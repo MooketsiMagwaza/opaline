@@ -4,7 +4,7 @@
 use std::io::Cursor;
 
 use base64::{Engine, engine::general_purpose::STANDARD};
-use image::{DynamicImage, ImageFormat, RgbImage, imageops::FilterType};
+use image::{DynamicImage, RgbImage, codecs::jpeg::JpegEncoder, imageops::FilterType};
 
 /// A captured frame as top-down BGRA.
 struct Frame {
@@ -23,20 +23,31 @@ fn to_jpeg_data_url(frame: Frame, max_width: u32) -> Option<String> {
     let mut image = RgbImage::from_raw(frame.width, frame.height, rgb)?;
 
     if image.width() > max_width {
-        let height = (image.height() as u64 * max_width as u64 / image.width() as u64).max(1) as u32;
+        let height =
+            (image.height() as u64 * max_width as u64 / image.width() as u64).max(1) as u32;
         image = image::imageops::resize(&image, max_width, height, FilterType::Triangle);
     }
 
     let mut bytes = Vec::new();
-    DynamicImage::ImageRgb8(image)
-        .write_to(&mut Cursor::new(&mut bytes), ImageFormat::Jpeg)
+    JpegEncoder::new_with_quality(&mut Cursor::new(&mut bytes), 58)
+        .encode_image(&DynamicImage::ImageRgb8(image))
         .ok()?;
     Some(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
 }
 
 /// A rectangle of the virtual screen, in physical pixels.
 pub fn snapshot_rect(x: i32, y: i32, width: i32, height: i32, max_width: u32) -> Option<String> {
-    to_jpeg_data_url(imp::screen_rect(x, y, width, height)?, max_width)
+    #[cfg(debug_assertions)]
+    let started = std::time::Instant::now();
+
+    // Scale while GDI copies the screen. Converting and resizing a full-resolution BGRA frame in
+    // Rust dominated the hotkey path even though the blurred backdrop never needs those pixels.
+    let snapshot = to_jpeg_data_url(imp::screen_rect(x, y, width, height, max_width)?, max_width);
+
+    #[cfg(debug_assertions)]
+    eprintln!("opaline: backdrop capture took {:?}", started.elapsed());
+
+    snapshot
 }
 
 /// One window's contents, even when other windows cover it.
@@ -51,9 +62,10 @@ mod imp {
     use windows::Win32::{
         Foundation::{HWND, RECT},
         Graphics::Gdi::{
-            BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BitBlt, CAPTUREBLT, CreateCompatibleBitmap,
-            CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC, DeleteObject, GetDC, GetDIBits, HBITMAP,
-            HDC, ReleaseDC, SRCCOPY, SelectObject,
+            BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BitBlt, CAPTUREBLT, COLORONCOLOR,
+            CreateCompatibleBitmap, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC, DeleteObject,
+            GetDC, GetDIBits, HBITMAP, HDC, ReleaseDC, SRCCOPY, SelectObject, SetStretchBltMode,
+            StretchBlt,
         },
         Storage::Xps::{PRINT_WINDOW_FLAGS, PrintWindow},
         UI::WindowsAndMessaging::GetWindowRect,
@@ -92,42 +104,65 @@ mod imp {
             )
         };
 
-        (lines != 0).then(|| Frame {
+        (lines != 0).then_some(Frame {
             pixels,
             width: width as u32,
             height: height as u32,
         })
     }
 
-    pub fn screen_rect(x: i32, y: i32, width: i32, height: i32) -> Option<Frame> {
+    pub fn screen_rect(x: i32, y: i32, width: i32, height: i32, max_width: u32) -> Option<Frame> {
         if width <= 0 || height <= 0 {
             return None;
         }
 
+        let target_width = width.min(max_width.max(1) as i32);
+        let target_height = ((height as i64 * target_width as i64) / width as i64).max(1) as i32;
+
         unsafe {
             let screen = GetDC(None);
             let memory = CreateCompatibleDC(Some(screen));
-            let bitmap = CreateCompatibleBitmap(screen, width, height);
+            let bitmap = CreateCompatibleBitmap(screen, target_width, target_height);
             let previous = SelectObject(memory, bitmap.into());
 
             // CAPTUREBLT includes layered windows, which is what a live wallpaper host is.
-            let copied = BitBlt(
-                memory,
-                0,
-                0,
-                width,
-                height,
-                Some(screen),
-                x,
-                y,
-                SRCCOPY | CAPTUREBLT,
-            )
-            .is_ok();
+            let copied = if target_width == width {
+                BitBlt(
+                    memory,
+                    0,
+                    0,
+                    width,
+                    height,
+                    Some(screen),
+                    x,
+                    y,
+                    SRCCOPY | CAPTUREBLT,
+                )
+                .is_ok()
+            } else {
+                // COLORONCOLOR is intentionally cheaper than HALFTONE. The CSS backdrop blur
+                // hides interpolation differences, while the hotkey path stays responsive.
+                SetStretchBltMode(memory, COLORONCOLOR);
+                StretchBlt(
+                    memory,
+                    0,
+                    0,
+                    target_width,
+                    target_height,
+                    Some(screen),
+                    x,
+                    y,
+                    width,
+                    height,
+                    SRCCOPY | CAPTUREBLT,
+                )
+                .as_bool()
+            };
 
             // The bitmap must not be selected into a DC while it is read.
             SelectObject(memory, previous);
             let frame = if copied {
-                read_pixels(screen, bitmap, width, height)
+                read_pixels(screen, bitmap, target_width, target_height)
             } else {
                 None
             };
@@ -154,7 +189,8 @@ mod imp {
             let bitmap = CreateCompatibleBitmap(screen, width, height);
             let previous = SelectObject(memory, bitmap.into());
 
-            let printed = PrintWindow(hwnd, memory, PRINT_WINDOW_FLAGS(PW_RENDERFULLCONTENT)).as_bool();
+            let printed =
+                PrintWindow(hwnd, memory, PRINT_WINDOW_FLAGS(PW_RENDERFULLCONTENT)).as_bool();
 
             SelectObject(memory, previous);
             let frame = if printed {
@@ -175,7 +211,13 @@ mod imp {
 mod imp {
     use super::Frame;
 
-    pub fn screen_rect(_x: i32, _y: i32, _width: i32, _height: i32) -> Option<Frame> {
+    pub fn screen_rect(
+        _x: i32,
+        _y: i32,
+        _width: i32,
+        _height: i32,
+        _max_width: u32,
+    ) -> Option<Frame> {
         None
     }
 

@@ -8,10 +8,7 @@
     <script type="module" src="/src/launcher.ts"></script>
   </head>
 
-  <body data-style="liquid" data-labels="true" data-rail="true" data-rail-side="right" data-anim="true">
-    <!-- SVG filters for the lens effect are generated into this element (src/glass.ts) -->
-    <svg id="lens-defs" width="0" height="0" aria-hidden="true" style="position: absolute"><defs></defs></svg>
-
+  <body data-style="frost" data-canvas="frosted" data-entry="fabric" data-labels="true" data-rail="false" data-rail-side="right" data-anim="true">
     <div class="stage pre" id="stage">
       <img id="backdrop" alt="" hidden />
       <div id="tint"></div>
@@ -23,7 +20,7 @@
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.5-3.5" />
             </svg>
-            <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search your desktop" />
+            <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search desktop and installed apps" />
           </div>
 
           <div class="actions">
@@ -43,9 +40,24 @@
           </div>
         </header>
 
-        <main id="grid-layer"><div id="grid"></div></main>
+        <main id="apps-surface" class="glass page-surface" aria-label="Desktop apps and groups">
+          <div id="grid-layer"><div id="grid"></div></div>
+          <footer id="status"></footer>
+        </main>
 
-        <footer id="status"></footer>
+        <main id="app-list-surface" class="glass page-surface secondary-surface" aria-label="All apps" hidden>
+          <header class="page-heading">
+            <div><span class="page-kicker">Library</span><h1>All apps</h1></div>
+            <span id="app-list-count" class="page-count"></span>
+          </header>
+          <div id="app-list" class="app-list"></div>
+        </main>
+
+        <nav id="page-nav" class="glass" aria-label="Launcher pages">
+          <button type="button" id="page-prev" class="page-arrow" aria-label="Previous page">‹</button>
+          <div class="page-position"><strong id="page-label">Home</strong><span id="page-dots" aria-hidden="true">● ○</span></div>
+          <button type="button" id="page-next" class="page-arrow" aria-label="Next page">›</button>
+        </nav>
 
         <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
         <div id="preview" class="glass" hidden></div>

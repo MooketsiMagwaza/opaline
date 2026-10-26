@@ -16,6 +16,9 @@ npm run tauri dev
 The first build compiles Tauri and its dependencies (several minutes); later ones are incremental. The overlay opens by itself on
 start-up. Close it with **Esc**, quit with **Ctrl+Q** or the tray icon's *Quit*.
 
+Clear canvas is the fast path: the transparent window opens without taking a screenshot. Turn **Clear canvas** off when validating the
+snapshot timing; debug builds print `opaline: backdrop capture took ...` to the terminal. Measure both paths separately.
+
 ## 2. Drive the page over the DevTools protocol
 
 WebView2 can expose Chrome's DevTools protocol on a local port. Start the app with it on, then use `scripts/cdp.mjs`:
@@ -83,8 +86,10 @@ from the screen. Mark your capture script DPI-aware first (`SetProcessDPIAware`)
 
 ```bash
 npm run build
+npm test
 cargo fmt   --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
+cargo test --manifest-path src-tauri/Cargo.toml --locked
 cargo check --manifest-path src-tauri/Cargo.toml --locked
 ```
 

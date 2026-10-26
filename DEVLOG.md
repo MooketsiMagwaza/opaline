@@ -2,6 +2,41 @@
 
 Newest first.
 
+## 2026-10-26 · Release-candidate hardening
+
+Continued Beta 1 with two goals: make the common open path feel immediate and turn the repository into a publishable project.
+
+- **Rail deferred.** The taskbar mirror remains in source but is deprecated to a later roadmap phase. The current build skips enumeration
+  refreshes, thumbnails, rail lens work and the Rail settings section.
+- **Focused pages.** Home and All Apps are the only active pages. Widget mockups were removed; widgets and calendar remain documented
+  roadmap work. All Apps now enumerates the real Windows AppsFolder after first paint instead of repeating Desktop entries.
+
+- **Transparent fast path.** Clear canvas now asks Rust to skip the screen capture and shows the transparent WebView directly. Frosted
+  modes keep the snapshot path because WebView backdrop filters cannot reliably sample the Windows compositor behind the window.
+- **Capture path.** Snapshot mode downsamples in GDI before readback, cutting the documented target from 2.3 million pixels to roughly
+  0.55 million on the 16:10 target display. After hiding, Opaline refreshes and decodes the next backdrop while the window is invisible; a real debug warm-open
+  measurement fell to 25.7 ms request-to-visible while the uncached path stayed below the 300 ms target.
+- **Render path.** Desktop and Taskband refreshes happen after the first visible frame on warm opens. Lens work is batched, cached and
+  bounded to 320 px maps; unrelated settings no longer rebuild every lens.
+- **Centred grid.** Loose items, folders and panes can be reordered only in snapped grid cells and retain their order. Search temporarily returns
+  to a compact grid without changing the saved layout.
+- **Page scaffold.** Home shares a floating previous/next switcher with the alphabetical installed-app catalogue. Catalogue work remains
+  off the visible-frame path.
+- **Motion.** The toggleable entrance unfolds the complete, pre-arranged grid upward as one lightweight fabric layer. Large glass
+  surfaces and individual tiles no longer animate independently, avoiding delayed content and expensive backdrop re-rasterisation.
+  Reduced motion removes the sequence. Dock magnification pushes neighbours away so enlarged icons do not overlap or clip.
+- **Surface hierarchy.** One rounded surface holds the centred app grid. Loose apps/folders use bare icon + name; panes put mini-icons
+  inside one rounded bubble with the name below. Search and the rail remain independent floating surfaces.
+- **Acrylic system.** The active UI now uses one consistent acrylic vocabulary. Appearance exposes backdrop blur, tint strength and tint
+  colour; cards deliberately avoid per-item backdrop filters so visual tuning does not multiply GPU work.
+- **Windows integration.** The rail reads Taskband registry order and packaged-app IDs as well as `.lnk` pins. The NSIS bundle places
+  Opaline directly in the Start Menu, removes its unwanted Desktop shortcut, and keeps launch-at-login opt-in.
+- **Quality and release.** Added frontend and Rust tests, release artifact automation, publishing metadata and release documentation.
+
+The local automated gates are clean. Real hotkey/focus, pointer persistence, installer, multi-monitor and CI checks remain explicit
+release blockers rather than being marked complete without observation. The acrylic bright/dark, persistence, reduced-motion and GPU
+matrix in `docs/THEME_WORKORDER.md` is also required before the visual package is marked verified.
+
 ## 2026-10-26 · Beta 1 — Tauri v2, snapshot overlay (current)
 
 Moved the launcher to Tauri v2 (Rust backend, TypeScript + CSS frontend) and, after the first Tauri cut, dropped OS

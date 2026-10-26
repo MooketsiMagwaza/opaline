@@ -6,13 +6,18 @@ import { type MenuEntry, showMenu } from "./menu";
 import { settings } from "./settings";
 
 type Entry = { kind: "group"; group: groups.Group } | { kind: "item"; item: Item };
+type Dragged =
+  | { kind: "item"; path: string; fromPane: boolean; layoutKey: string }
+  | { kind: "group"; groupId: string; layoutKey: string };
 
 let items: Item[] = [];
 const known = new Map<string, Item>();
 let query = "";
 let statusHint = "";
 let openId: string | null = null;
-let dragged: { path: string; fromPane: boolean } | null = null;
+let popupReturnFocus: HTMLElement | null = null;
+let dragged: Dragged | null = null;
+let layoutFrame = 0;
 
 export const allItems = (): Item[] => items;
 export const isPopupOpen = (): boolean => openId !== null;
@@ -36,8 +41,12 @@ export function setQuery(next: string) {
 export function reset() {
   query = "";
   openId = null;
+  popupReturnFocus = null;
   byId("popup-layer").hidden = true;
-  byId("popup").classList.remove("open");
+  const popup = byId("popup");
+  popup.classList.remove("open");
+  popup.replaceChildren();
+  popup.style.removeProperty("transform-origin");
   document.body.classList.remove("popup-open");
 }
 
@@ -77,12 +86,19 @@ function entries(): Entry[] {
 export function render() {
   const list = entries();
   const grid = byId("grid");
+  const searching = query.trim().length > 0;
+  grid.classList.toggle("ordered", !searching);
+  grid.classList.toggle("searching", searching);
+  if (searching) grid.style.removeProperty("height");
 
   if (list.length === 0) {
     grid.replaceChildren(el("p", "empty", [query ? `Nothing matches “${query}”` : "Nothing on your Desktop yet"]));
   } else {
     grid.replaceChildren(...list.map((entry) => (entry.kind === "group" ? paneTile(entry.group) : itemTile(entry.item))));
   }
+
+  cancelAnimationFrame(layoutFrame);
+  if (!searching && list.length > 0) layoutFrame = requestAnimationFrame(layoutOrderedTiles);
 
   const summary = query
     ? `${list.length} result${list.length === 1 ? "" : "s"}`
@@ -109,26 +125,85 @@ export function activateFirst() {
 
 // ---------- drag and drop ----------
 
+function layoutKeys(): string[] {
+  return [...byId("grid").querySelectorAll<HTMLElement>(":scope > .tile")]
+    .map((tile) => tile.dataset.layoutKey)
+    .filter((key): key is string => Boolean(key));
+}
+
+function insertionIndex(clientX: number, clientY: number, movingKey: string): number {
+  const tiles = [...byId("grid").querySelectorAll<HTMLElement>(":scope > .tile")].filter(
+    (tile) => tile.dataset.layoutKey !== movingKey,
+  );
+  const before = tiles.findIndex((tile) => {
+    const rect = tile.getBoundingClientRect();
+    const middleY = rect.top + rect.height / 2;
+    const sameRow = clientY >= rect.top && clientY <= rect.bottom;
+    return clientY < middleY || (sameRow && clientX < rect.left + rect.width / 2);
+  });
+  return before < 0 ? tiles.length : before;
+}
+
+function reorderedKeys(movingKey: string, index: number): string[] {
+  const keys = layoutKeys().filter((key) => key !== movingKey);
+  keys.splice(Math.min(keys.length, Math.max(0, index)), 0, movingKey);
+  return keys;
+}
+
+function layoutOrderedTiles() {
+  layoutFrame = 0;
+  const grid = byId("grid");
+  if (!grid.classList.contains("ordered")) return;
+
+  const tiles = [...grid.querySelectorAll<HTMLElement>(":scope > .tile")];
+  grid.style.removeProperty("height");
+  tiles
+    .map((tile, index) => ({ tile, index, saved: groups.positionOf(tile.dataset.layoutKey ?? "") }))
+    .sort((a, b) => {
+      if (!a.saved && !b.saved) return a.index - b.index;
+      if (!a.saved) return 1;
+      if (!b.saved) return -1;
+      return a.saved.y - b.saved.y || a.saved.x - b.saved.x || a.index - b.index;
+    })
+    .forEach(({ tile }) => {
+      tile.style.removeProperty("left");
+      tile.style.removeProperty("top");
+      grid.append(tile);
+    });
+}
+
 function endDrag() {
   dragged = null;
   document.body.classList.remove("dragging");
   document.querySelectorAll(".drop-target, .lifted").forEach((node) => node.classList.remove("drop-target", "lifted"));
 }
 
+function startDrag(tile: HTMLElement, value: Dragged, event: DragEvent) {
+  dragged = value;
+  event.dataTransfer?.setData("text/plain", value.layoutKey);
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+  document.body.classList.add("dragging");
+  requestAnimationFrame(() => tile.classList.add("lifted"));
+}
+
 function wireDrag(tile: HTMLElement, path: string, fromPane: boolean) {
+  const layoutKey = groups.itemPositionKey(path);
   tile.draggable = true;
   tile.addEventListener("dragstart", (event) => {
-    dragged = { path, fromPane };
-    event.dataTransfer?.setData("text/plain", path);
-    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-    document.body.classList.add("dragging");
-    requestAnimationFrame(() => tile.classList.add("lifted"));
+    startDrag(tile, { kind: "item", path, fromPane, layoutKey }, event);
   });
   tile.addEventListener("dragend", endDrag);
 }
 
+function wirePaneDrag(tile: HTMLElement, groupId: string) {
+  const layoutKey = groups.groupPositionKey(groupId);
+  tile.draggable = true;
+  tile.addEventListener("dragstart", (event) => startDrag(tile, { kind: "group", groupId, layoutKey }, event));
+  tile.addEventListener("dragend", endDrag);
+}
+
 function wireDrop(tile: HTMLElement, onDrop: (path: string) => void, accept: (path: string) => boolean = () => true) {
-  const acceptable = () => dragged !== null && accept(dragged.path);
+  const acceptable = () => dragged?.kind === "item" && accept(dragged.path);
 
   const over = (event: DragEvent) => {
     if (!acceptable()) return;
@@ -145,7 +220,7 @@ function wireDrop(tile: HTMLElement, onDrop: (path: string) => void, accept: (pa
     event.preventDefault();
     event.stopPropagation();
 
-    const path = dragged!.path;
+    const path = (dragged as Extract<Dragged, { kind: "item" }>).path;
     endDrag();
     onDrop(path);
   });
@@ -154,13 +229,12 @@ function wireDrop(tile: HTMLElement, onDrop: (path: string) => void, accept: (pa
 // ---------- tiles ----------
 
 function itemTile(item: Item, paneId?: string): HTMLElement {
-  const tile = el("button", "tile", [
-    el("span", "plate", [iconElement(item.path, item.name)]),
-    el("span", "label", [item.name]),
-  ]);
+  const tile = el("button", "tile item-tile", [iconElement(item.path, item.name), el("span", "label", [item.name])]);
   tile.type = "button";
   tile.title = item.name;
+  tile.setAttribute("aria-label", item.name);
   tile.dataset.path = item.path;
+  tile.dataset.layoutKey = groups.itemPositionKey(item.path);
 
   tile.addEventListener("click", () => launchItem(item.path));
   tile.addEventListener("contextmenu", (event) => {
@@ -175,7 +249,12 @@ function itemTile(item: Item, paneId?: string): HTMLElement {
     wireDrop(
       tile,
       (path) => {
+        const oldKeys = layoutKeys();
+        const targetIndex = Math.max(0, oldKeys.indexOf(groups.itemPositionKey(item.path)));
         const group = groups.createGroup("New pane", [item.path, path]);
+        const replaced = oldKeys.filter((key) => key !== groups.itemPositionKey(item.path) && key !== groups.itemPositionKey(path));
+        replaced.splice(Math.min(targetIndex, replaced.length), 0, groups.groupPositionKey(group.id));
+        groups.setLayoutOrder(replaced);
         render();
         openGroup(group.id, { rename: true });
       },
@@ -193,10 +272,12 @@ function paneTile(group: groups.Group): HTMLElement {
     members.map((path) => iconElement(path, known.get(path)!.name)),
   );
 
-  const tile = el("button", "tile pane-tile", [el("span", "plate pane-plate", [minis]), el("span", "label", [group.name])]);
+  const tile = el("button", "tile pane-tile", [minis, el("span", "label", [group.name])]);
   tile.type = "button";
   tile.title = group.name;
+  tile.setAttribute("aria-label", group.name);
   tile.dataset.id = group.id;
+  tile.dataset.layoutKey = groups.groupPositionKey(group.id);
 
   tile.addEventListener("click", () => openGroup(group.id, { from: tile }));
   tile.addEventListener("contextmenu", (event) => {
@@ -208,6 +289,7 @@ function paneTile(group: groups.Group): HTMLElement {
     groups.addToGroup(group.id, path);
     render();
   });
+  wirePaneDrag(tile, group.id);
   return tile;
 }
 
@@ -249,6 +331,17 @@ function itemMenu(item: Item): MenuEntry[] {
     },
   ];
 
+  const positionKey = groups.itemPositionKey(item.path);
+  if (groups.positionOf(positionKey)) {
+    menu.push({
+      label: "Return to automatic order",
+      action: () => {
+        groups.forgetPosition(positionKey);
+        render();
+      },
+    });
+  }
+
   if (current) {
     menu.push({
       label: `Remove from “${current.name}”`,
@@ -262,9 +355,23 @@ function itemMenu(item: Item): MenuEntry[] {
 }
 
 function paneMenu(group: groups.Group): MenuEntry[] {
-  return [
+  const menu: MenuEntry[] = [
     { label: "Open", action: () => openGroup(group.id) },
     { label: "Rename", action: () => openGroup(group.id, { rename: true }) },
+  ];
+
+  const positionKey = groups.groupPositionKey(group.id);
+  if (groups.positionOf(positionKey)) {
+    menu.push({
+      label: "Return to automatic order",
+      action: () => {
+        groups.forgetPosition(positionKey);
+        render();
+      },
+    });
+  }
+
+  menu.push(
     { separator: true },
     {
       label: "Ungroup",
@@ -274,7 +381,8 @@ function paneMenu(group: groups.Group): MenuEntry[] {
         render();
       },
     },
-  ];
+  );
+  return menu;
 }
 
 // ---------- pane popup ----------
@@ -338,6 +446,7 @@ export function openGroup(id: string, options: { rename?: boolean; from?: HTMLEl
 
   // grow out of the tile it was opened from, like an iOS folder
   const source = options.from ?? document.querySelector<HTMLElement>(`.pane-tile[data-id="${CSS.escape(id)}"]`);
+  popupReturnFocus = source ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   if (source) {
     const rect = source.getBoundingClientRect();
     panel.style.transformOrigin = `${rect.left + rect.width / 2 - panel.offsetLeft}px ${rect.top + rect.height / 2 - panel.offsetTop}px`;
@@ -357,16 +466,44 @@ export function closePopup() {
   if (openId === null) return;
 
   openId = null;
-  byId("popup").classList.remove("open");
+  const popup = byId("popup");
+  popup.classList.remove("open");
   document.body.classList.remove("popup-open");
   window.setTimeout(() => {
-    if (openId === null) byId("popup-layer").hidden = true;
+    if (openId !== null) return;
+    byId("popup-layer").hidden = true;
+    popup.replaceChildren();
+    popup.style.removeProperty("transform-origin");
+    if (popupReturnFocus?.isConnected) popupReturnFocus.focus();
+    popupReturnFocus = null;
   }, 180);
 }
 
 /** Wires the popup backdrop: click to close, drop a member on it to take it out of the pane. */
 export function initGrid() {
   const layer = byId("popup-layer");
+  const grid = byId("grid");
+
+  grid.addEventListener("dragover", (event) => {
+    if (!dragged || query.trim()) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  });
+  grid.addEventListener("drop", (event) => {
+    if (!dragged || query.trim()) return;
+    event.preventDefault();
+
+    const moving = dragged;
+    if (moving.kind === "item" && moving.fromPane) groups.removeFromGroup(moving.path);
+    groups.setLayoutOrder(reorderedKeys(moving.layoutKey, insertionIndex(event.clientX, event.clientY, moving.layoutKey)));
+    endDrag();
+    render();
+  });
+
+  window.addEventListener("resize", () => {
+    cancelAnimationFrame(layoutFrame);
+    layoutFrame = requestAnimationFrame(layoutOrderedTiles);
+  });
 
   layer.addEventListener("click", (event) => {
     if (event.target !== layer) return;
@@ -374,7 +511,7 @@ export function initGrid() {
     closePopup();
   });
 
-  const takeOut = () => dragged !== null && dragged.fromPane;
+  const takeOut = () => dragged?.kind === "item" && dragged.fromPane;
   layer.addEventListener("dragover", (event) => {
     if (takeOut() && event.target === layer) event.preventDefault();
   });
@@ -382,9 +519,11 @@ export function initGrid() {
     if (!takeOut() || event.target !== layer) return;
     event.preventDefault();
 
-    const path = dragged!.path;
+    const moving = dragged as Extract<Dragged, { kind: "item" }>;
+    const path = moving.path;
     endDrag();
     groups.removeFromGroup(path);
+    groups.setLayoutOrder([...layoutKeys(), moving.layoutKey]);
     render();
   });
 }

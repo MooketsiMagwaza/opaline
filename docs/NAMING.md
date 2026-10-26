@@ -7,7 +7,7 @@ Short, consistent names so code, docs, releases and the GitHub repo all read the
 | | |
 |---|---|
 | **Name** | Opaline |
-| **Tagline** | A frosted-glass launcher for your desktop. |
+| **Tagline** | An acrylic launcher for your desktop and installed apps. |
 | **Why** | Opaline glass is the milky, translucent kind — you can see the light through it, not the detail. That is the look. |
 
 > Availability of the name (trademark, domain, package registries, GitHub handle) has **not** been checked. Do that before the first public release.
@@ -19,7 +19,7 @@ Short, consistent names so code, docs, releases and the GitHub repo all read the
 | GitHub repository | `opaline` |
 | Rust package / npm package | `opaline` (library crate `opaline_lib`) |
 | Binary | `opaline` / `opaline.exe` |
-| Bundle identifier | `dev.opaline.launcher` — **placeholder**; use a domain you own, or `io.github.<your-handle>.opaline` |
+| Bundle identifier | `io.github.mooketsimagwaza.opaline` |
 | App data files | `groups.json`, `config.json` |
 | Local storage key | `opaline.settings` |
 | Environment variable | `OPALINE_PIN=1` keeps the window open on focus loss |

@@ -43,12 +43,16 @@ mod imp {
 
     use windows::{
         Win32::{
-            Foundation::{CloseHandle, HWND, LPARAM, RECT, TRUE},
+            Foundation::{CloseHandle, ERROR_SUCCESS, HWND, LPARAM, RECT, TRUE},
             Graphics::Dwm::{DWMWA_CLOAKED, DwmGetWindowAttribute},
             System::{
                 Com::{
                     CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance,
                     CoInitializeEx, CoUninitialize, IPersistFile, STGM_READ,
+                },
+                Registry::{
+                    HKEY, HKEY_CURRENT_USER, KEY_READ, REG_BINARY, RegCloseKey, RegOpenKeyExW,
+                    RegQueryValueExW,
                 },
                 Threading::{
                     OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
@@ -65,7 +69,7 @@ mod imp {
                 },
             },
         },
-        core::{BOOL, HSTRING, Interface, PWSTR},
+        core::{BOOL, HSTRING, Interface, PWSTR, w},
     };
 
     use super::{RailItem, WindowInfo};
@@ -103,6 +107,11 @@ mod imp {
         target: Option<String>,
     }
 
+    enum RegistryPin {
+        Link(String),
+        AppId(String),
+    }
+
     fn wide_to_string(buffer: &[u16], length: usize) -> String {
         String::from_utf16_lossy(&buffer[..length.min(buffer.len())])
     }
@@ -136,6 +145,40 @@ mod imp {
         }
     }
 
+    /// Windows shortcuts sometimes resolve an executable to a short/environment-based path while
+    /// process enumeration returns an absolute one. Executable file names are stable enough for
+    /// rail grouping and prevent a pinned app from appearing again as a separate running entry.
+    fn application_key(path: &str) -> String {
+        let lower = path.to_lowercase();
+        let file = Path::new(&lower)
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned());
+        match file {
+            Some(name) if name.ends_with(".exe") => name,
+            _ => lower,
+        }
+    }
+
+    fn pinned_key(pinned: &Pinned) -> String {
+        if let Some(target) = pinned.target.as_deref() {
+            return application_key(target);
+        }
+
+        // Windows' built-in File Explorer pin is a shell link that often has no filesystem
+        // target, even though its running window belongs to explorer.exe.
+        let stem = Path::new(&pinned.link)
+            .file_stem()
+            .map(|name| name.to_string_lossy().to_lowercase());
+        if stem
+            .as_deref()
+            .is_some_and(|name| matches!(name, "file explorer" | "windows explorer" | "explorer"))
+        {
+            return "explorer.exe".into();
+        }
+
+        application_key(&pinned.link)
+    }
+
     unsafe fn inspect(hwnd: HWND) -> Option<RawWindow> {
         unsafe {
             if !IsWindowVisible(hwnd).as_bool() {
@@ -147,12 +190,11 @@ mod imp {
             if style & WS_EX_TOOLWINDOW.0 != 0 && !app_window {
                 return None;
             }
-            if !app_window {
-                if let Ok(owner) = GetWindow(hwnd, GW_OWNER) {
-                    if !owner.is_invalid() {
-                        return None;
-                    }
-                }
+            if !app_window
+                && let Ok(owner) = GetWindow(hwnd, GW_OWNER)
+                && !owner.is_invalid()
+            {
+                return None;
             }
 
             // Windows on other virtual desktops and suspended Store apps are "cloaked".
@@ -196,7 +238,10 @@ mod imp {
 
             let exe = process_image(pid)?;
             let exe_lower = exe.to_lowercase();
-            if SHELL_EXECUTABLES.iter().any(|shell| exe_lower.ends_with(shell)) {
+            if SHELL_EXECUTABLES
+                .iter()
+                .any(|shell| exe_lower.ends_with(shell))
+            {
                 return None;
             }
 
@@ -208,7 +253,7 @@ mod imp {
             let (key, name) = if shared_host {
                 (format!("{exe_lower}|{handle}"), title.clone())
             } else {
-                (exe_lower, display_name(&exe))
+                (application_key(&exe), display_name(&exe))
             };
 
             Some(RawWindow {
@@ -237,16 +282,21 @@ mod imp {
     fn running_windows() -> Vec<RawWindow> {
         let mut windows: Vec<RawWindow> = Vec::new();
         unsafe {
-            let _ = EnumWindows(Some(collect), LPARAM(&mut windows as *mut Vec<RawWindow> as isize));
+            let _ = EnumWindows(
+                Some(collect),
+                LPARAM(&mut windows as *mut Vec<RawWindow> as isize),
+            );
         }
         windows
     }
 
     unsafe fn resolve_link(path: &Path) -> Option<String> {
         unsafe {
-            let link: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER).ok()?;
+            let link: IShellLinkW =
+                CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER).ok()?;
             let file: IPersistFile = link.cast().ok()?;
-            file.Load(&HSTRING::from(path.as_os_str()), STGM_READ).ok()?;
+            file.Load(&HSTRING::from(path.as_os_str()), STGM_READ)
+                .ok()?;
 
             let mut buffer = [0u16; 260];
             link.GetPath(&mut buffer, std::ptr::null_mut(), 0).ok()?;
@@ -256,9 +306,138 @@ mod imp {
         }
     }
 
-    /// The shortcuts behind the icons pinned to the taskbar, with their targets resolved so running
-    /// windows can be matched to them. Order is alphabetical: the taskbar's own order lives in an
-    /// undocumented registry blob.
+    fn unicode_strings(bytes: &[u8]) -> Vec<String> {
+        let mut strings = Vec::new();
+        let mut current = String::new();
+
+        for pair in bytes.chunks_exact(2) {
+            let unit = u16::from_le_bytes([pair[0], pair[1]]);
+            let printable = char::from_u32(unit as u32).filter(|character| !character.is_control());
+            if let Some(character) = printable {
+                current.push(character);
+            } else {
+                if current.len() >= 3 {
+                    strings.push(std::mem::take(&mut current));
+                }
+                current.clear();
+            }
+        }
+        if current.len() >= 3 {
+            strings.push(current);
+        }
+        strings
+    }
+
+    fn is_app_id(value: &str) -> bool {
+        value.contains('!')
+            && value.len() <= 256
+            && !value
+                .chars()
+                .any(|character| ['\\', '/', ':'].contains(&character))
+            && value
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || "._-!".contains(character))
+    }
+
+    fn taskband_value() -> Option<Vec<u8>> {
+        unsafe {
+            let mut key = HKEY::default();
+            if RegOpenKeyExW(
+                HKEY_CURRENT_USER,
+                w!(r"Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband"),
+                None,
+                KEY_READ,
+                &mut key,
+            ) != ERROR_SUCCESS
+            {
+                return None;
+            }
+
+            let mut kind = Default::default();
+            let mut length = 0u32;
+            let measured = RegQueryValueExW(
+                key,
+                w!("FavoritesResolve"),
+                None,
+                Some(&mut kind),
+                None,
+                Some(&mut length),
+            ) == ERROR_SUCCESS;
+            if !measured || kind != REG_BINARY || length == 0 {
+                let _ = RegCloseKey(key);
+                return None;
+            }
+
+            let mut bytes = vec![0u8; length as usize];
+            let read = RegQueryValueExW(
+                key,
+                w!("FavoritesResolve"),
+                None,
+                Some(&mut kind),
+                Some(bytes.as_mut_ptr()),
+                Some(&mut length),
+            ) == ERROR_SUCCESS;
+            let _ = RegCloseKey(key);
+            read.then(|| {
+                bytes.truncate(length as usize);
+                bytes
+            })
+        }
+    }
+
+    /// Windows 11 keeps taskbar order and Store-app pins in an undocumented Taskband value.
+    /// We only consume the self-describing UTF-16 link names and AppUserModelIDs inside it; an
+    /// unfamiliar future blob format therefore degrades to the pinned-shortcut folder.
+    fn taskband_pins() -> Vec<RegistryPin> {
+        let Some(value) = taskband_value() else {
+            return Vec::new();
+        };
+
+        let mut seen = std::collections::HashSet::new();
+        unicode_strings(&value)
+            .into_iter()
+            .filter_map(|value| {
+                let lower = value.to_lowercase();
+                if lower.ends_with(".lnk") {
+                    let name = Path::new(&value)
+                        .file_name()?
+                        .to_string_lossy()
+                        .into_owned();
+                    seen.insert(format!("link:{}", name.to_lowercase()))
+                        .then_some(RegistryPin::Link(name))
+                } else if is_app_id(&value) {
+                    seen.insert(format!("app:{lower}"))
+                        .then_some(RegistryPin::AppId(value))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn app_id_name(app_id: &str) -> String {
+        let identifier = app_id
+            .split('!')
+            .next()
+            .unwrap_or(app_id)
+            .split('_')
+            .next()
+            .unwrap_or(app_id)
+            .rsplit('.')
+            .next()
+            .unwrap_or(app_id);
+        let mut name = String::new();
+        for character in identifier.chars() {
+            if character.is_uppercase() && !name.is_empty() {
+                name.push(' ');
+            }
+            name.push(character);
+        }
+        name
+    }
+
+    /// The shortcuts and Store apps pinned to the taskbar, ordered by the Taskband registry when it
+    /// can be read. Folder-only pins follow alphabetically as a compatibility fallback.
     fn pinned_items() -> Vec<Pinned> {
         let Some(appdata) = std::env::var_os("APPDATA") else {
             return Vec::new();
@@ -279,13 +458,14 @@ mod imp {
             })
             .unwrap_or_default();
         links.sort();
+        let registry = taskband_pins();
 
         // COM wants its own apartment, so resolve on a short-lived thread.
         thread::spawn(move || {
             unsafe {
                 let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
             }
-            let pinned = links
+            let mut shortcuts = links
                 .iter()
                 .map(|link| Pinned {
                     name: link
@@ -296,6 +476,30 @@ mod imp {
                     target: unsafe { resolve_link(link) },
                 })
                 .collect::<Vec<_>>();
+            let mut pinned = Vec::new();
+            for entry in registry {
+                match entry {
+                    RegistryPin::Link(name) => {
+                        let name = name.to_lowercase();
+                        if let Some(index) = shortcuts.iter().position(|shortcut| {
+                            Path::new(&shortcut.link)
+                                .file_name()
+                                .is_some_and(|file| file.to_string_lossy().to_lowercase() == name)
+                        }) {
+                            pinned.push(shortcuts.remove(index));
+                        }
+                    }
+                    RegistryPin::AppId(app_id) => {
+                        let shell_path = format!(r"shell:AppsFolder\{app_id}");
+                        pinned.push(Pinned {
+                            name: app_id_name(&app_id),
+                            link: shell_path.clone(),
+                            target: Some(shell_path),
+                        });
+                    }
+                }
+            }
+            pinned.extend(shortcuts);
             unsafe { CoUninitialize() };
             pinned
         })
@@ -308,11 +512,7 @@ mod imp {
         let mut items = Vec::new();
 
         for pinned in pinned_items() {
-            let key = pinned
-                .target
-                .as_deref()
-                .unwrap_or(&pinned.link)
-                .to_lowercase();
+            let key = pinned_key(&pinned);
 
             let (matched, rest): (Vec<RawWindow>, Vec<RawWindow>) =
                 windows.into_iter().partition(|window| window.key == key);
@@ -354,6 +554,53 @@ mod imp {
                 let _ = ShowWindow(hwnd, SW_RESTORE);
             }
             let _ = SetForegroundWindow(hwnd);
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::{Pinned, app_id_name, application_key, is_app_id, pinned_key, unicode_strings};
+
+        #[test]
+        fn finds_utf16_strings_in_taskband_data() {
+            let mut bytes = vec![0, 0, 1, 0];
+            for unit in r"File Explorer.lnk".encode_utf16() {
+                bytes.extend(unit.to_le_bytes());
+            }
+            bytes.extend([0, 0]);
+            assert!(
+                unicode_strings(&bytes)
+                    .iter()
+                    .any(|value| value == "File Explorer.lnk")
+            );
+        }
+
+        #[test]
+        fn recognizes_and_names_store_app_ids() {
+            let app_id = "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App";
+            assert!(is_app_id(app_id));
+            assert_eq!(app_id_name(app_id), "Windows Calculator");
+            assert!(!is_app_id(r"C:\Windows\not-an-app!id"));
+        }
+
+        #[test]
+        fn executable_keys_match_short_and_absolute_paths() {
+            assert_eq!(application_key(r"C:\Windows\explorer.exe"), "explorer.exe");
+            assert_eq!(application_key(r"%windir%\explorer.exe"), "explorer.exe");
+            assert_eq!(
+                application_key(r"shell:AppsFolder\Package!App"),
+                r"shell:appsfolder\package!app"
+            );
+        }
+
+        #[test]
+        fn file_explorer_shell_link_matches_the_running_process() {
+            let pinned = Pinned {
+                name: "File Explorer".into(),
+                link: r"C:\Pinned\File Explorer.lnk".into(),
+                target: None,
+            };
+            assert_eq!(pinned_key(&pinned), "explorer.exe");
         }
     }
 }

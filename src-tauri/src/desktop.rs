@@ -97,3 +97,21 @@ pub fn scan(app: &AppHandle) -> Vec<Item> {
     });
     items
 }
+
+#[cfg(test)]
+mod tests {
+    use super::display_name;
+
+    #[test]
+    fn strips_only_shortcut_extensions_from_files() {
+        assert_eq!(display_name("Opaline.lnk", false), "Opaline");
+        assert_eq!(display_name("Website.URL", false), "Website");
+        assert_eq!(display_name("Linux.desktop", false), "Linux");
+        assert_eq!(display_name("notes.txt", false), "notes.txt");
+    }
+
+    #[test]
+    fn leaves_folder_names_unchanged() {
+        assert_eq!(display_name("Examples.lnk", true), "Examples.lnk");
+    }
+}

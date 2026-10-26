@@ -12,12 +12,29 @@ fn file(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
     if !ALLOWED.contains(&name) {
         return Err(format!("unknown store file: {name}"));
     }
-    let dir = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| error.to_string())?;
     Ok(dir.join(name))
 }
 
 pub fn load(app: &AppHandle, name: &str) -> Option<String> {
-    fs::read_to_string(file(app, name).ok()?).ok()
+    let path = file(app, name).ok()?;
+    if let Ok(contents) = fs::read_to_string(&path) {
+        return Some(contents);
+    }
+
+    // The public bundle identifier replaced the development placeholder. Preserve panes and the
+    // hotkey from pre-release builds once, without moving or deleting the legacy file.
+    let legacy = path
+        .parent()?
+        .parent()?
+        .join("dev.opaline.launcher")
+        .join(name);
+    let contents = fs::read_to_string(legacy).ok()?;
+    let _ = save(app, name, &contents);
+    Some(contents)
 }
 
 pub fn save(app: &AppHandle, name: &str, contents: &str) -> Result<(), String> {

@@ -6,6 +6,29 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 
 const ICON_SIZE: u32 = 128;
 
+/// Converts shell premultiplied BGRA pixels to the straight RGBA layout PNG expects.
+/// Shell bitmaps without an alpha channel are treated as opaque.
+fn bgra_to_rgba(pixels: &mut [u8]) {
+    let has_alpha = pixels.chunks_exact(4).any(|pixel| pixel[3] != 0);
+    for pixel in pixels.chunks_exact_mut(4) {
+        let (blue, green, red) = (pixel[0] as u32, pixel[1] as u32, pixel[2] as u32);
+        let alpha = if has_alpha { pixel[3] as u32 } else { 255 };
+
+        let straight = |channel: u32| -> u8 {
+            if alpha == 0 || alpha == 255 {
+                channel as u8
+            } else {
+                ((channel * 255 + alpha / 2) / alpha).min(255) as u8
+            }
+        };
+
+        pixel[0] = straight(red);
+        pixel[1] = straight(green);
+        pixel[2] = straight(blue);
+        pixel[3] = alpha as u8;
+    }
+}
+
 /// Returns the item's icon as a `data:image/png;base64,...` URL.
 pub fn icon_data_url(path: &str) -> Option<String> {
     let png = imp::icon_png(path, ICON_SIZE)?;
@@ -25,7 +48,7 @@ mod imp {
         Win32::{
             Foundation::SIZE,
             Graphics::Gdi::{
-                BITMAP, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, DeleteObject, GetDC,
+                BI_RGB, BITMAP, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, DeleteObject, GetDC,
                 GetDIBits, GetObjectW, HBITMAP, ReleaseDC,
             },
             System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize, IBindCtx},
@@ -33,6 +56,8 @@ mod imp {
         },
         core::HSTRING,
     };
+
+    use super::bgra_to_rgba;
 
     type Request = (String, u32, mpsc::Sender<Option<Vec<u8>>>);
 
@@ -135,26 +160,7 @@ mod imp {
             return None;
         }
 
-        // The shell hands back premultiplied BGRA; PNG wants straight RGBA. Icons without an
-        // alpha channel come back fully transparent, so make those opaque instead.
-        let has_alpha = pixels.chunks_exact(4).any(|pixel| pixel[3] != 0);
-        for pixel in pixels.chunks_exact_mut(4) {
-            let (blue, green, red) = (pixel[0] as u32, pixel[1] as u32, pixel[2] as u32);
-            let alpha = if has_alpha { pixel[3] as u32 } else { 255 };
-
-            let straight = |channel: u32| -> u8 {
-                if alpha == 0 || alpha == 255 {
-                    channel as u8
-                } else {
-                    ((channel * 255 + alpha / 2) / alpha).min(255) as u8
-                }
-            };
-
-            pixel[0] = straight(red);
-            pixel[1] = straight(green);
-            pixel[2] = straight(blue);
-            pixel[3] = alpha as u8;
-        }
+        bgra_to_rgba(&mut pixels);
 
         let mut out = Vec::new();
         {
@@ -167,6 +173,32 @@ mod imp {
             writer.write_image_data(&pixels).ok()?;
         }
         Some(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bgra_to_rgba;
+
+    #[test]
+    fn converts_opaque_bgra_to_rgba() {
+        let mut pixels = [10, 20, 30, 255];
+        bgra_to_rgba(&mut pixels);
+        assert_eq!(pixels, [30, 20, 10, 255]);
+    }
+
+    #[test]
+    fn unpremultiplies_translucent_channels() {
+        let mut pixels = [25, 50, 100, 128];
+        bgra_to_rgba(&mut pixels);
+        assert_eq!(pixels, [199, 100, 50, 128]);
+    }
+
+    #[test]
+    fn treats_an_alpha_free_bitmap_as_opaque() {
+        let mut pixels = [1, 2, 3, 0, 4, 5, 6, 0];
+        bgra_to_rgba(&mut pixels);
+        assert_eq!(pixels, [3, 2, 1, 255, 6, 5, 4, 255]);
     }
 }
 

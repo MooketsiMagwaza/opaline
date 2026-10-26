@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -35,14 +38,20 @@ jobs:
       - name: Type-check and bundle the UI
         run: npm run build
 
+      - name: Frontend unit tests
+        run: npm test
+
       - name: Rust formatting
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
 
       - name: Rust lints
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
       - name: Rust build check
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Rust unit tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
 
   # Linux is a planned port (WORKORDER WP10). Enable this job once the non-Windows paths exist.
   # linux:

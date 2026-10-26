@@ -1,3 +1,4 @@
+mod apps;
 mod capture;
 mod desktop;
 mod icons;
@@ -25,7 +26,8 @@ use tauri_plugin_opener::OpenerExt;
 
 const DEFAULT_HOTKEY: &str = "ctrl+alt+space";
 const CODENAME: &str = "Annealed";
-const SNAPSHOT_WIDTH: u32 = 1280;
+// Acrylic blur hides the extra detail; a smaller frame cuts GDI readback, JPEG work and IPC size.
+const SNAPSHOT_WIDTH: u32 = 960;
 const THUMBNAIL_WIDTH: u32 = 360;
 /// How long Rust waits for the UI to say the backdrop is ready before showing the window anyway.
 const PRESENT_TIMEOUT: Duration = Duration::from_millis(900);
@@ -38,15 +40,27 @@ struct AppState {
     hotkey: Mutex<String>,
     hotkey_ok: AtomicBool,
     close_on_blur: AtomicBool,
+    capture_backdrop: AtomicBool,
     show_on_ready: AtomicBool,
     present_pending: AtomicBool,
     last_present: Mutex<Option<Instant>>,
+    show_started: Mutex<Option<(Instant, &'static str)>>,
     last_monitor: Mutex<Option<(i32, i32)>>,
+    cached_snapshot: Mutex<Option<CachedSnapshot>>,
+    snapshot_refreshing: AtomicBool,
+}
+
+#[derive(Clone)]
+struct CachedSnapshot {
+    bounds: (i32, i32, u32, u32),
+    data_url: String,
 }
 
 #[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 struct Prepare {
     snapshot: Option<String>,
+    reuse_snapshot: bool,
 }
 
 #[derive(Serialize)]
@@ -83,7 +97,11 @@ fn load_hotkey(app: &AppHandle) -> String {
 }
 
 fn save_hotkey(app: &AppHandle, combo: &str) {
-    let _ = store::save(app, "config.json", &serde_json::json!({ "hotkey": combo }).to_string());
+    let _ = store::save(
+        app,
+        "config.json",
+        &serde_json::json!({ "hotkey": combo }).to_string(),
+    );
 }
 
 fn register_hotkey(app: &AppHandle, combo: &str) -> Result<Shortcut, String> {
@@ -104,6 +122,57 @@ fn hide(app: &AppHandle) {
     if let Some(window) = main_window(app) {
         let _ = window.hide();
     }
+    refresh_snapshot_while_hidden(app);
+}
+
+fn capture_current_monitor(app: &AppHandle) -> Option<CachedSnapshot> {
+    let window = main_window(app)?;
+    let monitor = window
+        .cursor_position()
+        .ok()
+        .and_then(|cursor| window.monitor_from_point(cursor.x, cursor.y).ok().flatten())
+        .or_else(|| window.primary_monitor().ok().flatten())?;
+    let origin = *monitor.position();
+    let size = *monitor.size();
+    let data_url = capture::snapshot_rect(
+        origin.x,
+        origin.y,
+        size.width as i32,
+        size.height as i32,
+        SNAPSHOT_WIDTH,
+    )?;
+    Some(CachedSnapshot {
+        bounds: (origin.x, origin.y, size.width, size.height),
+        data_url,
+    })
+}
+
+fn refresh_snapshot_while_hidden(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    if !state.capture_backdrop.load(Ordering::Relaxed)
+        || state.snapshot_refreshing.swap(true, Ordering::SeqCst)
+    {
+        return;
+    }
+
+    let app = app.clone();
+    thread::spawn(move || {
+        // Give DWM one frame to remove the overlay before capturing the next warm-open backdrop.
+        thread::sleep(Duration::from_millis(34));
+        let hidden = main_window(&app).is_some_and(|window| !window.is_visible().unwrap_or(true));
+        if hidden
+            && let Some(snapshot) = capture_current_monitor(&app)
+            && main_window(&app).is_some_and(|window| !window.is_visible().unwrap_or(true))
+        {
+            if let Ok(mut cached) = app.state::<AppState>().cached_snapshot.lock() {
+                *cached = Some(snapshot.clone());
+            }
+            let _ = app.emit("launcher-backdrop-cache", snapshot.data_url);
+        }
+        app.state::<AppState>()
+            .snapshot_refreshing
+            .store(false, Ordering::SeqCst);
+    });
 }
 
 fn show_window(app: &AppHandle) {
@@ -113,14 +182,28 @@ fn show_window(app: &AppHandle) {
 
     let _ = window.show();
     let _ = window.set_focus();
-    if let Ok(mut last) = app.state::<AppState>().last_present.lock() {
+    let state = app.state::<AppState>();
+    if let Ok(mut last) = state.last_present.lock() {
         *last = Some(Instant::now());
+    }
+    #[cfg(debug_assertions)]
+    if let Ok(mut started) = state.show_started.lock()
+        && let Some((started, path)) = started.take()
+    {
+        eprintln!(
+            "opaline: {path} request-to-visible took {:?}",
+            started.elapsed()
+        );
     }
 }
 
 /// Shows the window if the UI's backdrop is still pending; a late `present` is a no-op.
 fn show_if_pending(app: &AppHandle) {
-    if app.state::<AppState>().present_pending.swap(false, Ordering::SeqCst) {
+    if app
+        .state::<AppState>()
+        .present_pending
+        .swap(false, Ordering::SeqCst)
+    {
         show_window(app);
     }
 }
@@ -147,6 +230,8 @@ fn begin_show(app: &AppHandle) {
         return;
     };
     let state = app.state::<AppState>();
+    let capture_backdrop = state.capture_backdrop.load(Ordering::Relaxed);
+    let started = Instant::now();
 
     let monitor = window
         .cursor_position()
@@ -155,21 +240,54 @@ fn begin_show(app: &AppHandle) {
         .or_else(|| window.primary_monitor().ok().flatten());
 
     let mut snapshot = None;
+    let mut reuse_snapshot = false;
+    let mut path = "transparent";
     if let Some(monitor) = &monitor {
         let origin = *monitor.position();
         let size = *monitor.size();
-        snapshot = capture::snapshot_rect(
-            origin.x,
-            origin.y,
-            size.width as i32,
-            size.height as i32,
-            SNAPSHOT_WIDTH,
-        );
+        if capture_backdrop {
+            let bounds = (origin.x, origin.y, size.width, size.height);
+            reuse_snapshot = state.cached_snapshot.lock().ok().is_some_and(|cached| {
+                cached
+                    .as_ref()
+                    .is_some_and(|cached| cached.bounds == bounds)
+            });
+            if reuse_snapshot {
+                path = "cached snapshot";
+            } else {
+                snapshot = capture::snapshot_rect(
+                    origin.x,
+                    origin.y,
+                    size.width as i32,
+                    size.height as i32,
+                    SNAPSHOT_WIDTH,
+                );
+                if let Some(data_url) = &snapshot
+                    && let Ok(mut cached) = state.cached_snapshot.lock()
+                {
+                    *cached = Some(CachedSnapshot {
+                        bounds,
+                        data_url: data_url.clone(),
+                    });
+                }
+                path = "snapshot";
+            }
+        }
         fit_to_monitor(&state, &window, origin);
     }
 
+    if let Ok(mut current) = state.show_started.lock() {
+        *current = Some((started, path));
+    }
+
     state.present_pending.store(true, Ordering::SeqCst);
-    let _ = app.emit("launcher-prepare", Prepare { snapshot });
+    let _ = app.emit(
+        "launcher-prepare",
+        Prepare {
+            snapshot,
+            reuse_snapshot,
+        },
+    );
 
     let app = app.clone();
     thread::spawn(move || {
@@ -184,7 +302,7 @@ fn toggle(app: &AppHandle) {
     };
 
     if window.is_visible().unwrap_or(false) {
-        let _ = window.hide();
+        hide(app);
     } else {
         begin_show(app);
     }
@@ -244,6 +362,13 @@ fn list_items(app: AppHandle) -> Vec<desktop::Item> {
 }
 
 #[tauri::command]
+async fn list_apps() -> Vec<apps::AppEntry> {
+    tauri::async_runtime::spawn_blocking(apps::scan)
+        .await
+        .unwrap_or_default()
+}
+
+#[tauri::command]
 async fn get_icon(path: String) -> Option<String> {
     tauri::async_runtime::spawn_blocking(move || icons::icon_data_url(&path))
         .await
@@ -254,6 +379,15 @@ async fn get_icon(path: String) -> Option<String> {
 #[tauri::command]
 fn launch(app: AppHandle, path: String) {
     hide(&app);
+
+    #[cfg(windows)]
+    if path.starts_with(r"shell:AppsFolder\") {
+        let _ = std::process::Command::new("explorer.exe")
+            .arg(&path)
+            .spawn();
+        return;
+    }
+
     if let Err(error) = app.opener().open_path(path.as_str(), None::<&str>) {
         eprintln!("couldn't open {path}: {error}");
     }
@@ -350,7 +484,10 @@ fn set_hotkey(app: AppHandle, state: State<AppState>, combo: String) -> Result<S
             if let Some(previous) = previous {
                 let _ = app.global_shortcut().register(previous);
             }
-            Err(format!("{} is not available: {error}", hotkey_label(&combo)))
+            Err(format!(
+                "{} is not available: {error}",
+                hotkey_label(&combo)
+            ))
         }
     }
 }
@@ -358,6 +495,11 @@ fn set_hotkey(app: AppHandle, state: State<AppState>, combo: String) -> Result<S
 #[tauri::command]
 fn set_behavior(state: State<AppState>, close_on_blur: bool) {
     state.close_on_blur.store(close_on_blur, Ordering::Relaxed);
+}
+
+#[tauri::command]
+fn set_backdrop_capture(state: State<AppState>, enabled: bool) {
+    state.capture_backdrop.store(enabled, Ordering::Relaxed);
 }
 
 #[tauri::command]
@@ -399,15 +541,20 @@ pub fn run() {
             hotkey: Mutex::new(DEFAULT_HOTKEY.to_string()),
             hotkey_ok: AtomicBool::new(false),
             close_on_blur: AtomicBool::new(true),
+            capture_backdrop: AtomicBool::new(false),
             show_on_ready: AtomicBool::new(!start_hidden),
             present_pending: AtomicBool::new(false),
             last_present: Mutex::new(None),
+            show_started: Mutex::new(None),
             last_monitor: Mutex::new(None),
+            cached_snapshot: Mutex::new(None),
+            snapshot_refreshing: AtomicBool::new(false),
         })
         .invoke_handler(tauri::generate_handler![
             ready,
             present,
             list_items,
+            list_apps,
             get_icon,
             launch,
             reveal,
@@ -419,6 +566,7 @@ pub fn run() {
             status,
             set_hotkey,
             set_behavior,
+            set_backdrop_capture,
             load_store,
             save_store,
         ])
@@ -448,12 +596,12 @@ pub fn run() {
                     .is_some_and(|last| last.elapsed() < BLUR_GRACE);
 
                 if state.close_on_blur.load(Ordering::Relaxed) && !state.pinned && !settling {
-                    let _ = window.hide();
+                    hide(window.app_handle());
                 }
             }
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
-                let _ = window.hide();
+                hide(window.app_handle());
             }
             _ => {}
         })

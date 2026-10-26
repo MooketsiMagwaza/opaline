@@ -23,7 +23,7 @@ This applies in the repository (issues, pull requests, discussions, reviews) and
 ## Enforcement
 
 Maintainers may edit or remove comments, lock threads, and temporarily or permanently ban people who break these rules.
-To report a problem, email **<add a contact address before publishing>** or contact a maintainer privately. Reports are handled
-confidentially, and we will not retaliate against anyone who reports in good faith.
+To report a problem privately, open a [confidential repository advisory](https://github.com/MooketsiMagwaza/opaline/security/advisories/new)
+and prefix the title with `Conduct:`. Reports are handled confidentially, and we will not retaliate against anyone who reports in good faith.
 
 This code of conduct is adapted in spirit from the [Contributor Covenant](https://www.contributor-covenant.org).

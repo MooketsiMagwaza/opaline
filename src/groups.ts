@@ -3,16 +3,18 @@ import { debounce } from "./dom";
 
 /** A pane: a named, virtual group of Desktop items. The files themselves never move. */
 export type Group = { id: string; name: string; items: string[] };
+export type LayoutPosition = { x: number; y: number };
 
 type Store = {
   version: 1;
   organized: boolean;
   groups: Group[];
   launches: Record<string, number>;
+  layout: Record<string, LayoutPosition>;
 };
 
 const FILE = "groups.json";
-let store: Store = { version: 1, organized: false, groups: [], launches: {} };
+let store: Store = { version: 1, organized: false, groups: [], launches: {}, layout: {} };
 
 const persist = debounce(() => {
   void api.saveStore(FILE, JSON.stringify(store)).catch(() => {});
@@ -35,6 +37,19 @@ export async function loadGroups() {
           items: group.items.filter((path) => typeof path === "string"),
         })),
       launches: saved.launches ?? {},
+      layout: Object.fromEntries(
+        Object.entries(saved.layout ?? {}).flatMap(([key, position]) => {
+          if (
+            typeof position?.x !== "number" ||
+            typeof position?.y !== "number" ||
+            !Number.isFinite(position.x) ||
+            !Number.isFinite(position.y)
+          ) {
+            return [];
+          }
+          return [[key, { x: Math.min(1, Math.max(0, position.x)), y: Math.min(1, Math.max(0, position.y)) }]];
+        }),
+      ),
     };
   } catch {
     // an unreadable file just means starting fresh
@@ -43,6 +58,8 @@ export async function loadGroups() {
 
 export const groups = (): Group[] => store.groups;
 export const isOrganized = (): boolean => store.organized;
+export const itemPositionKey = (path: string): string => `item:${path}`;
+export const groupPositionKey = (id: string): string => `group:${id}`;
 
 export function markOrganized() {
   store.organized = true;
@@ -57,6 +74,9 @@ const newId = () => `g-${Date.now().toString(36)}${Math.floor(Math.random() * 12
 
 function detach(path: string) {
   for (const group of store.groups) group.items = group.items.filter((item) => item !== path);
+  for (const group of store.groups) {
+    if (group.items.length === 0) delete store.layout[groupPositionKey(group.id)];
+  }
   store.groups = store.groups.filter((group) => group.items.length > 0);
 }
 
@@ -102,13 +122,21 @@ export function renameGroup(id: string, name: string) {
 
 export function ungroup(id: string) {
   store.groups = store.groups.filter((group) => group.id !== id);
+  delete store.layout[groupPositionKey(id)];
   persist();
 }
 
 export function resetGroups() {
+  for (const group of store.groups) delete store.layout[groupPositionKey(group.id)];
   store.groups = [];
   // stay "organised": ungrouping everything must not be undone the next time the overlay opens
   store.organized = true;
+  persist();
+}
+
+/** Clears only the user's grid ordering; pane membership and launch history stay intact. */
+export function resetLayout() {
+  store.layout = {};
   persist();
 }
 
@@ -124,8 +152,21 @@ export function prune(live: Set<string>): boolean {
   }
 
   const before = store.groups.length;
+  for (const group of store.groups) {
+    if (group.items.length === 0) delete store.layout[groupPositionKey(group.id)];
+  }
   store.groups = store.groups.filter((group) => group.items.length > 0);
   changed = changed || store.groups.length !== before;
+
+  const liveGroupKeys = new Set(store.groups.map((group) => groupPositionKey(group.id)));
+  for (const key of Object.keys(store.layout)) {
+    const staleItem = key.startsWith("item:") && !live.has(key.slice("item:".length));
+    const staleGroup = key.startsWith("group:") && !liveGroupKeys.has(key);
+    if (staleItem || staleGroup) {
+      delete store.layout[key];
+      changed = true;
+    }
+  }
 
   if (changed) persist();
   return changed;
@@ -137,3 +178,30 @@ export function bumpLaunch(path: string) {
 }
 
 export const launchCount = (path: string): number => store.launches[path] ?? 0;
+
+/** Positions are normalized to the available canvas, so layouts survive resolution changes. */
+export const positionOf = (key: string): LayoutPosition | undefined => store.layout[key];
+
+export function setPosition(key: string, position: LayoutPosition) {
+  store.layout[key] = {
+    x: Math.round(Math.min(1, Math.max(0, position.x)) * 10_000) / 10_000,
+    y: Math.round(Math.min(1, Math.max(0, position.y)) * 10_000) / 10_000,
+  };
+  persist();
+}
+
+/** Persists the visual grid order while retaining the v1 normalized layout format. */
+export function setLayoutOrder(keys: string[]) {
+  const unique = [...new Set(keys)];
+  const denominator = Math.max(1, unique.length - 1);
+  unique.forEach((key, index) => {
+    store.layout[key] = { x: index / denominator, y: 0 };
+  });
+  persist();
+}
+
+export function forgetPosition(key: string) {
+  if (!(key in store.layout)) return;
+  delete store.layout[key];
+  persist();
+}

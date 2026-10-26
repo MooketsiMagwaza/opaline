@@ -13,12 +13,14 @@ window previews, and a settings pane. Read these, in order, before changing anyt
 
 ```bash
 npm install
+npm test                   # Vitest: pane store, layout and organise rules
 npm run tauri dev          # app with hot-reloading UI; Rust changes rebuild automatically
 npm run build              # tsc + vite production bundle (the type-check)
 npm run icons              # re-rasterise assets/logo.svg and regenerate src-tauri/icons
 cargo fmt   --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
 cargo check --manifest-path src-tauri/Cargo.toml --locked
+cargo test  --manifest-path src-tauri/Cargo.toml --locked
 ```
 
 ## Environment gotchas (Windows)
@@ -60,10 +62,10 @@ src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs taskbar.rs store.rs
 scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol)
 assets/         logo.svg (+ generated PNG)
 archive/        winui3-beta — the failed first attempt, kept for reference only; do not build or extend it
-docs/           NAMING.md · TESTING.md · CODEX_PROMPT.md
+docs/           architecture · testing · releasing · spatial and platform work orders
 ```
 
 ## Definition of done for a change
 
-`npm run build`, `cargo fmt --check`, `cargo clippy` and `cargo check` are clean · the relevant lines of WORKORDER §9 were exercised
+`npm test`, `npm run build`, `cargo fmt --check`, `cargo clippy`, `cargo test` and `cargo check` are clean · the relevant lines of WORKORDER §9 were exercised
 for real · statuses and changelog updated · no personal data in the diff · the PR/commit says what was and wasn't tested.

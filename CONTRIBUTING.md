@@ -13,9 +13,10 @@ Thanks for helping. This guide gets you from clone to pull request.
 Prerequisites: Windows 11, Node.js 20+, Rust stable with the MSVC toolchain, WebView2 (see the README).
 
 ```bash
-git clone <your fork>
+git clone https://github.com/YOUR-ACCOUNT/opaline.git
 cd opaline
 npm install
+npm test
 npm run tauri dev        # UI hot-reloads; Rust changes rebuild automatically
 ```
 
@@ -49,8 +50,10 @@ Useful while developing:
 
 ```bash
 npm run build                                   # type-check + production bundle
+npm test                                        # frontend/store unit tests
 cargo fmt --manifest-path src-tauri/Cargo.toml  # formatting
 cargo clippy --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml --locked
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
 

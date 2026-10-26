@@ -62,12 +62,13 @@ function activate(item: RailItem) {
   else if (item.launchPath) void api.launch(item.launchPath);
 }
 
-function dockButton(item: RailItem): HTMLElement {
+function dockButton(item: RailItem, index: number): HTMLElement {
   const button = el("button", item.windows.length ? "dock-item running" : "dock-item", [
     iconElement(item.iconPath, item.name),
   ]);
   button.type = "button";
   button.dataset.id = item.id;
+  button.style.setProperty("--i", String(index));
   button.setAttribute("aria-label", item.name);
   if (!settings().railPreviews) button.title = item.name;
   if (item.windows.length > 1) button.append(el("span", "badge", [String(item.windows.length)]));
@@ -75,6 +76,8 @@ function dockButton(item: RailItem): HTMLElement {
   button.addEventListener("click", () => activate(item));
   button.addEventListener("pointerenter", () => schedulePreview(item, button));
   button.addEventListener("pointerleave", scheduleHide);
+  button.addEventListener("focus", () => schedulePreview(item, button));
+  button.addEventListener("blur", scheduleHide);
   return button;
 }
 
@@ -169,8 +172,13 @@ function magnify(pointerY: number) {
     const button = child as HTMLElement;
     // layout position, so the scale being applied doesn't feed back into the maths
     const centre = top + button.offsetTop + button.offsetHeight / 2;
-    const distance = Math.abs(pointerY - centre);
-    button.style.setProperty("--s", (1 + 0.55 * Math.exp(-((distance / 72) ** 2))).toFixed(3));
+    const signedDistance = centre - pointerY;
+    const distance = Math.abs(signedDistance);
+    const scale = 1 + 0.42 * Math.exp(-((distance / 78) ** 2));
+    const push = Math.sign(signedDistance) * (scale - 1) * button.offsetHeight * 0.85;
+    button.style.setProperty("--s", scale.toFixed(3));
+    button.style.setProperty("--push", `${push.toFixed(1)}px`);
+    button.style.zIndex = String(Math.round(scale * 100));
   }
 }
 
@@ -188,6 +196,11 @@ export function initRail() {
   });
   rail.addEventListener("pointerleave", () => {
     cancelAnimationFrame(magnifyFrame);
-    for (const child of rail.children) (child as HTMLElement).style.removeProperty("--s");
+    for (const child of rail.children) {
+      const button = child as HTMLElement;
+      button.style.removeProperty("--s");
+      button.style.removeProperty("--push");
+      button.style.removeProperty("z-index");
+    }
   });
 }

@@ -1,15 +1,15 @@
 import { listen } from "@tauri-apps/api/event";
 import { type Status, api } from "./api";
 import { byId, sleep } from "./dom";
-import { attachLens, refreshLenses } from "./glass";
 import * as grid from "./grid";
 import * as groups from "./groups";
 import { forgetFailedIcons } from "./icons";
 import { closeMenu, isMenuOpen } from "./menu";
 import { organize } from "./organize";
+import * as pages from "./pages";
 import { closePanel, initPanel, isPanelOpen, isRecordingHotkey, syncPanel, togglePanel } from "./panel";
 import { hidePreview, initRail, refreshRail, startRail, stopRail } from "./rail";
-import { applySettings, onSettingsChange, settings } from "./settings";
+import { RAIL_AVAILABLE, applySettings, onSettingsChange, settings } from "./settings";
 
 const stage = byId("stage");
 const backdrop = byId<HTMLImageElement>("backdrop");
@@ -17,6 +17,9 @@ const search = byId<HTMLInputElement>("search");
 
 let status: Status = { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "", codename: "", pinned: false };
 let leaving = false;
+let itemsLoaded = false;
+let appsLoaded = false;
+let refreshTimer: number | undefined;
 
 function hint(): string {
   return status.hotkeyOk ? `Esc to close  ·  ${status.hotkey}` : `${status.hotkey} is taken — pick another in Settings`;
@@ -27,6 +30,7 @@ function hint(): string {
 async function setBackdrop(url: string | null) {
   if (!url) {
     backdrop.hidden = true;
+    backdrop.removeAttribute("src");
     return;
   }
 
@@ -52,41 +56,77 @@ async function loadItems() {
 
   grid.setStatusHint(hint());
   grid.render();
+  itemsLoaded = true;
+}
+
+async function loadApplications() {
+  if (appsLoaded) return;
+  const applications = await api.listApps();
+  pages.setApps(applications);
+  appsLoaded = true;
+}
+
+/** Keep work that does not affect the first visible frame outside the open path. */
+function refreshAfterPresent() {
+  window.clearTimeout(refreshTimer);
+  // Replacing the tile DOM during the entrance causes a visible hitch. Refresh after motion has
+  // settled; the prewarmed content is already correct enough for the first frame.
+  const delay = settings().animations && settings().fabricEntrance ? 620 : 120;
+  refreshTimer = window.setTimeout(() => {
+    if (leaving) return;
+    void loadItems().catch(() => {});
+    void loadApplications().catch(() => {});
+    if (RAIL_AVAILABLE) void refreshRail();
+  }, delay);
 }
 
 function resetUi() {
   closeMenu();
   closePanel();
-  hidePreview(true);
+  if (RAIL_AVAILABLE) hidePreview(true);
   grid.reset();
+  pages.reset();
   search.value = "";
 }
 
-async function onPrepare(snapshot: string | null) {
+async function onPrepare(snapshot: string | null, reuseSnapshot: boolean) {
   resetUi();
   stage.classList.remove("leaving");
+  stage.classList.remove("overlay-enter");
   stage.classList.add("pre");
   leaving = false;
   forgetFailedIcons();
 
-  await Promise.all([setBackdrop(snapshot), loadItems(), refreshRail()]);
+  // A warm open reuses the existing grid. Only the new snapshot belongs on the
+  // critical path; Desktop and taskbar changes can arrive just after first paint.
+  const backdropReady = reuseSnapshot ? Promise.resolve() : setBackdrop(snapshot);
+  if (itemsLoaded) await backdropReady;
+  else await Promise.all([backdropReady, loadItems()]);
+  const richEntrance = settings().animations && settings().fabricEntrance;
+  stage.classList.toggle("overlay-enter", richEntrance);
   await api.present();
 
   requestAnimationFrame(() => stage.classList.remove("pre"));
+  window.setTimeout(() => stage.classList.remove("overlay-enter"), 580);
   search.focus();
-  startRail();
+  if (RAIL_AVAILABLE) startRail();
+  refreshAfterPresent();
 }
 
 async function closeLauncher() {
   if (leaving) return;
   leaving = true;
+  window.clearTimeout(refreshTimer);
 
   if (settings().animations) {
     stage.classList.add("leaving");
     await sleep(160);
   }
-  stopRail();
+  if (RAIL_AVAILABLE) stopRail();
   await api.hide();
+  // Keep the hidden window in its prepared fabric state so a subsequent native show can never
+  // expose the previous fully-open frame before launcher-prepare reaches the webview.
+  stage.classList.add("pre");
 }
 
 // ---------- input ----------
@@ -144,15 +184,13 @@ function onShellClick(event: MouseEvent) {
 
 async function init() {
   applySettings();
+  const statusRequest = api.status().catch(() => null);
   await groups.loadGroups();
-  try {
-    status = await api.status();
-  } catch {
-    // keep the optimistic default
-  }
+  status = (await statusRequest) ?? status;
 
   grid.initGrid();
-  initRail();
+  pages.initPages();
+  if (RAIL_AVAILABLE) initRail();
   initPanel({
     status: () => status,
     organizeNow: () => {
@@ -166,6 +204,10 @@ async function init() {
       grid.reset();
       grid.render();
     },
+    resetGrid: () => {
+      groups.resetLayout();
+      grid.render();
+    },
     hotkeyChanged: (label) => {
       status = { ...status, hotkey: label, hotkeyOk: true };
       grid.setStatusHint(hint());
@@ -173,22 +215,25 @@ async function init() {
     },
   });
 
-  for (const id of ["search-wrap", "settings-button", "quit-button", "rail", "preview", "popup", "settings", "menu"]) {
-    attachLens(byId(id));
-  }
+  let previousSettings = settings();
+  onSettingsChange((next) => {
+    const previous = previousSettings;
+    previousSettings = next;
 
-  onSettingsChange(() => {
-    refreshLenses();
-    grid.render();
+    if (next.groupsFirst !== previous.groupsFirst || next.sortBy !== previous.sortBy) grid.render();
+    if (RAIL_AVAILABLE && next.rail && !previous.rail) void refreshRail();
+    if (RAIL_AVAILABLE && !next.railPreviews) hidePreview(true);
     syncPanel();
-    void refreshRail();
   });
 
-  search.addEventListener("input", () => grid.setQuery(search.value));
+  search.addEventListener("input", () => {
+    grid.setQuery(search.value);
+    pages.setQuery(search.value);
+  });
   search.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      grid.activateFirst();
+      if (!pages.activateFirst()) grid.activateFirst();
     }
   });
 
@@ -198,7 +243,15 @@ async function init() {
   document.addEventListener("keydown", onKey);
   document.addEventListener("contextmenu", (event) => event.preventDefault());
 
-  await listen<{ snapshot: string | null }>("launcher-prepare", (event) => void onPrepare(event.payload.snapshot));
+  await listen<string>("launcher-backdrop-cache", (event) => void setBackdrop(event.payload));
+  await listen<{ snapshot: string | null; reuseSnapshot: boolean }>("launcher-prepare", (event) =>
+    void onPrepare(event.payload.snapshot, event.payload.reuseSnapshot),
+  );
+
+  // Warm the grid while the window is still hidden. Icon requests remain
+  // asynchronous, so this does not wait for the serial shell-icon worker.
+  await loadItems().catch(() => {});
+  await api.setBackdropCapture(!settings().clearCanvas).catch(() => {});
   await api.ready();
 }
 

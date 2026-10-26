@@ -1,12 +1,13 @@
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { api, type Status } from "./api";
 import { byId, el } from "./dom";
-import { type Settings, resetSettings, settings, updateSettings } from "./settings";
+import { RAIL_AVAILABLE, type Settings, resetSettings, settings, updateSettings } from "./settings";
 
 export type PanelHooks = {
   status: () => Status;
   organizeNow: () => number;
   resetPanes: () => void;
+  resetGrid: () => void;
   hotkeyChanged: (label: string) => void;
 };
 
@@ -26,38 +27,25 @@ type Section = { id: string; title: string; controls: Control[] };
 
 const percent = (value: number) => `${Math.round(value * 100)}%`;
 const pixels = (value: number) => `${value} px`;
-const times = (value: number) => `${value.toFixed(2)}×`;
 
 let hooks: PanelHooks;
 let current = "appearance";
 let syncers: (() => void)[] = [];
 let recording = false;
+const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>();
 
 export const isRecordingHotkey = (): boolean => recording;
 export const isPanelOpen = (): boolean => !byId("settings").hidden;
 
 function sections(): Section[] {
-  return [
+  const available: Section[] = [
     {
       id: "appearance",
-      title: "Glass",
+      title: "Appearance",
       controls: [
-        {
-          kind: "segmented",
-          key: "glassStyle",
-          label: "Style",
-          options: [["liquid", "Liquid"], ["frost", "Frost"], ["clear", "Clear"]],
-          hint: "Liquid bends the backdrop at the edges. Frost only blurs. Clear is the lightest on your GPU.",
-        },
-        { kind: "range", key: "backdropBlur", label: "Backdrop blur", min: 0, max: 60, step: 1, format: pixels, hint: "Lower keeps the screen behind easier to make out." },
-        { kind: "range", key: "backdropSaturation", label: "Backdrop colour", min: 0.5, max: 2, step: 0.05, format: times },
-        { kind: "range", key: "backdropBrightness", label: "Backdrop brightness", min: 0.5, max: 1.3, step: 0.01, format: times },
+        { kind: "range", key: "backdropBlur", label: "Acrylic blur intensity", min: 0, max: 40, step: 1, format: pixels, hint: "Controls both the captured backdrop and the floating acrylic surfaces." },
+        { kind: "range", key: "tintStrength", label: "Acrylic tint", min: 0.06, max: 0.5, step: 0.01, format: percent },
         { kind: "color", key: "tintColor", label: "Tint colour" },
-        { kind: "range", key: "tintStrength", label: "Tint strength", min: 0, max: 0.8, step: 0.01, format: percent },
-        { kind: "range", key: "paneBlur", label: "Pane blur", min: 0, max: 30, step: 1, format: pixels, hint: "How frosted the glass panes are." },
-        { kind: "range", key: "refraction", label: "Lens strength", min: 0, max: 1, step: 0.01, format: percent, hint: "Only used by the Liquid style." },
-        { kind: "range", key: "cornerRadius", label: "Corner roundness", min: 12, max: 44, step: 1, format: pixels },
-        { kind: "range", key: "tileGlass", label: "Tile glass", min: 0, max: 0.5, step: 0.01, format: percent },
       ],
     },
     {
@@ -68,6 +56,16 @@ function sections(): Section[] {
         { kind: "toggle", key: "showLabels", label: "Show names" },
         { kind: "toggle", key: "groupsFirst", label: "Panes first", hint: "Show panes before loose items." },
         { kind: "segmented", key: "sortBy", label: "Sort loose items", options: [["name", "Name"], ["frequent", "Most used"]] },
+        {
+          kind: "action",
+          label: "Reset grid order",
+          hint: "Returns apps, folders and panes to the generated centred order without changing pane membership.",
+          button: "Reset order",
+          run: (note) => {
+            hooks.resetGrid();
+            note("Grid order reset.");
+          },
+        },
       ],
     },
     {
@@ -89,6 +87,12 @@ function sections(): Section[] {
         { kind: "toggle", key: "closeOnClickOff", label: "Close when clicking empty space" },
         { kind: "toggle", key: "closeOnBlur", label: "Close when you switch away" },
         { kind: "toggle", key: "animations", label: "Animations" },
+        {
+          kind: "toggle",
+          key: "fabricEntrance",
+          label: "Fabric opening animation",
+          hint: "Unfolds the already-arranged app grid upward like a sheet being laid out.",
+        },
       ],
     },
     {
@@ -135,6 +139,7 @@ function sections(): Section[] {
       ],
     },
   ];
+  return available.filter((section) => RAIL_AVAILABLE || section.id !== "rail");
 }
 
 // ---------- rows ----------
@@ -146,7 +151,7 @@ function row(label: string, hint: string | undefined, control: HTMLElement): HTM
 }
 
 function patch(key: keyof Settings, value: unknown) {
-  updateSettings({ [key]: value } as Partial<Settings>);
+  updateSettings({ ...(CUSTOM_MATERIAL_KEYS.has(key) ? { glassStyle: "custom" as const } : {}), [key]: value } as Partial<Settings>);
 }
 
 function rangeRow(control: Extract<Control, { kind: "range" }>): HTMLElement {
@@ -172,6 +177,9 @@ function rangeRow(control: Extract<Control, { kind: "range" }>): HTMLElement {
 
 function segmentedRow(control: Extract<Control, { kind: "segmented" }>): HTMLElement {
   const group = el("div", "segmented");
+  if (control.key === "glassStyle") group.classList.add("themes");
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", control.label);
   const buttons = control.options.map(([value, label]) => {
     const button = el("button", "", [label]);
     button.type = "button";

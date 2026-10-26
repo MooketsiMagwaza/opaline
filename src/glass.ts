@@ -1,4 +1,4 @@
-import { settings } from "./settings";
+import { materialSettings, settings } from "./settings";
 
 /**
  * The lens: what makes a pane bend the backdrop behind its edges like a slab of glass.
@@ -20,8 +20,11 @@ type Lens = {
 };
 
 const lenses = new Map<HTMLElement, Lens>();
+const pending = new Set<Lens>();
+const mapCache = new Map<string, string>();
 let counter = 0;
 let frame = 0;
+const MAX_MAP_DIMENSION = 256;
 
 function defs(): SVGDefsElement {
   return document.querySelector<SVGDefsElement>("#lens-defs defs")!;
@@ -46,17 +49,21 @@ export function attachLens(element: HTMLElement) {
 }
 
 export function refreshLenses() {
-  for (const lens of lenses.values()) {
-    lens.signature = "";
-    schedule(lens);
-  }
+  // The signature already includes every setting that changes lens output.
+  // Scheduling without invalidating it makes unrelated settings effectively free.
+  for (const lens of lenses.values()) schedule(lens);
 }
 
 function schedule(lens: Lens) {
-  cancelAnimationFrame(frame);
-  frame = requestAnimationFrame(() => rebuild(lens));
-  // other lenses queued in the same frame still need their turn
-  for (const other of lenses.values()) if (other !== lens) requestAnimationFrame(() => rebuild(other));
+  pending.add(lens);
+  if (frame) return;
+
+  frame = requestAnimationFrame(() => {
+    frame = 0;
+    const batch = [...pending];
+    pending.clear();
+    for (const queued of batch) rebuild(queued);
+  });
 }
 
 function setBackdrop(element: HTMLElement, value: string | null) {
@@ -69,9 +76,18 @@ function setBackdrop(element: HTMLElement, value: string | null) {
 function rebuild(lens: Lens) {
   const { element, filter, id } = lens;
   const s = settings();
+  const material = materialSettings(s);
 
-  // Frost and Clear are pure CSS; drop any inline override so the stylesheet decides.
-  if (s.glassStyle !== "liquid") {
+  // Solid, Frosted and Clear are pure CSS; drop inline overrides so the stylesheet decides.
+  if (s.glassStyle !== "liquid" && s.glassStyle !== "custom") {
+    setBackdrop(element, null);
+    lens.signature = "";
+    return;
+  }
+
+  // A Custom material with no refraction is ordinary CSS glass. Avoid allocating
+  // an SVG displacement texture when it would have a zero-pixel effect.
+  if (s.glassStyle === "custom" && material.refraction <= 0) {
     setBackdrop(element, null);
     lens.signature = "";
     return;
@@ -83,13 +99,29 @@ function rebuild(lens: Lens) {
 
   const radius = Math.min(parseFloat(getComputedStyle(element).borderTopLeftRadius) || 24, width / 2, height / 2);
   const bezel = Math.min(Math.max(radius * 0.85, 14), Math.min(width, height) / 2 - 2);
-  const signature = `${width}x${height}:${radius}:${bezel}:${s.refraction}:${s.paneBlur}`;
+  const signature = `${width}x${height}:${radius}:${bezel}:${material.refraction}:${material.paneBlur}`;
 
   if (signature !== lens.signature) {
     lens.signature = signature;
 
+    // The displacement texture is smoothly scaled by feImage, so generating it
+    // at a bounded resolution preserves the edge shape without blocking a frame
+    // on a settings-sized, full-resolution canvas.
+    const scale = Math.min(1, MAX_MAP_DIMENSION / Math.max(width, height));
+    const mapWidth = Math.max(12, Math.round(width * scale));
+    const mapHeight = Math.max(12, Math.round(height * scale));
+    const mapRadius = radius * scale;
+    const mapBezel = bezel * scale;
+    const mapKey = `${mapWidth}x${mapHeight}:${mapRadius.toFixed(2)}:${mapBezel.toFixed(2)}`;
+    let mapUrl = mapCache.get(mapKey);
+    if (!mapUrl) {
+      mapUrl = displacementMap(mapWidth, mapHeight, mapRadius, mapBezel);
+      if (mapCache.size >= 32) mapCache.delete(mapCache.keys().next().value!);
+      mapCache.set(mapKey, mapUrl);
+    }
+
     const map = document.createElementNS(SVG_NS, "feImage");
-    map.setAttribute("href", displacementMap(width, height, radius, bezel));
+    map.setAttribute("href", mapUrl);
     map.setAttribute("x", "0");
     map.setAttribute("y", "0");
     map.setAttribute("width", String(width));
@@ -100,7 +132,7 @@ function rebuild(lens: Lens) {
     const displace = document.createElementNS(SVG_NS, "feDisplacementMap");
     displace.setAttribute("in", "SourceGraphic");
     displace.setAttribute("in2", "map");
-    displace.setAttribute("scale", String(MAX_DISPLACEMENT * s.refraction));
+    displace.setAttribute("scale", String(MAX_DISPLACEMENT * material.refraction));
     displace.setAttribute("xChannelSelector", "R");
     displace.setAttribute("yChannelSelector", "G");
 
@@ -111,7 +143,7 @@ function rebuild(lens: Lens) {
     filter.replaceChildren(map, displace);
   }
 
-  setBackdrop(element, `blur(${s.paneBlur}px) url(#${id}) saturate(1.7) brightness(1.08)`);
+  setBackdrop(element, `blur(${material.paneBlur}px) url(#${id}) saturate(1.7) brightness(1.08)`);
 }
 
 /** R and G encode the displacement along x and y (128 = none); B and A are constant. */

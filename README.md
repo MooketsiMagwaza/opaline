@@ -5,8 +5,8 @@
 <h1 align="center">Opaline</h1>
 
 <p align="center">
-  A frosted-glass launcher for your desktop.<br />
-  Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> and everything on your Desktop floats up on liquid glass.
+  An acrylic launcher for your desktop and installed apps.<br />
+  Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> and your organised Desktop opens over a softened snapshot.
 </p>
 
 <p align="center">
@@ -17,20 +17,19 @@
   <a href="docs/NAMING.md">Naming</a>
 </p>
 
-> **Status: early development — `0.1.0` "Annealed".** Windows 11 first; Linux is planned.
+> **Status: `0.1.0` "Annealed" release candidate.** Windows 11 first; Linux is planned.
 >
-> It **builds and runs**: the overlay opens over a blurred screen snapshot, your Desktop items show their real icons, first run sorts
-> them into panes, and the pane popup, settings pane, context menu and rail render with the liquid-glass styling. Still to be
-> verified: the hotkey toggle and the close paths, drag and drop, persistence, rail interactions and CI. The
-> [work order](WORKORDER.md#0-status-at-pause) lists every requirement with its real status and only marks something done
+> The TypeScript build, frontend tests and Rust unit tests are clean locally. The remaining release gate is the real Windows interaction
+> pass: grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
+> [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done
 > once it has been seen working.
 
 ## What it is
 
 You hide the icons on your Windows desktop and keep the files where they are. Opaline reads your Desktop folders and, on
-a hotkey, lays them out over a blurred snapshot of whatever is on screen — your wallpaper, your live wallpaper, your
-windows — like the iPad home screen. Items are grouped into named **panes**, a **rail** on the edge mirrors your
-taskbar with hover previews, and a settings pane controls every part of the glass.
+a hotkey, lays them out over a blurred snapshot — your wallpaper, your live wallpaper, your
+windows — like a centred home screen. Items are grouped into named **panes**, and a focused Appearance panel controls the acrylic blur and tint.
+The experimental taskbar rail is temporarily disabled while the core overlay is tuned.
 
 Opaline only **reads** your Desktop. It never moves, renames or deletes your files, and it makes no network requests.
 
@@ -38,15 +37,27 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 
 | | |
 |---|---|
-| **Liquid glass** | Blurred, frosted backdrop you can still make out, lens refraction and specular rims on panes. Three styles: Liquid, Frost, Clear. |
+| **Consistent acrylic** | One material system covers the launcher, search and transient panels; Appearance exposes direct blur, tint-strength and tint-colour controls. |
+| **Centred app grid** | One rounded surface holds the app grid. Drag apps, folders and panes to reorder snapped grid cells; sparse final rows remain left-aligned to the same columns. Loose apps remain plain icon + name, while panes use one rounded mini-icon bubble with the name below. |
+| **Paged launcher** | Previous/next controls switch between Home and a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
 | **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
-| **Rail** | A vertical strip of your pinned and running apps; hover for window previews, click to jump. |
-| **Settings** | Blur, saturation, tint, lens strength, corner radius, icon size, rail side, behaviour, hotkey, launch at login. All live. |
+| **Rail (later)** | The taskbar mirror implementation is retained but deprecated from the current release into a later roadmap phase. |
+| **Settings** | Acrylic blur/tint, fabric opening motion, icon size, behaviour, hotkey and opt-in launch at login. All live. |
 | **Easy to leave** | <kbd>Esc</kbd>, click empty space, click away, or press the hotkey again. A tray icon is always there. |
 
 Feature status lives in the [work order](WORKORDER.md#4-work-packages).
+
+## Download
+
+Download the NSIS installer, MSI installer or portable Windows ZIP from the
+[latest GitHub release](https://github.com/MooketsiMagwaza/opaline/releases/latest). Installers add **Opaline** to the Start Menu. Release downloads include SHA-256 checksums.
+
+The first public Windows builds are unsigned, so Microsoft Defender SmartScreen may ask for confirmation. Verify the published
+`SHA256SUMS.txt` before running a download. Code signing is a release-hardening follow-up, not something the installer bypasses.
+
+Until the first tagged release is published, build locally with the development steps below.
 
 ## Quick start (development)
 
@@ -71,6 +82,8 @@ Build an installer:
 npm run tauri build
 ```
 
+The release process and artifact list are documented in [docs/RELEASING.md](docs/RELEASING.md).
+
 > **Windows path-length gotcha.** If the repo lives in a deeply nested folder, Cargo's build scripts can fail to link
 > (`LNK1104`) because paths pass 260 characters. Point the build output somewhere short:
 > `$env:CARGO_TARGET_DIR = "$env:LOCALAPPDATA\opaline-target"`.
@@ -88,6 +101,9 @@ npm run tauri build
 | Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Quit |
 
+Use the floating arrows at the bottom to switch between **Home** and **All apps**. All Apps is loaded after the first visible frame from
+Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slow the opening animation.
+
 ## Works well with
 
 - **Live wallpapers** — [Wallpaper Engine](https://www.wallpaperengine.io) (paid, biggest library) or
@@ -100,7 +116,7 @@ npm run tauri build
 
 | | |
 |---|---|
-| Panes and launch counts | `groups.json` in the app data folder (`%APPDATA%\dev.opaline.launcher`) |
+| Panes, grid order and launch counts | `groups.json` in the app data folder (`%APPDATA%\io.github.mooketsimagwaza.opaline`) |
 | Hotkey | `config.json`, same folder |
 | Look & behaviour settings | the webview's local storage (`opaline.settings`) |
 
@@ -109,19 +125,20 @@ Delete `groups.json` to start over; Opaline will organise your desktop again on 
 ## Project layout
 
 ```
-src/                 TypeScript + CSS UI (overlay, panes, rail, settings, glass/lens)
-src-tauri/src/       Rust: hotkey, window lifecycle, capture, icons, taskbar, store
+src/                 TypeScript + CSS UI (overlay, panes, All Apps, settings, acrylic)
+src-tauri/src/       Rust: hotkey, window lifecycle, capture, AppsFolder, icons, taskbar, store
 scripts/             make-icons.mjs (logo → app icons) · cdp.mjs (drive the running app for testing)
 archive/winui3-beta  The failed first attempt, kept for reference (see DEVLOG.md)
 assets/              Logo
-docs/                Naming scheme, testing guide, agent handoff prompt
+docs/                Architecture, testing, releasing, roadmaps and agent handoff
 AGENTS.md            Guide for coding agents (also a good orientation for people)
 ```
 
 ## Roadmap
 
-See [WORKORDER.md](WORKORDER.md) §4 and §11. Next up after 0.1: drag to reorder, pane colours and emoji, per-pane
-hotkeys, run as administrator, theme presets, a command palette, and the Linux port.
+See [WORKORDER.md](WORKORDER.md) §4 and §11. Widgets, calendar and an opt-in Start-style surface remain future work in
+[docs/PLATFORM_ROADMAP.md](docs/PLATFORM_ROADMAP.md). The current visual target is the single acrylic system described in
+[docs/THEME_WORKORDER.md](docs/THEME_WORKORDER.md).
 
 ## Contributing
 

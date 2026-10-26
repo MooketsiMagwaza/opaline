@@ -6,14 +6,14 @@ they touch.
 
 **Release in progress:** `0.1.0` · codename **Annealed** (see [docs/NAMING.md](docs/NAMING.md))
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-10-26 — work paused after the first end-to-end run (see §0).
+**Last updated:** 2026-10-26 — release-candidate hardening in progress (see §0).
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 ships in 0.1.0 · P1 next · P2 later. Mark `[x]` only for things you have seen work.
 
 ---
 
-## 0. Status at pause
+## 0. Current status
 
 The app **builds and runs**. It was started with `npm run tauri dev`, and its page was driven and screenshotted through
 WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/TESTING.md)) on the target laptop
@@ -21,34 +21,37 @@ WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/T
 
 **Seen working**
 
-- Full-screen overlay opens with a snapshot of the screen as a blurred, tinted backdrop; no flash of an empty window.
+- Full-screen overlay opens both through the snapshot path and through the transparent, capture-free clear-canvas path; no flash of an empty window.
 - All 45 Desktop items (user + shared Desktop) listed with their **real icons**, including `.lnk` shortcuts, folders and an `.exe`.
 - First-run **auto-organise** produced 12 panes (IDEs, AI & code agents, Dev tools, Browsers, Chat, Creative, Notes & planning,
   Games & music, Utilities, University, Code projects, Archive) and left 8 items loose, exactly as the rules in §6 intend.
 - **Pane popup** opens from its tile with the pane's name and members; **Esc** closes it.
-- Liquid-glass styling: search pill, buttons, popup, rail, settings pane and context menu all render with blur, specular rim and the
-  lens filter (`backdrop-filter: blur() url(#lens-n)` confirmed in computed style, 8 filters generated).
-- **Settings pane** opens with its six sections (Glass, Layout, Rail, Behaviour, Panes, About) and live values.
+- The current **acrylic styling** gives search, Home, All Apps, settings, popup and menus one consistent fill, rim and shadow; the earlier
+  lens treatment was removed from the active path.
+- **Settings pane** opens with five active sections (Appearance, Layout, Behaviour, Panes, About); Appearance exposes blur and tint, launch at login was observed off, and rail settings are feature-flagged out.
 - **Context menu** renders with Open / Open file location / Copy path / Add to pane ▸.
 - **Search** filters the grid ("dis" → Discord).
 - **Rail** lists the pinned File Explorer entry and the running Claude window with a running dot; hovering opens the preview card.
+- The global **Ctrl+Alt+Space** hotkey opens and closes the overlay from another foreground app; **Esc** closes the full overlay.
+- Transparent request-to-visible measurements on the target laptop were 9.2–49.2 ms across stable warm opens; one 57.1 ms open and 72–84 ms rebuild/jitter outliers were also recorded.
 - UI type-checks (`tsc --noEmit` clean); Rust compiles with no errors.
 - The logo rasterises and the full icon set is generated from it (`npm run icons`).
+- Frontend/store/theme tests (10) and Rust unit tests (9) pass locally; production UI bundle and NSIS release installer are clean.
 
 **Not yet verified** (do these first — §12 step 2)
 
-- The **hotkey** itself: the overlay was always opened by the app's own start-up path or a second launch, never by pressing Ctrl+Alt+Space.
-- Closing the whole overlay with **Esc**, **click on empty space**, **focus loss** and the hotkey (development runs used pinned mode).
+- Closing the whole overlay with **click on empty space** and **focus loss**; Esc and the hotkey were exercised successfully.
 - **Drag and drop**, **rename persistence**, **ungroup**, **remove from pane**, and that `groups.json` is written and survives a restart.
 - **Settings persistence** and the live effect of each control; **Frost** and **Clear** styles; behaviour on a bright wallpaper.
 - Hotkey **rebinding**, **launch at login**, **tray icon**, **single-instance** wake-up.
 - **Rail**: click to focus/launch, magnification, thumbnails after the optimisation below, and whether the list matches the real taskbar
   (only two entries appeared; Windows 11 stores some pins in the registry rather than as shortcuts — see §13).
-- **Performance**: time from hotkey to visible, idle memory, scrolling smoothness.
-- `cargo fmt`, `cargo clippy`, release build, and CI have not been run.
+- **Performance**: snapshot-path latency, idle memory and scrolling smoothness. The transparent warm path is approximately at its 50 ms target, with the outliers noted above.
+- The NSIS release installer builds locally; its install/uninstall pass, the remaining real interaction matrix and GitHub CI/tag release have not yet completed. Local build, format, Clippy, unit tests and locked Cargo check are clean.
 
-**Changed after the last visual check (unverified):** dependencies are now optimised in dev builds (`[profile.dev.package."*"]`),
-and the rail pre-loads window thumbnails when the overlay opens. The first thumbnail took ~800 ms before this.
+**Changed after the last visual check (unverified):** clear canvas is now a transparent, capture-free fast path; backdrop capture
+downsamples in GDI; warm opens defer Desktop/rail refreshes; lenses are bounded/cached; centred grid ordering, Taskband registry pins,
+collision-aware dock motion and the fabric opening sequence were added. These need the real-app pass before their statuses become `[x]`.
 
 ## 1. Objective
 
@@ -67,25 +70,32 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 
 | ID | Requirement | Pri | Status | Notes |
 |----|-------------|-----|--------|-------|
-| R-01 | **Ctrl+Alt+Space** toggles the launcher; the combo is rebindable in settings | P0 | `[~]` | Registered at start-up (status reported OK); toggling and rebinding not exercised |
+| R-01 | **Ctrl+Alt+Space** toggles the launcher; the combo is rebindable in settings | P0 | `[~]` | Global open/close toggling observed; rebinding not exercised |
 | R-02 | Items come straight from the Desktop folders (user + shared, OneDrive-aware); files are never moved, renamed or deleted | P0 | `[x]` | 45 items incl. shared desktop; read-only by construction. OneDrive-redirected desktop untested |
 | R-03 | Real icons for `.lnk`, `.exe`, folders, documents | P0 | `[x]` | All 45 shown on one cold start. Ten-cycle repeatability not yet checked |
 | R-04 | Search: instant, ranked, Enter launches the top hit, arrows navigate, typing anywhere searches | P0 | `[~]` | Filtering seen; Enter / arrows / type-anywhere not exercised |
 | R-05 | Panes: drag a tile onto another to make one, onto a pane to add, click to open the popup grid | P0 | `[~]` | Panes + popup seen; drag and drop not exercised |
 | R-06 | Pane naming: rename in place; names persist; new panes open into rename | P0 | `[~]` | Name field renders; rename + persistence not exercised |
 | R-07 | Auto-organise (IDEs, AI & code agents, dev tools, …), done for the user on first run, re-runnable | P0 | `[x]` | First run verified (12 panes). "Organise now" button not exercised |
-| R-08 | Liquid-glass look: blurred, frosted backdrop still recognisable; lens refraction + specular rims | P0 | `[~]` | Looks right on a dark backdrop; tune on a bright wallpaper; check GPU cost |
+| R-08 | Consistent acrylic look: softened backdrop remains recognisable, with clear borders and restrained highlights | P0 | `[~]` | Looks right on a dark backdrop; bright-wallpaper and GPU passes remain |
 | R-09 | Works over a transparent desktop / live wallpaper (snapshot of what is on screen) | P0 | `[~]` | Snapshot path works; not tried with a live wallpaper running |
-| R-10 | Closes on **Esc**, empty-space click, focus loss, and the hotkey | P0 | `[~]` | Esc closes the pane popup; whole-overlay close paths not exercised |
-| R-11 | Settings pane: every glass parameter, layout, behaviour, hotkey, launch at login, about | P0 | `[~]` | Renders with all sections; per-control effect and persistence not exercised |
+| R-10 | Closes on **Esc**, empty-space click, focus loss, and the hotkey | P0 | `[~]` | Whole-overlay Esc and hotkey close observed; empty-space click and focus loss not exercised |
+| R-11 | Settings pane: acrylic blur/tint, layout, behaviour, hotkey, launch at login, about | P0 | `[~]` | Focused Appearance controls render; per-control persistence pass remains |
 | R-12 | Rename / ungroup / remove / add to pane via right-click as well as dragging | P0 | `[~]` | Menu renders; actions not exercised |
-| R-13 | **Rail**: vertical taskbar mirror (pinned + running); click focuses or launches | P0 | `[~]` | Renders; click, completeness vs real taskbar not verified |
-| R-14 | Rail hover previews with thumbnails, click to focus, dock-style magnification | P0 | `[~]` | Card opens; thumbnail load time re-test needed; magnify not exercised |
-| R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | All written, logo + icons generated; CI never run; placeholders remain (§15) |
+| R-13 | **Rail**: vertical taskbar mirror (pinned + running); click focuses or launches | P2 | `[~]` | Deprecated from the current release; implementation retained behind `RAIL_AVAILABLE = false` |
+| R-14 | Rail hover previews with thumbnails, click to focus, dock-style magnification | P2 | `[~]` | Deferred with R-13; no enumeration, refresh or thumbnail work runs |
+| R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | Public metadata and release workflow are prepared; CI/tag release and demo screenshots remain unverified |
 | R-16 | Convenience: usage ordering, open file location, copy path, tray, launch at login | P0 | `[~]` | Implemented; none exercised |
 | R-17 | Linux port later | P2 | `[ ]` | Non-Windows stubs compile in principle; never built |
 | R-18 | WinUI 3 attempt logged as a failed beta, source archived | P0 | `[x]` | `DEVLOG.md`, `archive/winui3-beta/` |
 | R-19 | Live wallpaper and taskbar transparency are external tools; document compatibility | P0 | `[~]` | Documented in README; not tested with either tool |
+| R-20 | Loose items, folders and panes can be reordered only in a centred, snapped grid and persist across display sizes | P0 | `[~]` | Implemented with ordered metadata; real pointer/restart pass pending ([grid work order](docs/SPATIAL_WORKORDER.md)) |
+| R-21 | Acrylic canvas uses a downsampled snapshot and a hidden-window warm cache; retained clear mode provides a capture-free experimental path | P0 | `[~]` | Uncached debug open measured at 252.5 ms; cached warm open at 25.7 ms. Release measurements remain |
+| R-22 | Toggleable fabric-unfold entrance and collision-aware dock motion respect reduced motion | P0 | `[~]` | Single-layer grid unfold implemented; live visual/GPU pass pending |
+| R-23 | One rounded surface holds the app grid; loose apps use icon + name without a bubble; panes use one rounded mini-icon bubble with the name below | P0 | `[~]` | Hierarchy observed in the real app; long-label/clipping/theme matrix pending ([theme work order](docs/THEME_WORKORDER.md)) |
+| R-24 | Search floats independently from the canvas and item cards | P0 | `[~]` | Search active; deprecated rail is feature-flagged off |
+| R-25 | One persistent acrylic engine exposes blur intensity, tint strength and tint colour | P0 | `[~]` | Implemented; migration/persistence/contrast/GPU matrix pending |
+| R-26 | Floating page navigation exposes Home and the installed-app catalogue without slowing the first frame | P1 | `[~]` | Windows AppsFolder enumeration runs after presentation; complete keyboard pass remains |
 
 ## 3. Architecture
 
@@ -148,14 +158,15 @@ blur, tint and lensing.
 - [~] Optional "most used" ordering
 - **Accept:** every action reachable without the mouse.
 
-### WP5 — Liquid glass (R-08, R-09)
+### WP5 — Acrylic surfaces (R-08, R-09, R-23, R-24, R-25)
 - [x] Backdrop: snapshot with CSS blur/saturation/brightness + tint, oversized to hide blur edges
-- [x] Panes: translucent gradient, `backdrop-filter`, inner highlights, specular rim, shadow
-- [x] Lens: per-pane SVG displacement map from a rounded-rect signed-distance field, applied via `backdrop-filter: url(#…)`, rebuilt on resize
-- [~] Styles **Liquid** (seen) · **Frost** · **Clear** (not seen) · reduced-motion handling
-- **Accept:** backdrop blurred but recognisable; edges visibly bend what is behind them; Frost/Clear degrade cleanly; no jank on integrated GPU.
+- [x] Large floating/transient surfaces: translucent gradient, `backdrop-filter`, inner highlights, specular rim and shadow
+- [x] One acrylic token set with direct blur, tint-strength and tint-colour controls; dormant refraction code is not on the render path
+- [~] One rounded apps surface · centred grid with left-aligned sparse rows · plain app/folder icon + label · pane mini-icon bubble + label below · independently floating search
+- **Accept:** complete the bright/dark, card-clipping, persistence, migration, reduced-motion and integrated-GPU matrix in
+  `docs/THEME_WORKORDER.md`; no per-card backdrop filters.
 
-### WP6 — Rail (R-13, R-14)
+### WP6 — Rail (R-13, R-14) · deferred to P2
 - [x] `taskbar`: enumerate windows with Alt-Tab rules; group by executable; read the pinned-taskbar folder; resolve link targets
 - [x] Rail UI renders (pinned + running, running dot, window-count badge)
 - [~] Hover preview card opens; thumbnails (`PrintWindow`, `PW_RENDERFULLCONTENT`) — re-test speed; click to focus; magnification; click to launch
@@ -175,7 +186,7 @@ blur, tint and lensing.
 - [x] README, WORKORDER, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, LICENSE, CHANGELOG, templates, CI file, AGENTS.md, docs/
 - [x] Logo (`assets/logo.svg`) and generated icon set (`npm run icons`)
 - [x] DEVLOG with the failed WinUI 3 beta; source in `archive/winui3-beta/`
-- [ ] CI run green · placeholders replaced (§15) · screenshots with demo data
+- [~] Publishing metadata and tag-release workflow prepared; CI run, signed artifacts and screenshots with demo data remain
 - **Accept:** a stranger can clone, build, run and contribute using only the repo.
 
 ### WP10 — Linux port (R-17) · P2
@@ -185,23 +196,25 @@ blur, tint and lensing.
 - [ ] CI job on `ubuntu-latest`
 
 ### WP11 — Quality
-- [ ] Unit tests: auto-organise rules and group store (pure TypeScript — easiest first win)
-- [ ] Rust tests: `desktop::display_name`, BGRA→RGBA conversion
+- [x] Unit tests: auto-organise rules, group store, grid-order metadata and theme migration (12 tests passed locally)
+- [x] Rust tests: `desktop::display_name`, BGRA→RGBA and Taskband/Explorer matching (9 tests passed locally)
 - [ ] Manual pass of §9 before each release
-- [ ] Performance budget: show ≤ 300 ms, idle ≤ 120 MB, no dropped frames while scrolling
+- [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement
 
 ## 5. Settings inventory
 
 | Section | Setting | Default |
 |---|---|---|
-| Glass | Style: Liquid / Frost / Clear | Liquid |
+| Glass | Theme: Solid / Liquid / Frosted / Clear / Custom | Liquid |
 | | Backdrop blur · colour · brightness | 16 px · 1.35× · 0.96× |
 | | Tint colour · tint strength | `#0b1226` · 16 % |
 | | Pane blur · lens strength · corner roundness | 8 px · 70 % · 30 px |
 | | Tile glass | 24 % |
+| | Clear canvas · fabric opening animation | on · on |
 | Layout | Icon size S / M / L · show names | M · on |
 | | Panes first · sort loose items by name / most used | on · name |
-| Rail | Show rail · side · magnify · previews | on · right · on · on |
+| | Reset grid order (keeps panes) | action |
+| Rail | Deprecated to a later plan (`RAIL_AVAILABLE = false`) | hidden |
 | Behaviour | Close on empty-space click · close on focus loss · animations | on · on · on |
 | | Hotkey · launch at login | Ctrl+Alt+Space · off |
 | Panes | Organise for me · Ungroup all | actions |
@@ -228,7 +241,7 @@ Rules live in `src/organize.ts` as plain data. Anything that matches nothing sta
 
 ## 7. Data formats
 
-`groups.json` (app data directory, `%APPDATA%\dev.opaline.launcher`):
+`groups.json` (app data directory, `%APPDATA%\io.github.mooketsimagwaza.opaline`; legacy pre-release data is copied forward once):
 
 ```json
 {
@@ -245,7 +258,7 @@ storage under `opaline.settings`.
 ## 8. Rust ↔ UI contract
 
 Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(path)` · `reveal(path)` · `rail_items` · `thumbnail(hwnd)` ·
-`focus_window(hwnd)` · `hide_launcher` · `quit` · `status` · `set_hotkey(combo)` · `set_behavior(closeOnBlur)` · `load_store(name)` ·
+`focus_window(hwnd)` · `hide_launcher` · `quit` · `status` · `set_hotkey(combo)` · `set_behavior(closeOnBlur)` · `set_backdrop_capture(enabled)` · `load_store(name)` ·
 `save_store(name, json)`. Event: `launcher-prepare { snapshot }`. `load_store`/`save_store` accept only `groups.json` and `config.json`.
 
 ## 9. Acceptance checklist (run before every release)
@@ -261,57 +274,61 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 9. Every setting applies live and survives a restart; reset restores defaults.
 10. Second monitor: opens on the cursor's monitor.
 11. Tray icon: toggle and quit work; no process left after quitting.
-12. `npm run build`, `cargo fmt --check`, `cargo clippy` and `cargo check` are clean; CI is green.
+12. `npm test`, `npm run build`, `cargo fmt --check`, `cargo clippy`, `cargo test` and `cargo check` are clean; CI is green.
+13. Acrylic snapshot mode stays under its warm-open budget, and fabric opening motion can be disabled.
+14. Move a loose item, folder and pane; restart and confirm their positions persist (full pass in `docs/SPATIAL_WORKORDER.md`).
+15. Complete `docs/THEME_WORKORDER.md`: consistent acrylic, centred app surface, pane bubbles, left-aligned sparse rows, persistence, contrast and no clipping.
 
 ## 10. Risks & decisions
 
 | Risk / decision | Notes |
 |---|---|
-| OS blur materials (acrylic, blur) looked and behaved poorly | **Decided:** don't use them. The overlay renders its own blur from a snapshot. The first Tauri cut used acrylic and was replaced. |
+| OS blur materials (acrylic, blur) looked and behaved poorly | **Decided:** don't use them. Clear mode is a transparent WebView; frosted modes render their own snapshot. |
 | SVG filters inside `backdrop-filter` are Chromium-only | Fine for WebView2; Linux WebKitGTK falls back to Frost. Feature-detect and degrade. |
 | Snapshot freezes a live wallpaper while open | Accepted; the entrance transition hides the freeze. |
 | `PrintWindow` can't capture some protected or minimised windows | Show a placeholder; never block the rail on a failed thumbnail. |
 | Foreground lock may stop the overlay taking focus when the hotkey is pressed from another app | **Untested.** Fallback: `SetForegroundWindow`/`AttachThreadInput`. Without focus, Esc won't reach the page. |
 | Windows 260-character path limit | Build from a short folder, or set `CARGO_TARGET_DIR` to a short path (hit twice during development). |
-| Pinned taskbar apps live in two places | Classic pins are `.lnk` files in `…\User Pinned\TaskBar`; newer pins are in the registry `Taskband` value. Only the first is read today. |
+| Pinned taskbar apps live in two places | Classic `.lnk` pins and self-describing Taskband registry entries are merged; unfamiliar future blob formats fall back to the shortcut folder. |
 | Store/UWP apps share `ApplicationFrameHost.exe` | Each window gets its own rail entry named by its title. |
 | Dev builds are slow for image work | Dependencies optimised in the dev profile. |
 | A remote debugging port is used for testing | Local, development-only, never in a release build. Documented in docs/TESTING.md. |
 
 ## 11. Convenience ideas (beyond 0.1)
 
-**P1** — drag to reorder tiles and panes · pin/hide items · pane colours and emoji · Alt+1…9 opens the nth pane · recent-items strip ·
-close-window button in rail previews · run as administrator · layout export/import · theme presets (Frost, Liquid, Midnight, Daylight) ·
-clock/date widget · Quick Look preview on Space.
+**P1** — finish App Library keyboard/usage ordering and design opt-in widgets · pin/hide items · pane colours and emoji · Alt+1…9 opens the nth pane · recent-items strip ·
+close-window button in rail previews · run as administrator · layout/theme export-import · additional named palettes · clock/date widget ·
+Quick Look preview on Space.
 
 **P2** — command palette (calculator, unit conversion, web search, run command) · per-pane hotkeys · drop files from other apps onto a
 pane · Linux and macOS ports · settings sync via a plain file · scripting/plugin hooks.
 
+App Library, calendar, widgets and the reversible Start-style surface are specified separately in
+[docs/PLATFORM_ROADMAP.md](docs/PLATFORM_ROADMAP.md).
+
 ## 12. Next actions (ordered — start at the top)
 
-1. **Make the baseline clean.** `npm install`; `npm run build`; `cargo fmt`; `cargo clippy --all-targets` (fix findings);
-   `cargo check --locked`. Initialise git in a real folder (not a deeply nested one) and commit. Push only when the owner says so.
-   *Done when:* all four commands are clean and CI would pass.
+1. **Confirm the clean gate in CI.** The local `npm test`, `npm run build`, `cargo fmt --check`, Clippy with warnings denied,
+   `cargo test --locked` and `cargo check --locked` gates are clean. Run the same workflow on GitHub before marking CI verified.
 2. **Verify the "not yet verified" list in §0**, using `scripts/cdp.mjs` for page behaviour and the real keyboard for the hotkey, focus
    and tray paths. Fix what breaks. Flip statuses to `[x]` only for things you saw work; note how in the Notes column.
    Priorities: hotkey toggle and focus (R-01, R-10) → drag/drop/rename/persistence (R-05, R-06) → settings persistence (R-11) →
    rail click/preview/magnify (R-13, R-14) → single instance, tray, autostart (R-16).
-3. **Rail completeness.** Compare the rail with the real taskbar. Add the registry `Taskband` pins (see §10), keep order sensible, and handle
-   Store apps' icons. *Done when:* a user's pinned apps all appear and launch.
-4. **Tune the glass.** Test Liquid / Frost / Clear on a bright wallpaper and with a live wallpaper running; adjust defaults for
-   legibility; measure GPU cost on the integrated GPU and cut effects if it janks. Re-check show latency (≤ 300 ms).
-5. **Tests.** Unit-test `organize.ts` and `groups.ts` (e.g. Vitest); Rust tests for `display_name` and BGRA→RGBA.
-6. **Polish for publishing.** Replace the placeholders in §15; capture README screenshots *with demo data* (the development
-   screenshots show the owner's real folder names); run the CI; draft the first release (`v0.1.0 "Annealed"`).
-7. **Then P1 features** from §11, one work package at a time, each with acceptance criteria added here first.
+3. **Rail completeness.** Compare the merged folder/Taskband rail with the real taskbar and exercise a packaged app. *Done when:* all pins appear and launch.
+4. **Tune motion and glass.** Test Solid/Liquid/Frosted/Clear/Custom on bright and live wallpapers; measure integrated-GPU cost. Target about
+   50 ms for the transparent warm-open path and ≤ 300 ms for snapshot mode; report measured values rather than guessing.
+5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
+6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
+7. **Publish pass.** Build/install NSIS and MSI, capture README screenshots with demo data, run CI, then tag `v0.1.0` to create the release artifacts.
+8. **Then P1 features** from §11, one work package at a time, each with acceptance criteria added here first.
 
 ## 13. Known issues
 
-- The closed pane popup keeps its last member tiles in the DOM, so `document.querySelectorAll('.tile')` also counts them. Clear the popup when it closes.
-- The rail showed only File Explorer and Claude; the real taskbar may have more pins (see §10).
+- Fabric motion and real pointer grid reordering have not had their full real-app pass yet.
+- Taskband parsing deliberately consumes only self-describing link names/AppUserModelIDs from the undocumented blob and falls back safely.
 - First thumbnail took ~800 ms in an unoptimised dev build; unverified after the fix.
 - `Esc` in the pane-name field both closes the popup and bubbles to the global handler; confirm the intended order.
-- No automated tests exist.
+- The GitHub workflows cannot be marked verified until they run on the public remote.
 
 ## 14. Out of scope (external tools)
 
@@ -319,12 +336,12 @@ pane · Linux and macOS ports · settings sync via a plain file · scripting/plu
 - **Taskbar background:** a tool such as TranslucentTB. Opaline does not modify the taskbar.
 - Hiding Explorer's desktop icons: the Windows setting *View → Show desktop icons* (Opaline never changes it).
 
-## 15. Placeholders to replace before publishing
+## 15. Publishing metadata
 
 | Where | Placeholder |
 |---|---|
-| `src-tauri/tauri.conf.json`, `docs/NAMING.md` | bundle identifier `dev.opaline.launcher` — use a domain you own or `io.github.<handle>.opaline` |
-| `CODE_OF_CONDUCT.md`, `SECURITY.md` | `<add a contact address before publishing>` |
-| `LICENSE` | "Opaline contributors" — put the copyright holder you want |
-| `README.md`, `package.json`, `src-tauri/Cargo.toml` | repository URL, authors |
-| Name | Trademark, domain and package-registry availability of "Opaline" has **not** been checked |
+| `src-tauri/tauri.conf.json`, `docs/NAMING.md` | `io.github.mooketsimagwaza.opaline` |
+| Security/conduct contact | GitHub private contact for `@MooketsiMagwaza` |
+| License | `MooketsiMagwaza and Opaline contributors` |
+| Repository / author | `https://github.com/MooketsiMagwaza/opaline` · `MooketsiMagwaza` |
+| Name | Trademark, domain and package-registry availability of "Opaline" still requires an external legal/availability check |

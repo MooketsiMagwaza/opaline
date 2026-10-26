@@ -1,26 +1,31 @@
 {
-    "name":  "opaline",
-    "private":  true,
-    "version":  "0.1.0",
-    "type":  "module",
-    "scripts":  {
-                    "dev":  "vite",
-                    "build":  "tsc \u0026\u0026 vite build",
-                    "preview":  "vite preview",
-                    "tauri":  "tauri",
-                    "icons":  "node scripts/make-icons.mjs \u0026\u0026 tauri icon assets/logo-1024.png"
-                },
-    "dependencies":  {
-                         "@tauri-apps/api":  "^2",
-                         "@tauri-apps/plugin-autostart":  "^2.7.0",
-                         "@tauri-apps/plugin-opener":  "^2"
-                     },
-    "devDependencies":  {
-                            "@resvg/resvg-js":  "^2.6.2",
-                            "@tauri-apps/cli":  "^2",
-                            "typescript":  "~6.0.3",
-                            "vite":  "^8.0.16"
-                        },
-    "description":  "A frosted-glass launcher for your desktop.",
-    "license":  "MIT"
+    "name": "opaline",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "test": "vitest run",
+        "preview": "vite preview",
+        "tauri": "tauri",
+        "icons": "node scripts/make-icons.mjs && tauri icon assets/logo-1024.png"
+    },
+    "dependencies": {
+        "@tauri-apps/api": "^2",
+        "@tauri-apps/plugin-autostart": "^2.7.0",
+        "@tauri-apps/plugin-opener": "^2"
+    },
+    "devDependencies": {
+        "@resvg/resvg-js": "^2.6.2",
+        "@tauri-apps/cli": "^2",
+        "typescript": "~6.0.3",
+        "vite": "^8.0.16",
+        "vitest": "^5.0.5"
+    },
+    "description": "An acrylic launcher for your desktop and installed apps.",
+    "author": "MooketsiMagwaza",
+    "repository": "https://github.com/MooketsiMagwaza/opaline",
+    "homepage": "https://github.com/MooketsiMagwaza/opaline#readme",
+    "license": "MIT"
 }

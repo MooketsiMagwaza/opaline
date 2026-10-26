@@ -2,9 +2,9 @@
 
 ## Reporting a vulnerability
 
-Please **do not open a public issue** for security problems. Use GitHub's private
-[security advisory](https://docs.github.com/code-security/security-advisories) form on this repository, or email
-**<add a contact address before publishing>**. Include what you found, how to reproduce it and the version.
+Please **do not open a public issue** for security problems. Use this repository's
+[private security advisory](https://github.com/MooketsiMagwaza/opaline/security/advisories/new) form and address it to
+[@MooketsiMagwaza](https://github.com/MooketsiMagwaza). Include what you found, how to reproduce it and the version.
 
 We aim to acknowledge reports within a few days and to fix confirmed issues before disclosing them.
 
@@ -13,7 +13,7 @@ We aim to acknowledge reports within a few days and to fix confirmed issues befo
 Knowing this helps you judge reports:
 
 - **Reads** the user's Desktop folder and the shared Desktop folder (names, paths, icons). It never writes there.
-- **Captures the screen** (one monitor, when the overlay opens) and **window thumbnails** (on hover). Both stay in memory and are never saved to disk or sent anywhere.
+- **Captures the screen** only when the frosted backdrop is enabled, plus **window thumbnails** for previews. Clear-canvas mode is transparent and skips the screen capture. Captures stay in memory and are never saved or sent anywhere.
 - **Launches** files and shortcuts the user clicks, and can focus windows from the rail.
 - **Stores** two small files in its app data folder (`groups.json`, `config.json`) and settings in the webview's local storage.
 - **Registers** one global hotkey, and optionally a "launch at login" entry if the user turns it on.
