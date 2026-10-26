@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Opaline">
+  <title>Opaline</title>
+  <defs>
+    <!-- opal: blue to violet to pink to a warm edge -->
+    <linearGradient id="opal" x1="120" y1="80" x2="900" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7fb2ff" />
+      <stop offset="0.45" stop-color="#a98bff" />
+      <stop offset="0.8" stop-color="#ff8fcf" />
+      <stop offset="1" stop-color="#ffb48a" />
+    </linearGradient>
+    <radialGradient id="glow" cx="270" cy="200" r="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.6" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="fire" cx="780" cy="840" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5ff0d0" stop-opacity="0.6" />
+      <stop offset="1" stop-color="#5ff0d0" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- the glass pane -->
+    <linearGradient id="pane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5" />
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.14" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.28" />
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.98" />
+      <stop offset="0.35" stop-color="#ffffff" stop-opacity="0.16" />
+      <stop offset="0.7" stop-color="#ffffff" stop-opacity="0.08" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.75" />
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.98" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.66" />
+    </linearGradient>
+    <radialGradient id="shadow">
+      <stop offset="0" stop-color="#2b1c6b" stop-opacity="0.5" />
+      <stop offset="1" stop-color="#2b1c6b" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="232" fill="url(#opal)" />
+  <rect width="1024" height="1024" rx="232" fill="url(#glow)" />
+  <rect width="1024" height="1024" rx="232" fill="url(#fire)" />
+
+  <ellipse cx="512" cy="852" rx="310" ry="62" fill="url(#shadow)" />
+
+  <rect x="232" y="212" width="560" height="560" rx="152" fill="url(#pane)" />
+  <rect x="235" y="215" width="554" height="554" rx="149" fill="none" stroke="url(#rim)" stroke-width="6" />
+
+  <rect x="322" y="302" width="168" height="168" rx="50" fill="url(#tile)" />
+  <rect x="534" y="302" width="168" height="168" rx="50" fill="url(#tile)" fill-opacity="0.9" />
+  <rect x="322" y="514" width="168" height="168" rx="50" fill="url(#tile)" fill-opacity="0.9" />
+  <rect x="534" y="514" width="168" height="168" rx="50" fill="url(#tile)" fill-opacity="0.78" />
+
+  <!-- specular glint on the pane's lit corner -->
+  <path d="M300 292 C 326 252 392 232 462 232" fill="none" stroke="#ffffff" stroke-opacity="0.95" stroke-width="10" stroke-linecap="round" />
+</svg>

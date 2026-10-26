@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opaline</title>
+    <link rel="stylesheet" href="/src/launcher.css" />
+    <script type="module" src="/src/launcher.ts"></script>
+  </head>
+
+  <body data-style="liquid" data-labels="true" data-rail="true" data-rail-side="right" data-anim="true">
+    <!-- SVG filters for the lens effect are generated into this element (src/glass.ts) -->
+    <svg id="lens-defs" width="0" height="0" aria-hidden="true" style="position: absolute"><defs></defs></svg>
+
+    <div class="stage pre" id="stage">
+      <img id="backdrop" alt="" hidden />
+      <div id="tint"></div>
+
+      <div id="shell">
+        <header id="top">
+          <div class="search glass" id="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search your desktop" />
+          </div>
+
+          <div class="actions">
+            <button type="button" class="orb glass" id="settings-button" title="Settings" aria-label="Settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+                <circle cx="16" cy="7" r="2" />
+                <circle cx="8" cy="17" r="2" />
+              </svg>
+            </button>
+            <button type="button" class="orb glass" id="quit-button" title="Quit Opaline (Ctrl+Q)" aria-label="Quit Opaline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M12 3v8" />
+                <path d="M6.3 6.8a8 8 0 1 0 11.4 0" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <main id="grid-layer"><div id="grid"></div></main>
+
+        <footer id="status"></footer>
+
+        <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
+        <div id="preview" class="glass" hidden></div>
+
+        <div id="popup-layer" hidden>
+          <section id="popup" class="glass" aria-label="Pane"></section>
+        </div>
+
+        <aside id="settings" class="glass" aria-label="Settings" hidden></aside>
+        <div id="menu" class="glass" hidden></div>
+      </div>
+    </div>
+  </body>
+</html>

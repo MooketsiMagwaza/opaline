@@ -1,0 +1,201 @@
+<Window
+    x:Class="GlassLauncher.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GlassLauncher">
+
+    <Grid x:Name="Root" RequestedTheme="Dark" RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <ScaleTransform x:Name="RootScale" />
+        </Grid.RenderTransform>
+
+        <!-- Soft light falling from the top edge of the pane. -->
+        <Rectangle IsHitTestVisible="False">
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="#26FFFFFF" Offset="0" />
+                    <GradientStop Color="#00FFFFFF" Offset="0.4" />
+                    <GradientStop Color="#0AFFFFFF" Offset="1" />
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+
+        <Grid Padding="40,34,40,22" RowSpacing="26">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Escape" Invoked="Hide_Invoked" />
+                <KeyboardAccelerator Key="Q" Modifiers="Control" Invoked="Quit_Invoked" />
+            </Grid.KeyboardAccelerators>
+
+            <!-- Search pill, centered, with the quit button floating at the far right. -->
+            <Grid>
+                <Grid MaxWidth="560" HorizontalAlignment="Stretch">
+                    <TextBox
+                        x:Name="SearchBox"
+                        Height="46"
+                        Padding="50,12,20,10"
+                        VerticalContentAlignment="Center"
+                        CornerRadius="23"
+                        FontSize="15"
+                        PlaceholderText="Search your desktop"
+                        KeyDown="SearchBox_KeyDown"
+                        TextChanged="SearchBox_TextChanged">
+                        <TextBox.Resources>
+                            <SolidColorBrush x:Key="TextControlBackground" Color="#24FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#2EFFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#3AFFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#38FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#52FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#8CFFFFFF" />
+                            <SolidColorBrush x:Key="TextControlElevationBorderBrush" Color="#38FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#8CFFFFFF" />
+                            <SolidColorBrush x:Key="TextControlForeground" Color="White" />
+                            <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="White" />
+                            <SolidColorBrush x:Key="TextControlForegroundFocused" Color="White" />
+                            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#B8FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#C8FFFFFF" />
+                            <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#8CFFFFFF" />
+                        </TextBox.Resources>
+                    </TextBox>
+                    <FontIcon
+                        Margin="19,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontSize="15"
+                        Glyph="&#xE721;"
+                        IsHitTestVisible="False"
+                        Opacity="0.75" />
+                </Grid>
+
+                <Button
+                    Width="40"
+                    Height="40"
+                    Padding="0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    CornerRadius="20"
+                    Click="Quit_Click"
+                    ToolTipService.ToolTip="Quit (Ctrl+Q)">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackground" Color="#1CFFFFFF" />
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2EFFFFFF" />
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3AFFFFFF" />
+                        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#30FFFFFF" />
+                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#4CFFFFFF" />
+                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#4CFFFFFF" />
+                        <SolidColorBrush x:Key="ButtonForeground" Color="#E6FFFFFF" />
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White" />
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White" />
+                    </Button.Resources>
+                    <FontIcon FontSize="15" Glyph="&#xE7E8;" />
+                </Button>
+            </Grid>
+
+            <GridView
+                x:Name="ItemsGrid"
+                Grid.Row="1"
+                IsItemClickEnabled="True"
+                ItemClick="ItemsGrid_ItemClick"
+                ItemsSource="{x:Bind Items}"
+                SelectionMode="None">
+                <GridView.Resources>
+                    <SolidColorBrush x:Key="GridViewItemBackground" Color="Transparent" />
+                    <SolidColorBrush x:Key="GridViewItemBackgroundPointerOver" Color="#1EFFFFFF" />
+                    <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="#2CFFFFFF" />
+                    <SolidColorBrush x:Key="GridViewItemForeground" Color="White" />
+                    <SolidColorBrush x:Key="GridViewItemForegroundPointerOver" Color="White" />
+                    <SolidColorBrush x:Key="GridViewItemForegroundPressed" Color="White" />
+                </GridView.Resources>
+
+                <GridView.ItemContainerStyle>
+                    <Style BasedOn="{StaticResource DefaultGridViewItemStyle}" TargetType="GridViewItem">
+                        <Setter Property="CornerRadius" Value="22" />
+                        <Setter Property="Margin" Value="3" />
+                        <Setter Property="Padding" Value="0" />
+                    </Style>
+                </GridView.ItemContainerStyle>
+
+                <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid
+                            HorizontalAlignment="Center"
+                            ItemHeight="146"
+                            ItemWidth="114"
+                            Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </GridView.ItemsPanel>
+
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="local:DesktopItem">
+                        <StackPanel
+                            Width="108"
+                            Padding="0,12,0,8"
+                            Spacing="10">
+                            <!-- Glass plate behind the icon, like a home-screen app tile. -->
+                            <Grid
+                                Width="72"
+                                Height="72"
+                                HorizontalAlignment="Center"
+                                BorderThickness="1"
+                                CornerRadius="20">
+                                <Grid.Background>
+                                    <LinearGradientBrush StartPoint="0.15,0" EndPoint="0.85,1">
+                                        <GradientStop Color="#34FFFFFF" Offset="0" />
+                                        <GradientStop Color="#0EFFFFFF" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Grid.Background>
+                                <Grid.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#70FFFFFF" Offset="0" />
+                                        <GradientStop Color="#10FFFFFF" Offset="0.55" />
+                                        <GradientStop Color="#38FFFFFF" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Grid.BorderBrush>
+                                <Image
+                                    Width="44"
+                                    Height="44"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Source="{x:Bind Icon, Mode=OneWay}" />
+                            </Grid>
+                            <TextBlock
+                                FontSize="12.5"
+                                Foreground="#F0FFFFFF"
+                                MaxLines="2"
+                                Text="{x:Bind Name}"
+                                TextAlignment="Center"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+
+            <TextBlock
+                x:Name="StatusText"
+                Grid.Row="2"
+                HorizontalAlignment="Center"
+                FontSize="12"
+                Opacity="0.55" />
+        </Grid>
+
+        <!-- Rim light: bright on the upper-left edge, fading around the pane. -->
+        <Border
+            BorderThickness="1"
+            CornerRadius="8"
+            IsHitTestVisible="False">
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#70FFFFFF" Offset="0" />
+                    <GradientStop Color="#16FFFFFF" Offset="0.5" />
+                    <GradientStop Color="#40FFFFFF" Offset="1" />
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+        </Border>
+    </Grid>
+</Window>

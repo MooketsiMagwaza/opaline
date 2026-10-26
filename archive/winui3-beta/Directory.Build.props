@@ -1,0 +1,8 @@
+<Project>
+  <!-- Keep build output on a short path: the XAML compiler's generated files exceed MAX_PATH
+       when the project lives in a deeply nested folder. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\GlassLauncher-build\obj\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(LOCALAPPDATA)\GlassLauncher-build\bin\</BaseOutputPath>
+  </PropertyGroup>
+</Project>
