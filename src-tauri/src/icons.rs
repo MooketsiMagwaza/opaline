@@ -9,8 +9,8 @@ const ICON_SIZE: u32 = 128;
 /// Converts shell premultiplied BGRA pixels to the straight RGBA layout PNG expects.
 /// Shell bitmaps without an alpha channel are treated as opaque.
 fn bgra_to_rgba(pixels: &mut [u8]) {
-    let has_alpha = pixels.chunks_exact(4).any(|pixel| pixel[3] != 0);
-    for pixel in pixels.chunks_exact_mut(4) {
+    let has_alpha = pixels.as_chunks::<4>().0.iter().any(|pixel| pixel[3] != 0);
+    for pixel in pixels.as_chunks_mut::<4>().0 {
         let (blue, green, red) = (pixel[0] as u32, pixel[1] as u32, pixel[2] as u32);
         let alpha = if has_alpha { pixel[3] as u32 } else { 255 };
 

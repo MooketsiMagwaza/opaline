@@ -17,7 +17,9 @@ struct Frame {
 fn to_jpeg_data_url(frame: Frame, max_width: u32) -> Option<String> {
     let rgb: Vec<u8> = frame
         .pixels
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .flat_map(|pixel| [pixel[2], pixel[1], pixel[0]])
         .collect();
     let mut image = RgbImage::from_raw(frame.width, frame.height, rgb)?;
