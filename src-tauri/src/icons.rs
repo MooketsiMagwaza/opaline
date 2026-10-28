@@ -35,6 +35,11 @@ pub fn icon_data_url(path: &str) -> Option<String> {
     Some(format!("data:image/png;base64,{}", STANDARD.encode(png)))
 }
 
+pub fn window_icon_data_url(hwnd: i64) -> Option<String> {
+    let png = imp::window_icon_png(hwnd)?;
+    Some(format!("data:image/png;base64,{}", STANDARD.encode(png)))
+}
+
 #[cfg(windows)]
 mod imp {
     use std::{
@@ -46,20 +51,36 @@ mod imp {
 
     use windows::{
         Win32::{
-            Foundation::SIZE,
+            Foundation::{HWND, LPARAM, SIZE, WPARAM},
             Graphics::Gdi::{
                 BI_RGB, BITMAP, BITMAPINFO, BITMAPINFOHEADER, DIB_RGB_COLORS, DeleteObject, GetDC,
                 GetDIBits, GetObjectW, HBITMAP, ReleaseDC,
             },
             System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize, IBindCtx},
-            UI::Shell::{IShellItemImageFactory, SHCreateItemFromParsingName, SIIGBF_ICONONLY},
+            UI::{
+                Shell::{IShellItemImageFactory, SHCreateItemFromParsingName, SIIGBF_ICONONLY},
+                WindowsAndMessaging::{
+                    GCLP_HICON, GCLP_HICONSM, GetClassLongPtrW, GetIconInfo, HICON, ICON_BIG,
+                    ICON_SMALL2, ICONINFO, SMTO_ABORTIFHUNG, SendMessageTimeoutW, WM_GETICON,
+                },
+            },
         },
         core::HSTRING,
     };
 
     use super::bgra_to_rgba;
 
-    type Request = (String, u32, mpsc::Sender<Option<Vec<u8>>>);
+    enum Request {
+        Path {
+            path: String,
+            size: u32,
+            reply: mpsc::Sender<Option<Vec<u8>>>,
+        },
+        Window {
+            hwnd: i64,
+            reply: mpsc::Sender<Option<Vec<u8>>>,
+        },
+    }
 
     static WORKER: OnceLock<mpsc::Sender<Request>> = OnceLock::new();
 
@@ -76,10 +97,16 @@ mod imp {
                         let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
                     }
 
-                    for (path, size, reply) in receiver {
-                        // The shell occasionally fails the first request for an item, so retry once.
-                        let png = extract(&path, size).or_else(|| extract(&path, size));
-                        let _ = reply.send(png);
+                    for request in receiver {
+                        match request {
+                            Request::Path { path, size, reply } => {
+                                let png = extract(&path, size).or_else(|| extract(&path, size));
+                                let _ = reply.send(png);
+                            }
+                            Request::Window { hwnd, reply } => {
+                                let _ = reply.send(extract_window(hwnd));
+                            }
+                        }
                     }
 
                     unsafe { CoUninitialize() };
@@ -92,8 +119,64 @@ mod imp {
 
     pub fn icon_png(path: &str, size: u32) -> Option<Vec<u8>> {
         let (reply_sender, reply_receiver) = mpsc::channel();
-        worker().send((path.to_owned(), size, reply_sender)).ok()?;
+        worker()
+            .send(Request::Path {
+                path: path.to_owned(),
+                size,
+                reply: reply_sender,
+            })
+            .ok()?;
         reply_receiver.recv().ok().flatten()
+    }
+
+    pub fn window_icon_png(hwnd: i64) -> Option<Vec<u8>> {
+        let (reply, receiver) = mpsc::channel();
+        worker().send(Request::Window { hwnd, reply }).ok()?;
+        receiver.recv().ok().flatten()
+    }
+
+    fn extract_window(hwnd: i64) -> Option<Vec<u8>> {
+        unsafe {
+            let window = HWND(hwnd as _);
+            let mut result = 0usize;
+            for size in [ICON_SMALL2, ICON_BIG] {
+                let _ = SendMessageTimeoutW(
+                    window,
+                    WM_GETICON,
+                    WPARAM(size as usize),
+                    LPARAM(0),
+                    SMTO_ABORTIFHUNG,
+                    30,
+                    Some(&mut result),
+                );
+                if result != 0 {
+                    break;
+                }
+            }
+            if result == 0 {
+                result = GetClassLongPtrW(window, GCLP_HICONSM) as usize;
+            }
+            if result == 0 {
+                result = GetClassLongPtrW(window, GCLP_HICON) as usize;
+            }
+            if result == 0 {
+                return None;
+            }
+            let mut info = ICONINFO::default();
+            GetIconInfo(HICON(result as _), &mut info).ok()?;
+            let png = if info.hbmColor.is_invalid() {
+                None
+            } else {
+                bitmap_to_png(info.hbmColor)
+            };
+            if !info.hbmColor.is_invalid() {
+                let _ = DeleteObject(info.hbmColor.into());
+            }
+            if !info.hbmMask.is_invalid() {
+                let _ = DeleteObject(info.hbmMask.into());
+            }
+            png
+        }
     }
 
     fn extract(path: &str, size: u32) -> Option<Vec<u8>> {
@@ -205,6 +288,9 @@ mod tests {
 #[cfg(not(windows))]
 mod imp {
     pub fn icon_png(_path: &str, _size: u32) -> Option<Vec<u8>> {
+        None
+    }
+    pub fn window_icon_png(_hwnd: i64) -> Option<Vec<u8>> {
         None
     }
 }

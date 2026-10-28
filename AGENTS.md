@@ -38,6 +38,17 @@ cargo test  --manifest-path src-tauri/Cargo.toml --locked
 
 ## Rules of the road
 
+### Owner's coding standards (28 October 2026)
+
+- **YAGNI:** build when needed; avoid speculative infrastructure.
+- **DRY:** extract a shared pattern after its second real duplication, not before.
+- **Fail fast:** report actionable errors explicitly; do not silently hide failed persistence, startup or integrations.
+- **Simple first:** implement the obvious solution, then optimise where measurement shows a need.
+- **Delete aggressively:** remove obsolete paths and duplicated state when replacing them.
+- **Semantic naming:** use clear, self-documenting names for variables, parameters and APIs; prioritise comprehension over brevity for humans and coding agents.
+
+The owner explicitly adopted these standards from their screenshot. Apply them to new and touched code without turning feature work into an unrelated rewrite.
+
 - **Never touch the user's Desktop files.** Opaline reads them; panes are metadata in `groups.json`. Tests must not move, rename or
   delete anything on a real Desktop, and must restore any pane changes they make to the user's real data.
 - **No network access, no telemetry.** The snapshot and window thumbnails stay in memory.

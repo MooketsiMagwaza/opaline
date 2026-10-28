@@ -29,7 +29,7 @@
 You hide the icons on your Windows desktop and keep the files where they are. Opaline reads your Desktop folders and, on
 a hotkey, lays them out over a blurred snapshot — your wallpaper, your live wallpaper, your
 windows — like a centred home screen. Items are grouped into named **panes**, and a focused Appearance panel controls the acrylic blur and tint.
-The experimental taskbar rail is temporarily disabled while the core overlay is tuned.
+The bottom taskbar mirror shows pinned and running apps, with cached window previews. Numbered buttons in the corner switch between Desktop and named workspaces.
 
 Opaline only **reads** your Desktop. It never moves, renames or deletes your files, and it makes no network requests.
 
@@ -43,11 +43,33 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
 | **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
-| **Rail (later)** | The taskbar mirror implementation is retained but deprecated from the current release into a later roadmap phase. |
+| **Workspaces** | Alt+1 opens Desktop; Alt+2–9 open named spaces for apps, files and folders. Pin items without moving them. |
+| **Taskbar mirror** | The retained rail now sits at the bottom, with running indicators, focus/restore/launch and cached previews. Ctrl+B collapses page navigation. |
+| **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, with charts, per-app detail and pause/clear controls. |
+| **Focus** | Configurable Pomodoro timer, daily progression, quiet screen saver and slowly changing Zen reminders. Automatic saver is opt-in. |
+| **Windows key** | Opt-in Windows-key tap opens All apps while Opaline runs. Windows chords and the native Start-button click remain available. |
 | **Settings** | Acrylic blur/tint, fabric opening motion, icon size, behaviour, hotkey and opt-in launch at login. All live. |
 | **Easy to leave** | <kbd>Esc</kbd>, click empty space, click away, or press the hotkey again. A tray icon is always there. |
 
 Feature status lives in the [work order](WORKORDER.md#4-work-packages).
+
+## Preview
+
+Rendered examples use familiar app names and icons with synthetic folders, window contents and screen-time totals. They use the owner's current appearance values; no personal Desktop names or real captures are published.
+
+![Desktop with numbered corner spaces and the bottom taskbar mirror](docs/images/desktop.png)
+
+| Dev tools workspace | Local screen time |
+|---|---|
+| ![Apps and folders in a workspace](docs/images/workspaces.png) | ![Example screen-time totals](docs/images/screen-time.png) |
+
+| Screen-time progression | Focus timer |
+|---|---|
+| ![Thirty-day screen-time graph with example app usage](docs/images/screen-time-chart.png) | ![Focus timer with Zen and screen saver options](docs/images/focus.png) |
+
+![How workspace navigation fits together](docs/images/workspace-flow.svg)
+
+The [session work order](docs/SESSION_WORKORDER.md) lists every requested change, verification evidence and the owner test before a draft PR. [Design references and image policy](docs/UI_GUIDANCE.md).
 
 ## Download
 
@@ -100,8 +122,12 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | Click empty space | Close |
 | Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Quit |
+| <kbd>Alt</kbd>+<kbd>1</kbd> / <kbd>2</kbd>–<kbd>9</kbd> | Desktop / named workspaces, while Opaline is open |
+| <kbd>Shift</kbd>+<kbd>Tab</kbd> | Cycle pages; choose Ctrl+Tab in Behaviour to keep standard reverse focus |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
+| <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the floating arrows at the bottom to switch between **Home** and **All apps**. All Apps is loaded after the first visible frame from
+Use the numbered corner buttons for **Desktop** and named spaces, the library icon for **All apps**, the clock icon for **Screen time**, and the circle for **Focus**. The bottom taskbar's All apps button uses Opaline's own mark. All Apps is loaded after the first visible frame from
 Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slow the opening animation.
 
 ## Works well with
@@ -119,8 +145,14 @@ Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slo
 | Panes, grid order and launch counts | `groups.json` in the app data folder (`%APPDATA%\io.github.mooketsimagwaza.opaline`) |
 | Hotkey | `config.json`, same folder |
 | Look & behaviour settings | the webview's local storage (`opaline.settings`) |
+| Named spaces and pinned items | `workspaces.json`, same app data folder |
+| Local screen time / Windows-key preference | `screen-time.json` / `shell.json`, same app data folder |
 
 Delete `groups.json` to start over; Opaline will organise your desktop again on the next open.
+
+Screen time starts while Opaline runs. Only the foreground maximised app counts; background/minimised windows, idle periods after 60 seconds and sleep gaps do not. Apps sharing a legacy Windows host can be combined under that executable. Screen time stores app identity and totals, not window titles or browsing history.
+
+WebView2 is the Windows UI engine used by Tauri. Its processes are children of Opaline even when Task Manager groups them separately under Microsoft Edge WebView2. See [architecture](docs/ARCHITECTURE.md#processes-on-windows).
 
 ## Project layout
 

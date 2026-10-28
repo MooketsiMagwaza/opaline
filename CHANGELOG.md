@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 ## [Unreleased] — 0.1.0 "Annealed"
 
 ### Added
+- Focus page with a configurable Pomodoro timer, completion graph, Zen reminders and an optional in-app idle screen saver.
+- Seven- and thirty-day screen-time charts, per-app drill-down and a styled period menu backed by local daily history.
+- Acrylic custom scrollbars with a width setting, plus a smaller bottom taskbar and larger app surface.
+- Owner coding rules from the supplied screenshot in `AGENTS.md`.
+- Named workspaces with Alt+1 Desktop and Alt+2–9 custom app/folder/file collections; numbered corner navigation, Shift+Tab/Ctrl+Tab cycling and Ctrl+B compact mode.
+- Local foreground maximised-app screen time: Today / All time, pause/resume and clear; idle and sleep gaps excluded.
+- Reactivated the retained taskbar mirror at the bottom with a bounded decoded thumbnail cache, shared requests, background refresh and GDI downsampling before readback.
+- Opt-in Windows-key tap opens All apps; off by default, preserving Windows chords, native Start-button click and Ctrl+Esc.
+- Windows desktop handling for Opaline and its backdrop cache; real workspace/multi-monitor acceptance remains open.
+- Group-origin popup motion, full two-line tile labels, scrollable grid edges, keyboard submenus/modal focus and stricter settings validation.
+- Message-by-message work orders, Apple/Figma guidance notes, isolated checks and GitHub artwork using current appearance, familiar apps and synthetic folders.
 - Full-screen overlay opened with Ctrl+Alt+Space, drawn over a blurred snapshot of the screen.
 - Desktop items from the user and shared Desktop folders, with real shell icons.
 - Search, keyboard navigation, tray icon, `--hidden` and `--pin` launch flags.
@@ -17,7 +28,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - One rounded apps surface with a centred, reorderable grid; loose apps are plain icon + name, while pane mini-icons sit inside one rounded bubble with the name below.
 - A floating page switcher with Home and a functional alphabetical Windows AppsFolder catalogue.
 - A Reset grid order action that preserves pane membership and Desktop files.
-- Temporarily feature-flagged the taskbar rail off, including its refresh, thumbnails, lens and settings section.
+- The previously disabled taskbar rail is reactivated at the owner's request; its lens remains dormant.
 - Narrowed and centred the app surfaces; sparse grid rows stay aligned to the leftmost grid columns.
 - A unified acrylic surface system with direct backdrop-blur, tint-strength and tint-colour controls.
 - Rail: taskbar mirror with hover window previews.
@@ -28,12 +39,14 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Project documentation: README, work orders, architecture/testing/releasing guidance, contribution and security policies, naming and CI.
 
 ### Changed
+- Running taskbar apps prefer their window icon, with shortcut icons as fallback; the All apps dock button uses the Opaline mark.
+- Startup registers readiness before Desktop/icon warming finishes and loads independent stores concurrently. Launch-at-login now shows its current state explicitly.
 - Replaced the OS acrylic/blur window material with a self-rendered backdrop, so blur, tint and refraction are fully controllable.
 - Clear mode now skips capture and opens as a transparent full-screen surface; frosted modes retain the snapshot fallback.
 - Backdrop capture downsamples in GDI, lens maps are bounded and cached, and non-critical refreshes occur after first paint.
 - Dock magnification pushes neighbouring icons apart to avoid clipping.
 - Search and rail now read as independent floating surfaces; theme changes reuse the same hierarchy across popup, settings, previews and menus.
-- Removed the widget mockups and deprecated the taskbar rail from the active interface to keep the launcher focused.
+- Removed widget mockups; the taskbar mirror supplements numbered workspace navigation.
 
 ### Notes
 - Pre-release. Local TypeScript, frontend and Rust unit tests pass. Hotkey/focus, drag persistence, tray, installer and CI still need the

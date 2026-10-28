@@ -1,0 +1,18 @@
+{
+  "Visual Studio Code": "/docs/demo-icons/visual-studio-code.png",
+  "Terminal": "/docs/demo-icons/terminal.png",
+  "Docker Desktop": "/docs/demo-icons/docker-desktop.png",
+  "Firefox": "/docs/demo-icons/firefox.png",
+  "Microsoft Edge": "/docs/demo-icons/microsoft-edge.png",
+  "Discord": "/docs/demo-icons/discord.png",
+  "WhatsApp": "/docs/demo-icons/whatsapp.png",
+  "Obsidian": "/docs/demo-icons/obsidian.png",
+  "Notion": "/docs/demo-icons/notion.png",
+  "Spotify": "/docs/demo-icons/spotify.png",
+  "Steam": "/docs/demo-icons/steam.png",
+  "OBS Studio": "/docs/demo-icons/obs-studio.png",
+  "Notion Calendar": "/docs/demo-icons/notion-calendar.png",
+  "ChatGPT": "/docs/demo-icons/chatgpt.png",
+  "Claude": "/docs/demo-icons/claude.png",
+  "Android Studio": "/docs/demo-icons/android-studio.png"
+}

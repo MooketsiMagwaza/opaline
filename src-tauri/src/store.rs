@@ -5,17 +5,35 @@ use std::{fs, path::PathBuf};
 
 use tauri::{AppHandle, Manager};
 
-const ALLOWED: [&str; 2] = ["groups.json", "config.json"];
+const ALLOWED: [&str; 5] = [
+    "groups.json",
+    "config.json",
+    "workspaces.json",
+    "screen-time.json",
+    "shell.json",
+];
 const MAX_BYTES: usize = 1024 * 1024;
+
+pub fn test_data_dir() -> Option<PathBuf> {
+    #[cfg(debug_assertions)]
+    {
+        std::env::var_os("OPALINE_TEST_DATA")
+            .map(PathBuf::from)
+            .filter(|path| path.is_absolute())
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        None
+    }
+}
 
 fn file(app: &AppHandle, name: &str) -> Result<PathBuf, String> {
     if !ALLOWED.contains(&name) {
         return Err(format!("unknown store file: {name}"));
     }
-    let dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| error.to_string())?;
+    let dir = test_data_dir()
+        .map(Ok)
+        .unwrap_or_else(|| app.path().app_data_dir().map_err(|error| error.to_string()))?;
     Ok(dir.join(name))
 }
 
@@ -23,6 +41,9 @@ pub fn load(app: &AppHandle, name: &str) -> Option<String> {
     let path = file(app, name).ok()?;
     if let Ok(contents) = fs::read_to_string(&path) {
         return Some(contents);
+    }
+    if test_data_dir().is_some() {
+        return None;
     }
 
     // The public bundle identifier replaced the development placeholder. Preserve panes and the

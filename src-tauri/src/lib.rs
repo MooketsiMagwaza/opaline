@@ -2,8 +2,12 @@ mod apps;
 mod capture;
 mod desktop;
 mod icons;
+mod idle;
+mod start_menu;
 mod store;
 mod taskbar;
+mod usage;
+mod workspace;
 
 use std::{
     sync::{
@@ -54,6 +58,7 @@ struct AppState {
 struct CachedSnapshot {
     bounds: (i32, i32, u32, u32),
     data_url: String,
+    desktop_id: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -61,6 +66,7 @@ struct CachedSnapshot {
 struct Prepare {
     snapshot: Option<String>,
     reuse_snapshot: bool,
+    page: &'static str,
 }
 
 #[derive(Serialize)]
@@ -119,9 +125,11 @@ fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
 }
 
 fn hide(app: &AppHandle) {
+    idle::dismiss();
     if let Some(window) = main_window(app) {
         let _ = window.hide();
     }
+    let _ = app.emit("launcher-hidden", ());
     refresh_snapshot_while_hidden(app);
 }
 
@@ -144,6 +152,7 @@ fn capture_current_monitor(app: &AppHandle) -> Option<CachedSnapshot> {
     Some(CachedSnapshot {
         bounds: (origin.x, origin.y, size.width, size.height),
         data_url,
+        desktop_id: workspace::current_id(),
     })
 }
 
@@ -226,11 +235,42 @@ fn fit_to_monitor(state: &AppState, window: &WebviewWindow, origin: PhysicalPosi
 /// Step one of showing: snapshot the screen *before* the overlay exists on it, then ask the UI to
 /// load the snapshot. The UI answers with `present`.
 fn begin_show(app: &AppHandle) {
+    begin_show_page(app, "desktop");
+}
+
+fn open_app_list(app: &AppHandle) {
+    if let Some(window) = main_window(app)
+        && window.is_visible().unwrap_or(false)
+    {
+        #[cfg(windows)]
+        if window
+            .hwnd()
+            .is_ok_and(|hwnd| workspace::is_current(windows::Win32::Foundation::HWND(hwnd.0)))
+        {
+            let _ = app.emit("launcher-page", "all-apps");
+            let _ = window.set_focus();
+            return;
+        }
+    }
+    begin_show_page(app, "all-apps");
+}
+
+fn begin_show_page(app: &AppHandle, page: &'static str) {
     let Some(window) = main_window(app) else {
         return;
     };
     let state = app.state::<AppState>();
-    let capture_backdrop = state.capture_backdrop.load(Ordering::Relaxed);
+    #[cfg(windows)]
+    if let Ok(hwnd) = window.hwnd()
+        && workspace::prepare(windows::Win32::Foundation::HWND(hwnd.0))
+    {
+        let _ = window.hide();
+        if let Ok(mut cached) = state.cached_snapshot.lock() {
+            *cached = None;
+        }
+    }
+    let desktop_id = workspace::current_id();
+    let capture_backdrop = page != "screen-saver" && state.capture_backdrop.load(Ordering::Relaxed);
     let started = Instant::now();
 
     let monitor = window
@@ -248,9 +288,11 @@ fn begin_show(app: &AppHandle) {
         if capture_backdrop {
             let bounds = (origin.x, origin.y, size.width, size.height);
             reuse_snapshot = state.cached_snapshot.lock().ok().is_some_and(|cached| {
-                cached
-                    .as_ref()
-                    .is_some_and(|cached| cached.bounds == bounds)
+                cached.as_ref().is_some_and(|cached| {
+                    cached.bounds == bounds
+                        && desktop_id.is_some()
+                        && cached.desktop_id == desktop_id
+                })
             });
             if reuse_snapshot {
                 path = "cached snapshot";
@@ -268,6 +310,7 @@ fn begin_show(app: &AppHandle) {
                     *cached = Some(CachedSnapshot {
                         bounds,
                         data_url: data_url.clone(),
+                        desktop_id: desktop_id.clone(),
                     });
                 }
                 path = "snapshot";
@@ -286,6 +329,7 @@ fn begin_show(app: &AppHandle) {
         Prepare {
             snapshot,
             reuse_snapshot,
+            page,
         },
     );
 
@@ -301,7 +345,14 @@ fn toggle(app: &AppHandle) {
         return;
     };
 
-    if window.is_visible().unwrap_or(false) {
+    #[cfg(windows)]
+    let on_current = window
+        .hwnd()
+        .map(|hwnd| workspace::is_current(windows::Win32::Foundation::HWND(hwnd.0)))
+        .unwrap_or(true);
+    #[cfg(not(windows))]
+    let on_current = true;
+    if window.is_visible().unwrap_or(false) && on_current {
         hide(app);
     } else {
         begin_show(app);
@@ -346,6 +397,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 /// The UI has loaded its listeners; show the first overlay now if this launch should open it.
 #[tauri::command]
 fn ready(app: AppHandle, state: State<AppState>) {
+    idle::ready();
     if state.show_on_ready.swap(false, Ordering::SeqCst) {
         begin_show(&app);
     }
@@ -369,8 +421,36 @@ async fn list_apps() -> Vec<apps::AppEntry> {
 }
 
 #[tauri::command]
+fn workspace_item(path: String) -> Result<desktop::Item, String> {
+    let path = std::path::Path::new(path.trim());
+    if !path.is_absolute() {
+        return Err("Enter a full file or folder path.".into());
+    }
+    let metadata =
+        std::fs::metadata(path).map_err(|error| format!("Could not read that path: {error}"))?;
+    let name = path
+        .file_name()
+        .unwrap_or(path.as_os_str())
+        .to_string_lossy()
+        .into_owned();
+    Ok(desktop::Item {
+        name,
+        path: path.to_string_lossy().into_owned(),
+        is_folder: metadata.is_dir(),
+    })
+}
+
+#[tauri::command]
 async fn get_icon(path: String) -> Option<String> {
     tauri::async_runtime::spawn_blocking(move || icons::icon_data_url(&path))
+        .await
+        .ok()
+        .flatten()
+}
+
+#[tauri::command]
+async fn get_window_icon(hwnd: i64) -> Option<String> {
+    tauri::async_runtime::spawn_blocking(move || icons::window_icon_data_url(hwnd))
         .await
         .ok()
         .flatten()
@@ -503,6 +583,32 @@ fn set_backdrop_capture(state: State<AppState>, enabled: bool) {
 }
 
 #[tauri::command]
+fn screen_time(app: AppHandle) -> Result<usage::Report, String> {
+    usage::report(&app)
+}
+#[tauri::command]
+fn set_screen_time(app: AppHandle, enabled: bool) -> Result<(), String> {
+    usage::set_enabled(&app, enabled)
+}
+#[tauri::command]
+fn clear_screen_time(app: AppHandle) -> Result<(), String> {
+    usage::clear(&app)
+}
+#[tauri::command]
+fn start_menu_status() -> start_menu::Status {
+    start_menu::status()
+}
+#[tauri::command]
+fn set_start_menu(app: AppHandle, enabled: bool) -> Result<(), String> {
+    start_menu::set_enabled(&app, enabled)
+}
+
+#[tauri::command]
+fn set_screen_saver(enabled: bool, idle_minutes: u64) -> Result<(), String> {
+    idle::configure(enabled, idle_minutes)
+}
+
+#[tauri::command]
 fn load_store(app: AppHandle, name: String) -> Option<String> {
     store::load(&app, &name)
 }
@@ -516,6 +622,12 @@ pub fn run() {
     let args: Vec<String> = std::env::args().collect();
     let start_hidden = args.iter().any(|arg| arg == "--hidden");
     let pinned = args.iter().any(|arg| arg == "--pin") || std::env::var_os("OPALINE_PIN").is_some();
+    let mut context = tauri::generate_context!();
+    if let Some(test_dir) = store::test_data_dir()
+        && let Some(window) = context.config_mut().app.windows.first_mut()
+    {
+        window.data_directory = Some(test_dir.join("webview"));
+    }
 
     tauri::Builder::default()
         // A second launch just opens the running instance's overlay.
@@ -555,7 +667,9 @@ pub fn run() {
             present,
             list_items,
             list_apps,
+            workspace_item,
             get_icon,
+            get_window_icon,
             launch,
             reveal,
             rail_items,
@@ -567,6 +681,12 @@ pub fn run() {
             set_hotkey,
             set_behavior,
             set_backdrop_capture,
+            screen_time,
+            set_screen_time,
+            clear_screen_time,
+            start_menu_status,
+            set_start_menu,
+            set_screen_saver,
             load_store,
             save_store,
         ])
@@ -583,6 +703,9 @@ pub fn run() {
             }
 
             build_tray(handle)?;
+            usage::start(handle);
+            start_menu::start(handle);
+            idle::start(handle);
             Ok(())
         })
         .on_window_event(|window, event| match event {
@@ -605,6 +728,14 @@ pub fn run() {
             }
             _ => {}
         })
-        .run(tauri::generate_context!())
-        .expect("error while running Opaline");
+        .build(context)
+        .expect("error while building Opaline")
+        .run(|app, event| {
+            if matches!(
+                event,
+                tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
+            ) {
+                usage::flush(app);
+            }
+        });
 }

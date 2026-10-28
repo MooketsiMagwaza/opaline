@@ -6,7 +6,9 @@ they touch.
 
 **Release in progress:** `0.1.0` · codename **Annealed** (see [docs/NAMING.md](docs/NAMING.md))
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-10-26 — release-candidate hardening in progress (see §0).
+**Last updated:** 2026-10-28 — workspace/screen-time candidate on `feat/workspaces-screen-time`.
+
+**Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and the owner-test-before-PR gate.
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 ships in 0.1.0 · P1 next · P2 later. Mark `[x]` only for things you have seen work.
@@ -14,6 +16,8 @@ verified · `[ ]` not started. **Priority:** P0 ships in 0.1.0 · P1 next · P2 
 ---
 
 ## 0. Current status
+
+**28 October candidate:** named workspaces, local screen time with daily graphs, numbered corner navigation, compact mode, the reactivated bottom taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
 
 The app **builds and runs**. It was started with `npm run tauri dev`, and its page was driven and screenshotted through
 WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/TESTING.md)) on the target laptop
@@ -61,7 +65,7 @@ snapshot of whatever is on screen. On it:
 - every item from your Desktop folders, as glass tiles with their real icons;
 - named **panes** (groups) like Start-menu or iPad folders, organised automatically and editable by hand;
 - a search bar that finds anything instantly;
-- a **rail** on the edge that mirrors the taskbar (pinned and running apps) and shows window previews on hover;
+- a compact **taskbar mirror** along the bottom (pinned and running apps) with cached window previews on hover;
 - a settings pane controlling every parameter of the glass.
 
 Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **Opaline only reads them.**
@@ -82,8 +86,8 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-10 | Closes on **Esc**, empty-space click, focus loss, and the hotkey | P0 | `[~]` | Whole-overlay Esc and hotkey close observed; empty-space click and focus loss not exercised |
 | R-11 | Settings pane: acrylic blur/tint, layout, behaviour, hotkey, launch at login, about | P0 | `[~]` | Focused Appearance controls render; per-control persistence pass remains |
 | R-12 | Rename / ungroup / remove / add to pane via right-click as well as dragging | P0 | `[~]` | Menu renders; actions not exercised |
-| R-13 | **Rail**: vertical taskbar mirror (pinned + running); click focuses or launches | P2 | `[~]` | Deprecated from the current release; implementation retained behind `RAIL_AVAILABLE = false` |
-| R-14 | Rail hover previews with thumbnails, click to focus, dock-style magnification | P2 | `[~]` | Deferred with R-13; no enumeration, refresh or thumbnail work runs |
+| R-13 | **Rail**: bottom taskbar mirror (pinned + running); click focuses or launches | P0 | `[~]` | Retained implementation reactivated; native enumeration checked; full parity/focus/launch pass pending |
+| R-14 | Cached rail hover previews, click to focus, optional magnification | P0 | `[~]` | Decoded bounded cache, shared requests, background refresh and GDI downsampling; owner hover/focus pass pending |
 | R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | Public metadata and release workflow are prepared; CI/tag release and demo screenshots remain unverified |
 | R-16 | Convenience: usage ordering, open file location, copy path, tray, launch at login | P0 | `[~]` | Implemented; none exercised |
 | R-17 | Linux port later | P2 | `[ ]` | Non-Windows stubs compile in principle; never built |
@@ -96,6 +100,20 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-24 | Search floats independently from the canvas and item cards | P0 | `[~]` | Search active; deprecated rail is feature-flagged off |
 | R-25 | One persistent acrylic engine exposes blur intensity, tint strength and tint colour | P0 | `[~]` | Implemented; migration/persistence/contrast/GPU matrix pending |
 | R-26 | Floating page navigation exposes Home and the installed-app catalogue without slowing the first frame | P1 | `[~]` | Windows AppsFolder enumeration runs after presentation; complete keyboard pass remains |
+| R-27 | Named app/file/folder spaces; Alt+1 Desktop, Alt+2–9 custom | P0 | `[~]` | Serialized metadata, rename/remove/pin, direct folder paths; W-03 |
+| R-28 | Local maximised foreground-app time, Today / All time, pause and clear | P0 | `[~]` | Native sampler, date/sleep tests; owner usage/idle/restart pass remains; W-01 |
+| R-29 | Numbered corner pages, cycle shortcut and compact taskbar view | P0 | `[~]` | Browser keyboard/persistence/layout checks; W-02/W-05/W-18 |
+| R-30 | Opt-in Windows-key tap opens All apps; Windows chords retained | P0 | `[~]` | Hook available, off by default; real key/chord acceptance required; W-08 |
+| R-31 | Current Windows desktop receives Opaline; desktop-aware backdrop cache | P0 | `[~]` | Documented COM interface; real desktop/PowerToys pass remains; W-04 |
+| R-32 | Group-origin popup motion and readable two-line labels | P0 | `[~]` | Browser origin/reduced-motion checks; native pointer pass remains; W-15/W-18 |
+| R-33 | Custom scrollbar and a larger centre surface with a compact bottom taskbar | P0 | `[~]` | Browser layout screenshots and narrow bounds; W-19/W-21 |
+| R-34 | Running app icons match their Windows taskbar identity | P0 | `[~]` | Window-icon path precedes shortcut fallback; real ChatGPT comparison remains; W-20 |
+| R-35 | Period menu, 7/30-day usage graphs, per-app progression | P0 | `[~]` | Browser chart/menu checks; daily native history tests; W-23/W-24 |
+| R-36 | Pomodoro timer with configurable breaks, progress and persistence | P0 | `[~]` | Deadline/transition unit tests and browser UI check; native/restart pass remains; W-25 |
+| R-37 | Zen reminders and optional in-app idle screen saver | P1 | `[~]` | Browser mode checks; real idle and wake pass remains; W-26 |
+| R-38 | Faster hidden startup and clear launch-at-login state | P0 | `[~]` | Concurrent boot, deferred UI work, bounded icon cache; next-sign-in test remains; W-27 |
+| R-39 | Use Opaline brand mark for All apps rather than a Windows logo | P0 | `[~]` | Rendered demo screenshot; native pass remains; W-22 |
+| R-40 | Adopt owner coding rules from the supplied screenshot | P0 | `[~]` | Added to AGENTS.md and applied to touched code; W-28 |
 
 ## 3. Architecture
 
@@ -116,7 +134,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 
 1. Hotkey → Rust captures the monitor under the cursor *before* the window is on screen and downsamples it to a JPEG.
 2. Rust fits the hidden window to that monitor (borderless full-screen) and emits `launcher-prepare { snapshot }`.
-3. The UI sets the backdrop, waits for it to decode, loads items and the rail, then calls `present`.
+3. The UI sets the backdrop, waits for it to decode, loads Desktop items if needed, then calls `present`. Apps, icons and taskbar refresh after the first frame.
 4. Rust shows and focuses the window; the UI transitions the stage in.
 
 If the UI never answers, Rust presents anyway after 900 ms. On first launch the overlay opens when the UI calls `ready`.
@@ -166,10 +184,11 @@ blur, tint and lensing.
 - **Accept:** complete the bright/dark, card-clipping, persistence, migration, reduced-motion and integrated-GPU matrix in
   `docs/THEME_WORKORDER.md`; no per-card backdrop filters.
 
-### WP6 — Rail (R-13, R-14) · deferred to P2
+### WP6 — Bottom taskbar mirror (R-13, R-14) · reactivated
 - [x] `taskbar`: enumerate windows with Alt-Tab rules; group by executable; read the pinned-taskbar folder; resolve link targets
 - [x] Rail UI renders (pinned + running, running dot, window-count badge)
 - [~] Hover preview card opens; thumbnails (`PrintWindow`, `PW_RENDERFULLCONTENT`) — re-test speed; click to focus; magnification; click to launch
+- [~] Decoded cache hits render immediately; stale images refresh in background; requests deduplicate; closed handles are evicted and cache is bounded to 32. Cached target ≤50 ms; cold captures measured separately.
 - **Accept:** rail matches the real taskbar apart from the system tray and documented Store-app edge cases; previews within ~300 ms.
 
 ### WP7 — Settings pane (R-11)
@@ -196,27 +215,38 @@ blur, tint and lensing.
 - [ ] CI job on `ubuntu-latest`
 
 ### WP11 — Quality
-- [x] Unit tests: auto-organise rules, group store, grid-order metadata and theme migration (12 tests passed locally)
-- [x] Rust tests: `desktop::display_name`, BGRA→RGBA and Taskband/Explorer matching (9 tests passed locally)
+- [x] Frontend unit tests: organisation, groups, ordering, settings validation, workspace writes and focus deadline/phase transitions (18 tests passed locally, 28 October)
+- [x] Rust unit tests: display names, pixels, Taskband matching and usage/date/sleep attribution (11 tests passed locally, 28 October)
 - [ ] Manual pass of §9 before each release
 - [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement
+
+### WP12 — Focus, progression and startup (R-33–R-40)
+- [~] Custom scrollbar, larger app surface and compact taskbar; verify at 100/150/200% Windows scaling.
+- [~] Running-window icons precede shortcut icons; compare ChatGPT and other apps to the Windows taskbar.
+- [~] Screen-time period menu, daily graphs, per-app detail and local 90-day retention; verify rollover and idle behaviour.
+- [~] Pomodoro deadline and fourth-session long break; verify hide/reopen and OS restart. Zen and the optional saver need real pointer/keyboard/idle wake checks.
+- [~] Hidden startup registers the hotkey before Desktop, icon or rail warming finishes. Login toggle clearly reports off/on; verify a stable binary path after Windows sign-in.
+- [~] Rendered demo screenshots and owner coding rules; preview test first, then draft PR.
 
 ## 5. Settings inventory
 
 | Section | Setting | Default |
 |---|---|---|
-| Glass | Theme: Solid / Liquid / Frosted / Clear / Custom | Liquid |
-| | Backdrop blur · colour · brightness | 16 px · 1.35× · 0.96× |
-| | Tint colour · tint strength | `#0b1226` · 16 % |
-| | Pane blur · lens strength · corner roundness | 8 px · 70 % · 30 px |
-| | Tile glass | 24 % |
-| | Clear canvas · fabric opening animation | on · on |
+| Appearance | Acrylic blur · tint colour · tint strength | New profiles: 22 px · `#0b1226` · 20%; saved values preserved |
 | Layout | Icon size S / M / L · show names | M · on |
 | | Panes first · sort loose items by name / most used | on · name |
 | | Reset grid order (keeps panes) | action |
-| Rail | Deprecated to a later plan (`RAIL_AVAILABLE = false`) | hidden |
+| Layout | Compact navigation (Ctrl+B) | off |
+| | Surface width · taskbar icon size · scrollbar width | 960 px · 30 px · 8 px |
+| Taskbar | Show mirror · magnify · previews | on · off · on |
 | Behaviour | Close on empty-space click · close on focus loss · animations | on · on · on |
 | | Hotkey · launch at login | Ctrl+Alt+Space · off |
+| | Page cycling · pane opening duration · fabric opening | Shift+Tab (or Ctrl+Tab) · 320 ms · on |
+| | Use Opaline for the Windows key | off; native Start-button click / Ctrl+Esc retained |
+| Workspaces | Add / rename / remove up to eight spaces | Dev tools initially; Desktop always Alt+1 |
+| Screen time | Pause / resume · clear history | tracking on while Opaline runs; local only |
+| Focus | Session · short break · long break · quote interval | 25 min · 5 min · 15 min · 25 sec |
+| | Automatic screen saver · idle time | off · 5 min |
 | Panes | Organise for me · Ungroup all | actions |
 | About | Version, codename, quit, reset all settings | |
 
@@ -252,14 +282,13 @@ Rules live in `src/organize.ts` as plain data. Anything that matches nothing sta
 }
 ```
 
-`config.json`: `{ "hotkey": "ctrl+alt+space" }` (Rust needs it before the UI exists). Everything else lives in the webview's local
-storage under `opaline.settings`.
+`config.json`: `{ "hotkey": "ctrl+alt+space" }`. `workspaces.json` stores named spaces; `screen-time.json` stores executable/current-day totals and pause state; `shell.json` stores Windows-key routing. Visual/layout settings live in webview local storage under `opaline.settings`.
 
 ## 8. Rust ↔ UI contract
 
 Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(path)` · `reveal(path)` · `rail_items` · `thumbnail(hwnd)` ·
 `focus_window(hwnd)` · `hide_launcher` · `quit` · `status` · `set_hotkey(combo)` · `set_behavior(closeOnBlur)` · `set_backdrop_capture(enabled)` · `load_store(name)` ·
-`save_store(name, json)`. Event: `launcher-prepare { snapshot }`. `load_store`/`save_store` accept only `groups.json` and `config.json`.
+`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `start_menu_status` · `set_start_menu(enabled)`. Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
 
 ## 9. Acceptance checklist (run before every release)
 
@@ -278,6 +307,7 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 13. Acrylic snapshot mode stays under its warm-open budget, and fabric opening motion can be disabled.
 14. Move a loose item, folder and pane; restart and confirm their positions persist (full pass in `docs/SPATIAL_WORKORDER.md`).
 15. Complete `docs/THEME_WORKORDER.md`: consistent acrylic, centred app surface, pane bubbles, left-aligned sparse rows, persistence, contrast and no clipping.
+16. Complete `docs/SESSION_WORKORDER.md`: workspace shortcuts/persistence, compact mode, cached previews, Win-key opt-in/chords, real usage/idle/sleep, virtual-desktop/PowerToys compatibility. Draft PR only after the owner's test result.
 
 ## 10. Risks & decisions
 
@@ -296,7 +326,7 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 
 ## 11. Convenience ideas (beyond 0.1)
 
-**P1** — finish App Library keyboard/usage ordering and design opt-in widgets · pin/hide items · pane colours and emoji · Alt+1…9 opens the nth pane · recent-items strip ·
+**P1** — finish App Library usage ordering and design opt-in widgets · hide items · pane colours and emoji · recent-items strip ·
 close-window button in rail previews · run as administrator · layout/theme export-import · additional named palettes · clock/date widget ·
 Quick Look preview on Space.
 
@@ -308,6 +338,8 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 ## 12. Next actions (ordered — start at the top)
 
+0. **Owner-test the 28 October candidate first.** Follow `docs/SESSION_WORKORDER.md`. Alt+1–9 selects spaces and the taskbar is active. Review the runnable build and local verification; create the draft PR only after the owner's test result. Do not publish a release as part of this change.
+
 1. **Confirm the clean gate in CI.** The local `npm test`, `npm run build`, `cargo fmt --check`, Clippy with warnings denied,
    `cargo test --locked` and `cargo check --locked` gates are clean. Run the same workflow on GitHub before marking CI verified.
 2. **Verify the "not yet verified" list in §0**, using `scripts/cdp.mjs` for page behaviour and the real keyboard for the hotkey, focus
@@ -315,7 +347,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
    Priorities: hotkey toggle and focus (R-01, R-10) → drag/drop/rename/persistence (R-05, R-06) → settings persistence (R-11) →
    rail click/preview/magnify (R-13, R-14) → single instance, tray, autostart (R-16).
 3. **Rail completeness.** Compare the merged folder/Taskband rail with the real taskbar and exercise a packaged app. *Done when:* all pins appear and launch.
-4. **Tune motion and glass.** Test Solid/Liquid/Frosted/Clear/Custom on bright and live wallpapers; measure integrated-GPU cost. Target about
+4. **Tune motion and glass.** Test the active acrylic controls on bright and live wallpapers; measure integrated-GPU cost. Target about
    50 ms for the transparent warm-open path and ≤ 300 ms for snapshot mode; report measured values rather than guessing.
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
@@ -326,9 +358,10 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 - Fabric motion and real pointer grid reordering have not had their full real-app pass yet.
 - Taskband parsing deliberately consumes only self-describing link names/AppUserModelIDs from the undocumented blob and falls back safely.
-- First thumbnail took ~800 ms in an unoptimised dev build; unverified after the fix.
+- Native cold thumbnails measured 66.5–131.6 ms after GDI downsampling. Cached demo presentation measured 13–17 ms; owner cached-hover parity remains open.
 - `Esc` in the pane-name field both closes the popup and bubbles to the global handler; confirm the intended order.
 - The GitHub workflows cannot be marked verified until they run on the public remote.
+- Windows-key routing and virtual-desktop/PowerToys compatibility need real key/workflow testing; the Windows-key option remains off by default.
 
 ## 14. Out of scope (external tools)
 

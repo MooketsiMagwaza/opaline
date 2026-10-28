@@ -53,10 +53,40 @@
           <div id="app-list" class="app-list"></div>
         </main>
 
+        <main id="workspace-surface" class="glass page-surface secondary-surface" aria-label="Workspace" hidden>
+          <header class="page-heading"><div><span class="page-kicker">Workspace</span><h1 id="workspace-title">Dev tools</h1></div><span id="workspace-count" class="page-count"></span></header>
+          <div id="workspace-items" class="app-list"></div>
+          <details class="workspace-add"><summary>Add a folder or file</summary><form id="workspace-path-form" class="workspace-editor"><input id="workspace-path" class="workspace-name" type="text" placeholder="Full folder or file path" aria-label="Full folder or file path" required /><button type="submit" class="chip">Add to this space</button></form><p id="workspace-path-note" class="note" role="status"></p></details>
+        </main>
+
+        <main id="screen-time-surface" class="glass page-surface secondary-surface" aria-label="Screen time" hidden>
+          <header class="page-heading"><div><span class="page-kicker">On this device</span><h1>Screen time</h1></div><strong id="usage-total" class="usage-total">0 sec</strong></header>
+          <div class="usage-toolbar"><span>Period</span><button id="usage-period" type="button" class="chip" aria-haspopup="menu" aria-label="Screen-time period">Today ▾</button><button id="usage-refresh" type="button" class="chip">Refresh</button><button id="usage-all-apps" type="button" class="chip" hidden>All apps</button></div>
+          <div class="page-scroll">
+          <p id="usage-status" class="row-hint" role="status"></p>
+          <div id="usage-insights" class="usage-insights"></div>
+          <div id="usage-chart"></div>
+          <div id="usage-list" class="usage-list"></div>
+          </div>
+        </main>
+
+        <main id="focus-surface" class="glass page-surface secondary-surface" aria-label="Focus" hidden>
+          <header class="page-heading"><div><span class="page-kicker">One thing at a time</span><h1>Focus</h1></div><span id="focus-completed" class="page-count">0 today</span></header>
+          <div class="page-scroll">
+            <div class="segmented timer-phases" role="group" aria-label="Pomodoro phase"><button type="button" data-timer-phase="work">Focus</button><button type="button" data-timer-phase="short-break">Short break</button><button type="button" data-timer-phase="long-break">Long break</button></div>
+            <div class="focus-session"><div id="focus-progress" class="timer-ring"><div><span id="focus-phase" class="page-kicker">Focus</span><strong id="focus-clock" aria-live="off">25:00</strong></div></div><div class="focus-copy"><h2>Give this moment your attention.</h2><p id="focus-note" class="row-hint" role="status"></p><div class="focus-buttons"><button id="focus-start" type="button" class="chip primary">Start</button><button id="focus-reset" type="button" class="chip">Reset session</button></div></div></div>
+            <div class="focus-modes"><button id="focus-zen" type="button" class="mode-card"><strong>Zen mode</strong><span>Slowly changing reminders. Space to think.</span></button><button id="focus-saver" type="button" class="mode-card"><strong>Screen saver</strong><span>A quiet clock. Move or press a key to return.</span></button></div>
+            <div id="focus-chart"></div>
+          </div>
+        </main>
+
+        <p id="navigation-note" role="status"></p>
         <nav id="page-nav" class="glass" aria-label="Launcher pages">
           <button type="button" id="page-prev" class="page-arrow" aria-label="Previous page">‹</button>
-          <div class="page-position"><strong id="page-label">Home</strong><span id="page-dots" aria-hidden="true">● ○</span></div>
+          <div id="page-tabs"></div>
+          <div class="page-position"><strong id="page-label" aria-live="polite">Desktop</strong></div>
           <button type="button" id="page-next" class="page-arrow" aria-label="Next page">›</button>
+          <button type="button" id="bar-toggle" class="page-arrow" title="Compact bar (Ctrl+B)" aria-label="Collapse to taskbar view" aria-expanded="true">⌄</button>
         </nav>
 
         <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
@@ -69,6 +99,11 @@
         <aside id="settings" class="glass" aria-label="Settings" hidden></aside>
         <div id="menu" class="glass" hidden></div>
       </div>
+      <section id="ambient" role="dialog" aria-modal="true" aria-labelledby="ambient-title" hidden>
+        <button id="ambient-close" type="button" class="chip ambient-close">Return · Esc</button>
+        <div id="ambient-content"><span id="ambient-title" class="page-kicker">A little room to think</span><strong id="ambient-clock"></strong><span id="ambient-date"></span><blockquote id="zen-quote"></blockquote><span id="zen-position" class="row-hint"></span><span id="ambient-timer"></span></div>
+        <div class="zen-controls"><button id="zen-prev" type="button" class="chip" aria-label="Previous quote">←</button><button id="zen-pause" type="button" class="chip">Pause quotes</button><button id="zen-next" type="button" class="chip" aria-label="Next quote">→</button></div>
+      </section>
     </div>
   </body>
 </html>

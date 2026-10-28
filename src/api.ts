@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 export type Item = { name: string; path: string; isFolder: boolean };
 export type AppEntry = { name: string; path: string };
 export type WindowInfo = { hwnd: number; title: string; minimized: boolean };
+export type UsageEntry = { id: string; name: string; path: string; totalSeconds: number; todaySeconds: number; dailySeconds: Record<string, number> };
+export type UsageReport = { enabled: boolean; supported: boolean; entries: UsageEntry[]; saveError: string | null };
 export type RailItem = {
   id: string;
   name: string;
@@ -25,7 +27,15 @@ export const api = {
   present: () => invoke<void>("present"),
   listItems: () => invoke<Item[]>("list_items"),
   listApps: () => invoke<AppEntry[]>("list_apps"),
+  workspaceItem: (path: string) => invoke<Item>("workspace_item", { path }),
+  screenTime: () => invoke<UsageReport>("screen_time"),
+  setScreenTime: (enabled: boolean) => invoke<void>("set_screen_time", { enabled }),
+  clearScreenTime: () => invoke<void>("clear_screen_time"),
+  startMenuStatus: () => invoke<{ enabled: boolean; available: boolean }>("start_menu_status"),
+  setStartMenu: (enabled: boolean) => invoke<void>("set_start_menu", { enabled }),
+  setScreenSaver: (enabled: boolean, idleMinutes: number) => invoke<void>("set_screen_saver", { enabled, idleMinutes }),
   icon: (path: string) => invoke<string | null>("get_icon", { path }),
+  windowIcon: (hwnd: number) => invoke<string | null>("get_window_icon", { hwnd }),
   launch: (path: string) => invoke<void>("launch", { path }),
   reveal: (path: string) => invoke<void>("reveal", { path }),
   rail: () => invoke<RailItem[]>("rail_items"),

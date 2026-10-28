@@ -32,6 +32,10 @@ pub fn focus_window(hwnd: i64) {
     imp::focus_window(hwnd);
 }
 
+pub fn foreground_maximized() -> Option<(String, String)> {
+    imp::foreground_maximized()
+}
+
 #[cfg(windows)]
 mod imp {
     use std::{
@@ -73,6 +77,34 @@ mod imp {
     };
 
     use super::{RailItem, WindowInfo};
+
+    pub fn foreground_maximized() -> Option<(String, String)> {
+        use windows::Win32::{
+            System::SystemInformation::GetTickCount,
+            UI::{
+                Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO},
+                WindowsAndMessaging::{GetForegroundWindow, IsZoomed},
+            },
+        };
+        unsafe {
+            let mut input = LASTINPUTINFO {
+                cbSize: size_of::<LASTINPUTINFO>() as u32,
+                ..Default::default()
+            };
+            if !GetLastInputInfo(&mut input).as_bool()
+                || GetTickCount().wrapping_sub(input.dwTime) >= 60_000
+            {
+                return None;
+            }
+            let hwnd = GetForegroundWindow();
+            if !IsZoomed(hwnd).as_bool() || IsIconic(hwnd).as_bool() {
+                return None;
+            }
+            let window = inspect(hwnd)?;
+            // Executable identity avoids retaining document/window titles in usage history.
+            Some((window.exe.to_lowercase(), display_name(&window.exe)))
+        }
+    }
 
     /// Shell surfaces that own visible windows but are not apps.
     const SHELL_CLASSES: [&str; 6] = [
@@ -614,4 +646,7 @@ mod imp {
     }
 
     pub fn focus_window(_hwnd: i64) {}
+    pub fn foreground_maximized() -> Option<(String, String)> {
+        None
+    }
 }

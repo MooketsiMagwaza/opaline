@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 2026-10-28 · Workspaces, local screen time and retained taskbar
+
+The owner requested named Alt+number spaces, maximised-app time, keyboard page switching, a compact bottom taskbar, faster cached previews, a Windows-key opt-in, smooth pane-origin motion, current appearance in realistic GitHub artwork, and a test-first draft PR. The complete intake is `docs/SESSION_WORKORDER.md`.
+
+Reused the retained rail and Windows enumeration, moved it horizontally, added a 32-entry decoded preview cache with shared requests/background refresh, and moved thumbnail scaling into GDI before CPU readback. Native cold checks measured 66.5–131.6 ms; cached demo presentation measured 13–17 ms. No cold 50 ms claim is made.
+
+Native usage sampling persists local executable/current-day totals while hidden, excluding idle and sleep gaps. Spaces live in their own metadata file. Windows virtual-desktop APIs move only Opaline and invalidate cross-desktop backdrop reuse. Windows-key routing is off by default and preserves shell recovery paths; real key/desktop acceptance remains open.
+
+The owner's latest saved Appearance values were read without modification (10 px blur, 16% tint, small icons). Numbered corner controls replace the wide bottom page strip after a clipping report. Tile labels no longer shrink vertically or disappear beneath an unconditional fade mask. App icons in the demo artwork are recognisable public app identities; personal folder names and real screen captures are excluded.
+
+Process inspection confirmed WebView2 already has Opaline as its parent; Task Manager's grouping is a separate presentation. The supported Tauri process model is retained. The branch and local commit are for owner testing; push/draft PR wait for the owner's test result.
+
 ## 2026-10-26 · Release-candidate hardening
 
 Continued Beta 1 with two goals: make the common open path feel immediate and turn the repository into a publishable project.
