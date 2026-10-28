@@ -4,9 +4,9 @@ The single source of truth for what Opaline must do, how it is built, what has a
 Everything in the original brief is traceable to a requirement ID (`R-xx`). Pull requests and commits should reference the IDs
 they touch.
 
-**Release in progress:** `0.2.0` · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md))
+**Latest release:** [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md)). Pinch input and gesture routing changed in this patch; the owner still experiences lag and occasional missed swipes, tracked as W-51.
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-10-28 — Home navigation local-preview candidate on `feat/workspaces-screen-time`.
+**Last updated:** 2026-10-29 — v0.2.1 release and persistent gesture bug.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
 
@@ -53,7 +53,7 @@ WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/T
 - **Rail**: click to focus/launch, magnification, thumbnails after the optimisation below, and whether the list matches the real taskbar
   (only two entries appeared; Windows 11 stores some pins in the registry rather than as shortcuts — see §13).
 - **Performance**: snapshot-path latency, idle memory and scrolling smoothness. The transparent warm path is approximately at its 50 ms target, with the outliers noted above.
-- The NSIS release installer builds locally; its install/uninstall pass, the remaining real interaction matrix and GitHub CI/tag release have not yet completed. Local build, format, Clippy, unit tests and locked Cargo check are clean.
+- The 0.2.0 NSIS installer built locally; its install/uninstall pass and the remaining real interaction matrix have not yet completed. The 0.2.1 local build, format, Clippy, unit tests and locked Cargo check are clean. The owner approved shipping the patch with the persistent gesture bug documented.
 
 **Changed after the last visual check (unverified):** clear canvas is now a transparent, capture-free fast path; backdrop capture
 downsamples in GDI; warm opens defer Desktop/rail refreshes; lenses are bounded/cached; centred grid ordering, Taskband registry pins,
@@ -79,7 +79,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-01 | **Ctrl+Alt+Space** toggles the launcher; the combo is rebindable in settings | P0 | `[~]` | Global open/close toggling observed; rebinding not exercised |
 | R-02 | Items come straight from the Desktop folders (user + shared, OneDrive-aware); files are never moved, renamed or deleted | P0 | `[x]` | 45 items incl. shared desktop; read-only by construction. OneDrive-redirected desktop untested |
 | R-03 | Real icons for `.lnk`, `.exe`, folders, documents | P0 | `[x]` | All 45 shown on one cold start. Ten-cycle repeatability not yet checked |
-| R-04 | Search: instant, ranked, Enter launches the top hit, arrows navigate, typing anywhere searches | P0 | `[~]` | Filtering seen; Enter / arrows / type-anywhere not exercised |
+| R-04 | Search: S focuses it, instant ranked results, Enter launches the top hit and arrows navigate | P0 | `[~]` | Browser checks cover S focus and no automatic focus; native keyboard and result launch still need owner confirmation; W-49 |
 | R-05 | Panes: drag a tile onto another to make one, onto a pane to add, click to open the popup grid | P0 | `[~]` | Panes + popup seen; drag and drop not exercised |
 | R-06 | Pane naming: rename in place; names persist; new panes open into rename | P0 | `[~]` | Name field renders; rename + persistence not exercised |
 | R-07 | Auto-organise (IDEs, AI & code agents, dev tools, …), done for the user on first run, re-runnable | P0 | `[x]` | First run verified (12 panes). "Organise now" button not exercised |
@@ -90,7 +90,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-12 | Rename / ungroup / remove / add to pane via right-click as well as dragging | P0 | `[~]` | Menu renders; actions not exercised |
 | R-13 | **Rail**: bottom taskbar mirror (pinned + running); click focuses or launches | P0 | `[~]` | Retained implementation reactivated; native enumeration checked; full parity/focus/launch pass pending |
 | R-14 | Cached rail hover previews, click to focus, optional magnification | P0 | `[~]` | Decoded bounded cache, shared requests, background refresh and GDI downsampling; owner hover/focus pass pending |
-| R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | Public metadata and release workflow are prepared; CI/tag release and demo screenshots remain unverified |
+| R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | v0.2.0 CI/tag release and synthetic screenshots published; v0.2.1 release verification and unsigned-artifact hardening remain |
 | R-16 | Convenience: usage ordering, open file location, copy path, tray, launch at login | P0 | `[~]` | Implemented; none exercised |
 | R-17 | Linux port later | P2 | `[ ]` | Non-Windows stubs compile in principle; never built |
 | R-18 | WinUI 3 attempt logged as a failed beta, source archived | P0 | `[x]` | `DEVLOG.md`, `archive/winui3-beta/` |
@@ -123,10 +123,12 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-42 | Taskbar icons remain sharp; Opaline does not add its own dock button | P0 | `[~]` | Larger window icon and lower hover scale; real taskbar comparison pending; W-30/W-31 |
 | R-43 | Four header icons, Home-only side arrows and icon-grid hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33/W-37 |
 | R-44 | Taskbar scrollbar hidden and taskbar/search heights match | P0 | `[~]` | Computed-style and rendered viewport check; native scaling pass pending; W-34/W-35 |
-| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Browser wheel gesture checks; real device pass pending; W-36 |
+| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Owner confirmed physical pinch works after WebView2 input was enabled. Pinch selects Alt+1–5 pages; swipe selects Home screens only. Browser routing/wraparound checks pass. Owner reports remaining lag and occasional missed swipes; W-36/W-50/W-51 |
+| R-49 | Shared ambient material and more active saver | P1 | `[~]` | Demo Zen/saver screenshots show the shared backdrop and acrylic; rotating prompt and motion code checked in browser. Real idle/wake and owner visual pass pending; W-48 |
 | R-46 | Brighter theme-matched header capsules | P0 | `[~]` | Browser visual pass; owner theme/scaling pass pending; W-38 |
 | R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |
 | R-48 | Compact grouped charts and Focus/Zen visual pass | P1 | `[~]` | Browser chart geometry and screenshots; owner visual pass pending; W-40/W-41 |
+| R-50 | Make trackpad gestures consistently responsive and smooth | P1 | `[ ]` | Persistent known bug accepted for v0.2.1. Profile real WebView2 wheel/pinch event timing, tune recognition and completion motion, then obtain owner device acceptance; W-51 |
 
 ## 3. Architecture
 
@@ -218,7 +220,7 @@ blur, tint and lensing.
 - [x] README, WORKORDER, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, LICENSE, CHANGELOG, templates, CI file, AGENTS.md, docs/
 - [x] Logo (`assets/logo.svg`) and generated icon set (`npm run icons`)
 - [x] DEVLOG with the failed WinUI 3 beta; source in `archive/winui3-beta/`
-- [~] Publishing metadata and tag-release workflow prepared; CI run, signed artifacts and screenshots with demo data remain
+- [~] Publishing metadata, tag workflow and synthetic screenshots are present; v0.2.0 CI/release ran, while v0.2.1 CI and unsigned-artifact hardening remain
 - **Accept:** a stranger can clone, build, run and contribute using only the repo.
 
 ### WP10 — Linux port (R-17) · P2
@@ -228,8 +230,8 @@ blur, tint and lensing.
 - [ ] CI job on `ubuntu-latest`
 
 ### WP11 — Quality
-- [x] Frontend unit tests: organisation, groups, ordering, settings validation, workspace writes and focus deadline/phase transitions (18 tests passed locally, 28 October)
-- [x] Rust unit tests: display names, pixels, Taskband matching and usage/date/sleep attribution (11 tests passed locally, 28 October)
+- [x] Frontend unit tests: organisation, groups, ordering, settings validation, workspace writes and focus deadline/phase transitions (18 tests passed locally, 29 October)
+- [x] Rust unit tests: display names, pixels, Taskband matching and usage/date/sleep attribution (11 tests passed locally, 29 October)
 - [ ] Manual pass of §9 before each release
 - [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement
 
@@ -327,7 +329,7 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 13. Acrylic snapshot mode stays under its warm-open budget, and the short app-grid opening motion can be disabled.
 14. Move a loose item, folder and pane; restart and confirm their positions persist (full pass in `docs/SPATIAL_WORKORDER.md`).
 15. Complete `docs/THEME_WORKORDER.md`: consistent acrylic, centred app surface, pane bubbles, left-aligned sparse rows, persistence, contrast and no clipping.
-16. Complete `docs/SESSION_WORKORDER.md`: workspace shortcuts/persistence, compact mode, cached previews, Win-key opt-in/chords, real usage/idle/sleep, virtual-desktop/PowerToys compatibility. The owner authorized this PR and release while those real Windows checks remain open.
+16. Complete `docs/SESSION_WORKORDER.md`: workspace shortcuts/persistence, compact mode, cached previews, Win-key opt-in/chords, real usage/idle/sleep, virtual-desktop/PowerToys compatibility. The owner authorized v0.2.1 while those checks and W-51 remain open.
 
 ## 10. Risks & decisions
 
@@ -358,7 +360,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 ## 12. Next actions (ordered — start at the top)
 
-0. **Prepare the authorized 0.2.0 PR and release.** Alt+1–5 selects the main pages; Tab and side arrows select Home screens. Build and test the Windows binaries, run CI, merge the PR, then tag v0.2.0. Keep unverified native interactions open in `docs/SESSION_WORKORDER.md`.
+0. **Publish the authorized v0.2.1 patch.** Run CI on the gesture branch, merge the PR, tag the merge commit and verify the GitHub release assets. Document W-51 in the release notes; keep unverified native interactions open in `docs/SESSION_WORKORDER.md`.
 
 1. **Confirm the clean gate in CI.** The local `npm test`, `npm run build`, `cargo fmt --check`, Clippy with warnings denied,
    `cargo test --locked` and `cargo check --locked` gates are clean. Run the same workflow on GitHub before marking CI verified.
@@ -371,16 +373,17 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
    50 ms for the transparent warm-open path and ≤ 300 ms for snapshot mode; report measured values rather than guessing.
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
-7. **Publish pass.** Build NSIS, MSI and portable binaries, capture README screenshots with demo data, run CI, then tag `v0.2.0` to create the release artifacts. Record installer smoke-test evidence separately.
+7. **Release follow-up.** Verify the v0.2.1 NSIS, MSI, portable ZIP and checksums produced by the tag workflow. Record installer smoke-test evidence separately; profile the gesture bug in W-51 on the owner's trackpad.
 8. **Then P1 features** from §11, one work package at a time, each with acceptance criteria added here first.
 
 ## 13. Known issues
 
+- **Persistent in v0.2.1:** two-finger swipe and pinch can still feel laggy or fail to register a short gesture on the owner's trackpad. Correct page routing is covered by browser checks, and physical pinch reaches WebView2, but real-device responsiveness is not accepted. Track in W-51; use Tab/Home dots or Alt+1–5 meanwhile.
 - Fabric motion and real pointer grid reordering have not had their full real-app pass yet.
 - Taskband parsing deliberately consumes only self-describing link names/AppUserModelIDs from the undocumented blob and falls back safely.
 - Native cold thumbnails measured 66.5–131.6 ms after GDI downsampling. Cached demo presentation measured 13–17 ms; owner cached-hover parity remains open.
 - `Esc` in the pane-name field both closes the popup and bubbles to the global handler; confirm the intended order.
-- The GitHub workflows cannot be marked verified until they run on the public remote.
+- The v0.2.1 CI and tag workflows require a successful public run before their results can be marked verified; v0.2.0 workflows ran successfully.
 - Windows-key routing and virtual-desktop/PowerToys compatibility need real key/workflow testing; the Windows-key option remains off by default.
 
 ## 14. Out of scope (external tools)

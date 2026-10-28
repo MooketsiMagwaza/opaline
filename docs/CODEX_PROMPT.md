@@ -31,6 +31,9 @@ with blur/tint controls; lens/refraction stays off the render path. Rail refresh
 request-to-visible; an uncached debug open measured 252.5 ms. Pointer/restart persistence, multi-monitor, installer installation and full
 release acceptance still need owner passes.
 
+LATEST RELEASE: v0.2.1 Borosilicate. Pinch navigates the Alt+1–5 pages; two-finger horizontal swipes navigate Home screens only.
+The owner reports persistent lag and occasional missed gestures on the real trackpad. Keep W-51 open until measured and accepted on-device.
+
 DO THIS, IN ORDER (full detail in WORKORDER section 12):
 1. Make the baseline clean: npm install; npm run build; cargo fmt; cargo clippy --all-targets (fix findings); cargo check --locked.
 2. Verify everything in WORKORDER section 0 "Not yet verified". Use scripts/cdp.mjs for page behaviour; for the hotkey, focus-on-open,

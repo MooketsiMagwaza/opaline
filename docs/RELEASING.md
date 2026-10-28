@@ -1,5 +1,7 @@
 # Releasing Opaline
 
+The latest tagged release is [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1). Its known trackpad gesture issue is recorded in [WORKORDER §13](../WORKORDER.md#13-known-issues).
+
 Tagged releases are built on GitHub Actions and publish three Windows downloads: an NSIS installer, an MSI installer and a portable
 ZIP containing `opaline.exe`. A `SHA256SUMS.txt` file is published beside them.
 

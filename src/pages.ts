@@ -14,8 +14,12 @@ let current = "desktop";
 let homeScreen = 0;
 let apps: AppEntry[] = [];
 let appsReady = false;
+let appListRendered = false;
 let query = "";
 let usageTimer: number | undefined;
+let gestureSurface: HTMLElement | null = null;
+let gestureDirection = 0;
+let gestureMode: "pinch" | "swipe" | null = null;
 
 const pages = () => [
   { id: "desktop", label: "Home", surface: "apps-surface" },
@@ -63,6 +67,7 @@ function renderList() {
   const empty = appsReady ? (query ? `Nothing matches “${query}”` : "No applications found") : "Loading installed applications…";
   byId("app-list").replaceChildren(...(matches.length ? matches.map((item) => appButton(item)) : [el("p", "page-empty", [empty])]));
   byId("app-list-count").textContent = appsReady ? `${matches.length} apps` : "Loading";
+  appListRendered = true;
 }
 
 function renderWorkspace() {
@@ -92,7 +97,8 @@ function renderNav() {
   renderHomePages();
 }
 
-export function show(id: string, focus = true) {
+export function show(id: string) {
+  clearGesturePreview();
   const next = pages().find((page) => page.id === id) ?? pages()[0];
   closeMenu(); grid.reset();
   current = next.id;
@@ -100,19 +106,22 @@ export function show(id: string, focus = true) {
   itemPicker.close();
   const surface = current === "desktop" && homeScreen > 0 ? "workspace-surface" : next.surface;
   for (const id of ["apps-surface", "workspace-surface", "app-list-surface", "screen-time-surface", "focus-surface", "settings-surface"]) byId(id).hidden = surface !== id;
-  renderNav(); renderWorkspace();
-  if (current === "desktop") grid.setQuery(query);
-  if (current === "all-apps") renderList();
+  renderNav();
+  if (current === "desktop" && homeScreen > 0) renderWorkspace();
+  if (current === "desktop" && homeScreen === 0) grid.setQuery(query);
+  if (current === "all-apps" && !appListRendered) renderList();
   if (current === "screen-time") { renderUsage(); void refreshUsage(); }
   if (current === "focus") refreshFocus();
   if (current === "settings") refreshPanel();
   byId<HTMLInputElement>("search").placeholder = `Search ${next.label.toLocaleLowerCase()}`;
-  if (focus) byId("search").focus();
+  byId("shell").focus({ preventScroll: true });
 }
 
 export function cycle(direction = 1) {
   const list = pages();
-  show(list[(list.findIndex((page) => page.id === current) + direction + list.length) % list.length].id);
+  const next = list[(list.findIndex((page) => page.id === current) + direction + list.length) % list.length].id;
+  if (next === "desktop") homeScreen = 0;
+  show(next);
 }
 export function selectPage(index: number): boolean {
   const id = pages()[index]?.id;
@@ -125,9 +134,66 @@ export function cycleHome(direction = 1) {
   homeScreen = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
   show("desktop");
 }
+function gestureDestination(direction: number, mode: "pinch" | "swipe"): string {
+  if (isHome() && mode === "swipe") {
+    const index = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
+    return index === 0 ? "Desktop" : workspaces()[index - 1].name;
+  }
+  const list = pages();
+  return list[(list.findIndex(page => page.id === current) + direction + list.length) % list.length].label;
+}
+export function previewGesture(direction: number, progress: number, mode: "pinch" | "swipe") {
+  if (!direction) return;
+  const homeContent = isHome();
+  if (gestureSurface && gestureMode !== mode) clearGesturePreview();
+  gestureSurface ??= document.querySelector<HTMLElement>(homeContent ? ".page-surface:not([hidden]) > .home-motion" : ".page-surface:not([hidden])");
+  if (!gestureSurface) return;
+  gestureSurface.dataset.gesturePreview = "true";
+  gestureSurface.style.setProperty("--gesture-shift", `${-direction * progress * 68}px`);
+  const scale = mode === "swipe" ? 1 : 1 + progress * (direction < 0 ? -.055 : .025);
+  gestureSurface.style.setProperty("--gesture-scale", String(scale));
+  const cue = byId("gesture-cue");
+  if (gestureDirection !== direction || gestureMode !== mode) {
+    cue.textContent = gestureDestination(direction, mode);
+    gestureDirection = direction;
+    gestureMode = mode;
+  }
+  cue.style.opacity = String(Math.max(.25, progress));
+  if (cue.hidden) cue.hidden = false;
+}
+export function clearGesturePreview() {
+  if (gestureSurface) {
+    delete gestureSurface.dataset.gesturePreview;
+    gestureSurface.style.removeProperty("--gesture-shift");
+    gestureSurface.style.removeProperty("--gesture-scale");
+    gestureSurface = null;
+  }
+  gestureDirection = 0;
+  gestureMode = null;
+  byId("gesture-cue").hidden = true;
+}
+export function completeGesture(direction: number, mode: "pinch" | "swipe") {
+  if (!direction) return;
+  if (mode === "swipe" && !isHome()) { clearGesturePreview(); return; }
+  const homeSwipe = isHome() && mode === "swipe";
+  const navigate = () => { if (homeSwipe) cycleHome(direction); else cycle(direction); };
+  if (document.body.dataset.anim === "false" || matchMedia("(prefers-reduced-motion: reduce)").matches || !document.startViewTransition) {
+    navigate();
+    return;
+  }
+  document.documentElement.dataset.gestureDirection = direction > 0 ? "next" : "previous";
+  document.body.classList.add("gesture-transitioning");
+  document.body.classList.toggle("home-gesture-transitioning", homeSwipe);
+  const transition = document.startViewTransition(navigate);
+  const finish = () => {
+    delete document.documentElement.dataset.gestureDirection;
+    document.body.classList.remove("gesture-transitioning", "home-gesture-transitioning");
+  };
+  void transition.finished.then(finish, finish);
+}
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
-export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; itemPicker.setApps(next); if (current === "all-apps") renderList(); }
-export function setQuery(next: string) { query = next; if (current === "desktop" && homeScreen === 0) grid.setQuery(next); if (current === "all-apps") renderList(); renderWorkspace(); setUsageQuery(next); }
+export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; appListRendered = false; itemPicker.setApps(next); if (current === "all-apps") renderList(); }
+export function setQuery(next: string) { if (query !== next) appListRendered = false; query = next; if (current === "desktop" && homeScreen === 0) grid.setQuery(next); if (current === "all-apps") renderList(); if (current === "desktop" && homeScreen > 0) renderWorkspace(); setUsageQuery(next); }
 export function reset() { query = ""; homeScreen = 0; show("desktop"); }
 export function activateFirst(): boolean {
   if (current === "desktop" && homeScreen === 0) return false;
@@ -144,8 +210,7 @@ export function handleArrow(event: KeyboardEvent): boolean {
   const columns = Math.max(1, [...holder.children].filter((row) => (row as HTMLElement).offsetTop === (holder.firstElementChild as HTMLElement)?.offsetTop).length);
   const delta = ({ ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns } as Record<string, number>)[event.key];
   if (!delta) return false;
-  if (index + delta < 0) byId("search").focus();
-  else buttons[Math.min(buttons.length - 1, index + delta)]?.focus();
+  if (index + delta >= 0) buttons[Math.min(buttons.length - 1, index + delta)]?.focus();
   return true;
 }
 export function startPages() {
@@ -162,7 +227,7 @@ export function initPages() {
   byId("home-dock").addEventListener("click", () => { homeScreen = 0; show("desktop"); });
   initUsage();
   onWorkspacesChange(() => {
-    if (homeScreen > workspaces().length) { homeScreen = 0; show("desktop", false); }
+    if (homeScreen > workspaces().length) { homeScreen = 0; show("desktop"); }
     else { renderNav(); renderWorkspace(); }
   });
   show("desktop");

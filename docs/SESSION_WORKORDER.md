@@ -1,6 +1,6 @@
-# Opaline 0.2.0 work order — 28 October 2026
+# Opaline 0.2.x work order — 28–29 October 2026
 
-This is the complete intake from the owner's messages in this chat. It extends the main work order; it does not mark earlier release gates complete. `[~]` means implemented with the verification limits below; `[ ]` means waiting. The owner authorized the PR, merge and v0.2.0 release on 28 October 2026; the checks below remain open until exercised.
+This is the complete intake from the owner's messages in this chat. It extends the main work order; it does not mark earlier release gates complete. `[~]` means implemented with the verification limits below; `[ ]` means waiting. The owner authorized v0.2.0 on 28 October and a v0.2.1 PR, merge and release on 29 October 2026. The checks below remain open until exercised.
 
 | ID | Owner's request | Implementation / acceptance | Status |
 |---|---|---|---|
@@ -39,7 +39,7 @@ This is the complete intake from the owner's messages in this chat. It extends t
 | W-33 | Hover to peek inside groups and folders after 500 ms | Show a small acrylic icon grid (up to 2×3) using real group members or a bounded read-only folder listing. Dismiss on leave, click and drag; keyboard focus shows it immediately. | `[~]` |
 | W-34 | Taskbar scrollbar appears on hover | Hide the taskbar scrollbar while retaining horizontal scrolling for overflow; keep magnification bounded so icons do not force a visible bar. | `[~]` |
 | W-35 | Consistent taskbar and search height | Make both surfaces 52 CSS px high, align header text and use the same acrylic material. Check narrow viewport geometry and real Windows scaling. | `[~]` |
-| W-36 | Trackpad and touch gestures between pages | Support horizontal trackpad swipes and pinch wheel events, plus two-finger touch swipe/pinch on the launcher canvas; preserve scrolling inside lists and panels. Browser gesture checks pass; real device acceptance remains. | `[~]` |
+| W-36 | Trackpad and touch gestures between pages | Owner reported that v0.2.0 pinch did not work and gestures felt choppy in the 0.2.1 previews. Physical pinch now reaches Opaline after enabling WebView2 input. Pinch-in/out selects previous/next Alt+1–5 page; horizontal swipes move only through Home screens with wraparound. Browser checks pass. The owner still experiences lag and missed swipes; see W-51. | `[~]` |
 | W-37 | Six header icons without clutter | Superseded by W-42. The Home and Dev tools buttons move out of the header; the four remaining icons keep their matching capsules. | `[~]` |
 | W-38 | Header icon backgrounds too dark | Raise the capsule's acrylic highlight and border while retaining the saved theme material and transparent icon buttons. Compare with search, taskbar and custom/light styles on the owner's display. | `[~]` |
 | W-39 | Easier custom folders and apps | Add a prominent Add items action, search the actual Windows AppsFolder catalogue, and use the native Windows folder/file picker. Keep full path entry as an advanced fallback. Test pin, duplicate prevention, cancel, save and restart. | `[~]` |
@@ -51,6 +51,10 @@ This is the complete intake from the owner's messages in this chat. It extends t
 | W-45 | Replace fabric opening motion | Animate only the app grid for about 200 ms with a short upward pop. Preserve reduced-motion and animation settings; check warm/cold perceived startup. Remove obsolete fabric controls and state. | `[~]` |
 | W-46 | New-version screenshots and blank desktop example | Capture every top-level page, each Settings section, Home screens, picker, pane, Focus modes, compact taskbar and preview with demo fixtures. Add an original illustrative blank desktop screenshot based on the owner's reference. Never commit the owner's actual desktop image. | `[~]` |
 | W-47 | Apply owner coding standards to this feature set | Extract a stateful `ItemPicker`, split keyboard actions into focused handlers, remove obsolete settings, keep semantic naming and explicit errors. Avoid unrelated OOP infrastructure; review the touched modules for nested action chains. | `[~]` |
+| W-48 | Match Zen and saver to the launcher material | Reuse the saved backdrop, tint and acrylic card for both modes. Add a slow saver highlight and rotating break prompts; honour reduced motion and animation settings. Demo screenshots pass; owner visual and real idle/wake checks remain open. | `[~]` |
+| W-49 | Search focus only on request | Opening Opaline and changing pages focus the neutral launcher shell. Press S or click search to focus it; S does not enter a query character. Remove automatic arrow-to-search focus. Browser checks pass; owner keyboard retest pending. | `[~]` |
+| W-50 | Restore native pinch and wrap Home swipes | Wry disables WebView2 pinch input by default. It is enabled for this window, and the owner confirmed pinch now reaches the app. Pinch navigates Alt+1–5; Home swipes wrap from the final screen to Desktop and backward from Desktop to the final screen. Browser routing checks pass; W-51 tracks the unresolved real-device feel. | `[~]` |
+| W-51 | Persistent trackpad gesture lag / missed swipes | Reproduce on the owner's device; measure wheel/pinch event cadence, recognizer thresholds and frame/completion timing in WebView2 without logging private app content. Make both gestures register consistently and feel as responsive as the group popup; verify partial cancellation, rapid repeats, Home wrap and Alt+1–5 routing on the real touchpad. Accepted as a known bug in v0.2.1 for later work. | `[ ]` |
 
 ## Verification record
 
@@ -70,4 +74,4 @@ This is the complete intake from the owner's messages in this chat. It extends t
 6. In Behaviour enable the Windows-key option. Tap Win: All apps should open. Check Win+E, Win+R and Win+Ctrl+Arrow, then turn the option off. Native Start-button click and Ctrl+Esc remain available.
 7. Open Focus with Ctrl+Alt+F. Start/pause a short test timer, hide and reopen Opaline, try Zen and Screen saver, then opt into the idle screen saver if desired. Confirm the usage graph and period menu after a day change.
 8. In the full Settings page, change appearance and check that it applies and survives restart. In Behaviour check Launch at login. It is currently off on this machine. Turn it on from the stable preview/install location and sign out/in or restart to confirm hidden tray startup and hotkey availability. Compare ChatGPT's running icon with the actual Windows taskbar.
-9. Record results against these checks. The owner has authorized the PR, merge and v0.2.0 release; do not mark a check complete without observing it.
+9. Recheck W-51 on the real trackpad. Record results against these checks; the owner authorized the v0.2.1 release with this bug still open. Do not mark a check complete without observing it.

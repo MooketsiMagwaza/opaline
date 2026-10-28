@@ -17,12 +17,14 @@
   <a href="docs/NAMING.md">Naming</a>
 </p>
 
-> **Current version: `0.2.0` "Borosilicate".** Windows 11 first; Linux is planned.
+> **Latest release: [`v0.2.1` "Borosilicate"](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1).** Windows 11 first; Linux is planned.
 >
 > The TypeScript build, frontend tests and Rust unit tests are clean locally. Real Windows interaction checks remain open for
 > grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
 > [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done
 > once it has been seen working.
+
+Two-finger swipe and pinch navigation may still feel laggy or miss a short gesture on some trackpads. This remains an open [known issue](WORKORDER.md#13-known-issues); Tab and the Home dots move between Home screens, and Alt+1–5 opens the main pages.
 
 ## What it is
 
@@ -39,14 +41,14 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 |---|---|
 | **Consistent acrylic** | One material system covers the launcher, search and transient panels; Appearance exposes direct blur, tint-strength and tint-colour controls. |
 | **Centred app grid** | One rounded surface holds the app grid. Drag apps, folders and panes to reorder snapped grid cells; sparse final rows remain left-aligned to the same columns. Loose apps remain plain icon + name, while panes use one rounded mini-icon bubble with the name below. |
-| **Paged launcher** | Side arrows and Tab move between the Desktop Home and custom screens. The header opens a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
+| **Paged launcher** | Side arrows, Tab and two-finger left/right swipe move through the Home screens with wraparound. Pinch moves through the Alt+1–5 pages. Both gestures show a live slide preview. The header opens a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
-| **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
+| **Search** | Press <kbd>S</kbd> or click search to focus it. Prefix matches first; <kbd>Enter</kbd> launches and arrow keys move around. |
 | **Home screens** | Alt+1 opens a read-only view of your Windows Desktop. Tab and Shift+Tab move through simple custom screens. Each custom screen can hold apps, folders and files chosen through Windows app search or a native picker. |
 | **Taskbar mirror** | The retained rail now sits at the bottom, with running indicators, focus/restore/launch and cached previews. Ctrl+B collapses page navigation. |
 | **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, with charts, per-app detail and pause/clear controls. |
-| **Focus** | Configurable Pomodoro timer, daily progression, quiet screen saver and slowly changing Zen reminders. Automatic saver is opt-in. |
+| **Focus** | Configurable Pomodoro timer, daily progression, shared-acrylic Zen and screen saver views, and rotating break reminders. Automatic saver is opt-in. |
 | **Windows key** | Opt-in Windows-key tap opens All apps while Opaline runs. Windows chords and the native Start-button click remain available. |
 | **Settings** | A full page for acrylic blur/tint, icon size, behaviour, hotkey and opt-in launch at login. Changes apply as you make them. |
 | **Easy to leave** | <kbd>Esc</kbd>, click empty space, click away, or press the hotkey again. A tray icon is always there. |
@@ -135,9 +137,9 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | Key | Does |
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | Open / close (rebindable in Settings) |
-| Type | Search anywhere |
+| <kbd>S</kbd> | Focus search without entering a character |
 | <kbd>Enter</kbd> | Launch the top result |
-| <kbd>↓</kbd> then arrows | Move through tiles |
+| <kbd>S</kbd>, then <kbd>↓</kbd> | Move from search into tiles |
 | <kbd>Esc</kbd> | Clear search → close pane/menu/settings → close Opaline |
 | Click empty space | Close |
 | Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |
@@ -148,7 +150,7 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the side arrows or Tab on Home to move between the Desktop and custom screens. Ctrl+Tab or trackpad/touch gestures cycle between top-level pages. The header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right. **Home** sits beside the bottom taskbar, which shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
+Use the side arrows, Tab or a two-finger horizontal swipe on Home to move between the Desktop and custom screens. Home swipes wrap in both directions and have no page-navigation action outside Home. Pinch inward to go to the previous Alt+1–5 screen; spread outward to go to the next. Ctrl+Tab also cycles the five main screens. The header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right. **Home** sits beside the bottom taskbar, which shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
 
 ## Works well with
 

@@ -48,9 +48,11 @@ button.usage-row:hover, button.usage-row[aria-pressed="true"] { background: rgba
 .mode-card small { color: var(--dim); font-size: 11px; }
 .mode-glyph { display: grid; flex: none; place-items: center; width: 34px; height: 34px; color: var(--text); font-size: 23px; }
 .mode-arrow { margin-left: auto; color: var(--dim); font-size: 18px; }
-#ambient { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 35%, #324361, #101725 72%); color: #e6edf8; }
-#ambient[data-mode="zen"]::before { content: ""; position: absolute; width: min(72vw, 760px); aspect-ratio: 1; border: 1px solid rgba(216,232,255,.09); border-radius: 50%; box-shadow: 0 0 0 90px rgba(216,232,255,.018), 0 0 0 190px rgba(216,232,255,.012); pointer-events: none; }
-#ambient-content { display: flex; flex-direction: column; align-items: center; gap: 20px; width: min(820px, 80vw); text-align: center; transform: translateY(var(--drift, 0px)); }
+body.ambient-open #shell { visibility: hidden; }
+#ambient { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; background: transparent; color: var(--text); }
+#ambient-content { --r: calc(var(--radius) + 8px); display: flex; flex-direction: column; align-items: center; gap: 20px; width: min(820px, 80vw); min-height: 360px; justify-content: center; padding: 42px; text-align: center; transform: translateY(var(--drift, 0px)); transition: transform 1s linear; }
+#ambient[data-mode="saver"] #ambient-content::after { content: ""; position: absolute; inset: 14px; z-index: 0; border-radius: inherit; background: radial-gradient(circle at 30% 25%, rgba(154,191,233,.11), transparent 42%); pointer-events: none; animation: saver-glow 20s ease-in-out infinite alternate; }
+@keyframes saver-glow { to { opacity: .3; transform: scale(.95); } }
 #ambient-clock { font-size: clamp(60px, 10vw, 130px); font-weight: 350; letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
 #ambient-date { color: var(--dim); font-size: 18px; }
 #zen-quote { position: relative; margin: 10px 0; max-width: 760px; font-size: clamp(28px, 3.7vw, 46px); line-height: 1.36; font-weight: 350; text-wrap: balance; }
@@ -60,7 +62,25 @@ button.usage-row:hover, button.usage-row[aria-pressed="true"] { background: rgba
 .zen-controls { position: absolute; bottom: 30px; left: 50%; display: flex; gap: 8px; padding: 8px; border: 1px solid rgba(255,255,255,.16); border-radius: 18px; background: rgba(255,255,255,.065); transform: translateX(-50%); }
 #ambient-timer { color: #bbd3ef; font-size: 14px; }
 #ambient[data-mode="zen"] #ambient-clock, #ambient[data-mode="zen"] #ambient-date { display: none; }
-#ambient[data-mode="saver"] #zen-quote, #ambient[data-mode="saver"] #zen-position, #ambient[data-mode="saver"] .zen-controls { display: none; }
+#ambient[data-mode="saver"] #zen-quote { max-width: 480px; margin: 0; color: var(--dim); font-size: clamp(16px, 2vw, 22px); }
+#ambient[data-mode="saver"] #zen-quote::before { display: none; }
+#ambient[data-mode="saver"] #zen-position, #ambient[data-mode="saver"] .zen-controls { display: none; }
+body[data-anim="false"] #ambient[data-mode="saver"] #ambient-content::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { #ambient[data-mode="saver"] #ambient-content::after { animation: none; } }
+.page-surface:not([hidden]) { view-transition-name: launcher-page; }
+body.home-gesture-transitioning .page-surface:not([hidden]) { view-transition-name: none; }
+body.home-gesture-transitioning .page-surface:not([hidden]) > .home-motion { view-transition-name: launcher-page; }
+.page-surface[data-gesture-preview="true"], .home-motion[data-gesture-preview="true"] { transform: translateX(var(--gesture-shift)) scale(var(--gesture-scale)); transition: none !important; will-change: transform; }
+html { view-transition-name: none; }
+html[data-gesture-direction="next"]::view-transition-old(launcher-page) { animation: page-out-next 85ms cubic-bezier(.55,0,1,.45) both; }
+html[data-gesture-direction="next"]::view-transition-new(launcher-page) { animation: page-in-next 220ms cubic-bezier(.16,1,.3,1) both; }
+html[data-gesture-direction="previous"]::view-transition-old(launcher-page) { animation: page-out-previous 85ms cubic-bezier(.55,0,1,.45) both; }
+html[data-gesture-direction="previous"]::view-transition-new(launcher-page) { animation: page-in-previous 220ms cubic-bezier(.16,1,.3,1) both; }
+@keyframes page-out-next { to { transform: translateX(-110px) scale(.985); opacity: 0; } }
+@keyframes page-in-next { from { transform: translateX(110px) scale(.985); opacity: 0; } }
+@keyframes page-out-previous { to { transform: translateX(110px) scale(.985); opacity: 0; } }
+@keyframes page-in-previous { from { transform: translateX(-110px) scale(.985); opacity: 0; } }
+#gesture-cue { position: absolute; z-index: 5; top: 50%; right: 5%; color: var(--text); font-size: 15px; font-weight: 550; text-shadow: 0 2px 8px #0b1226; pointer-events: none; }
 @media (max-width: 650px) { .focus-session { flex-direction: column; gap: 10px; } .focus-copy { text-align: center; } .focus-buttons { justify-content: center; } .insight { padding: 4px 9px; } .insight strong { font-size: 14px; } }
 
 :root {
@@ -210,17 +230,21 @@ body[data-canvas="clear"] #tint {
   grid-template-rows: auto minmax(0, 1fr) auto;
   padding: 30px 44px 16px;
   touch-action: pan-y;
+  outline: none;
 }
 
 #apps-surface {
   --r: calc(var(--radius) + 8px);
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   margin: 20px 0 58px;
   padding: 12px 14px 10px;
   overflow: hidden;
 }
+.home-motion { min-width: 0; min-height: 0; }
+.home-motion-desktop { display: grid; grid-template-rows: minmax(0, 1fr) auto; height: 100%; }
+.home-motion-workspace { display: flex; flex: 1; flex-direction: column; gap: 18px; }
 
 body[data-rail="true"] #shell {
   padding-bottom: 64px;
@@ -234,6 +258,7 @@ body[data-rail="true"] .page-surface { margin-bottom: 16px; }
   min-width: 0;
   min-height: 0;
   justify-self: center;
+  transition: transform .2s var(--ease);
 }
 
 /* ---------- glass ---------- */

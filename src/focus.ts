@@ -16,6 +16,7 @@ const reminders = [
   "Your attention is allowed to come back slowly.", "There is room to begin again.", "Take the time to notice what is already complete.",
   "Keep the next promise small enough to keep.", "A steady hour begins with a single minute.", "One thing finished leaves more room than many things hurried.",
 ];
+const saverPrompts = ["Look away from the screen for a moment.", "Let your shoulders settle.", "A little distance can bring a clearer view.", "Take one slow breath before you return."];
 const durations = (): TimerDurations => ({ work: settings().focusMinutes * 60000, "short-break": settings().shortBreakMinutes * 60000, "long-break": settings().longBreakMinutes * 60000 });
 let timer = newTimer(durations());
 try { timer = restoreTimer(JSON.parse(localStorage.getItem(TIMER_KEY) || "null"), durations()); } catch { /* Invalid timer state starts a fresh session, without changing usage data. */ }
@@ -23,6 +24,7 @@ let ambient: "zen" | "saver" | null = null;
 let automaticSaver = false;
 let returnFocus: HTMLElement | null = null;
 let quoteIndex = 0;
+let saverPromptIndex = 0;
 let quotePaused = false;
 let quoteChangedAt = Date.now();
 let ambientOpenedAt = 0;
@@ -66,8 +68,9 @@ export function openAmbient(mode: "zen" | "saver", automatic = false) {
   returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   ambient = mode; automaticSaver = automatic; ambientOpenedAt = Date.now(); quotePaused = false;
   const canvas = byId("ambient"); canvas.hidden = false; canvas.dataset.mode = mode;
+  document.body.classList.add("ambient-open");
   byId("ambient-title").textContent = mode === "zen" ? "A little room to think" : "Opaline";
-  byId("zen-quote").textContent = reminders[quoteIndex];
+  byId("zen-quote").textContent = mode === "saver" ? saverPrompts[saverPromptIndex] : reminders[quoteIndex];
   byId("zen-position").textContent = `Small reminders · ${quoteIndex + 1} / ${reminders.length}`;
   byId("zen-pause").textContent = "Pause quotes";
   quoteChangedAt = Date.now(); renderTimer();
@@ -78,12 +81,14 @@ function updateAmbientClock() {
   const now = new Date();
   byId("ambient-clock").textContent = now.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   byId("ambient-date").textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  byId("ambient-content").style.setProperty("--drift", `${Math.sin(Date.now() / 60000) * 18}px`);
+  const drift = settings().animations && !matchMedia("(prefers-reduced-motion: reduce)").matches ? Math.sin(Date.now() / 60000) * 18 : 0;
+  byId("ambient-content").style.setProperty("--drift", `${drift}px`);
 }
 export function closeAmbient(hideAutomatic = true) {
   if (!ambient) return;
   const hide = automaticSaver && hideAutomatic;
   ambient = null; automaticSaver = false; byId("ambient").hidden = true;
+  document.body.classList.remove("ambient-open");
   if (hide) void api.hide();
   else if (returnFocus?.isConnected) returnFocus.focus();
 }
@@ -118,6 +123,11 @@ export function initFocus() {
     if (ambient) {
       updateAmbientClock();
       if (ambient === "zen" && !quotePaused && Date.now() - quoteChangedAt >= settings().quoteIntervalSeconds * 1000) changeQuote();
+      if (ambient === "saver" && Date.now() - quoteChangedAt >= settings().quoteIntervalSeconds * 1000) {
+        saverPromptIndex = (saverPromptIndex + 1) % saverPrompts.length;
+        quoteChangedAt = Date.now();
+        byId("zen-quote").textContent = saverPrompts[saverPromptIndex];
+      }
     }
   }, 1000);
   refreshFocus();

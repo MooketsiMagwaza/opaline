@@ -13,7 +13,7 @@
       <img id="backdrop" alt="" hidden />
       <div id="tint"></div>
 
-      <div id="shell">
+      <div id="shell" tabindex="-1">
         <header id="top">
           <nav id="header-left" class="header-nav glass" aria-label="Apps and screen time">
             <button type="button" class="orb" data-page="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
@@ -24,7 +24,7 @@
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3.5-3.5" />
             </svg>
-            <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search desktop and installed apps" />
+            <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search desktop and installed apps" aria-keyshortcuts="S" title="Press S to search" />
           </div>
 
           <nav id="header-right" class="header-nav glass" aria-label="Focus and settings">
@@ -40,8 +40,10 @@
         </header>
 
         <main id="apps-surface" class="glass page-surface" aria-label="Desktop apps and groups">
-          <div id="grid-layer"><div id="grid"></div></div>
-          <footer class="home-footer"><span id="status"></span><nav id="home-pages" class="home-pages" aria-label="Home screens"></nav></footer>
+          <div class="home-motion home-motion-desktop">
+            <div id="grid-layer"><div id="grid"></div></div>
+            <footer class="home-footer"><span id="status"></span><nav id="home-pages" class="home-pages" aria-label="Home screens"></nav></footer>
+          </div>
         </main>
 
         <main id="app-list-surface" class="glass page-surface secondary-surface" aria-label="All apps" hidden>
@@ -53,9 +55,11 @@
         </main>
 
         <main id="workspace-surface" class="glass page-surface secondary-surface" aria-label="Workspace" hidden>
-          <header class="page-heading"><h1 id="workspace-title">Screen 2</h1><button id="workspace-add-trigger" type="button" class="chip">+ Add app or folder</button></header>
-          <div id="workspace-items" class="app-list"></div>
-          <nav id="workspace-pages" class="home-pages" aria-label="Home screens"></nav>
+          <div class="home-motion home-motion-workspace">
+            <header class="page-heading"><h1 id="workspace-title">Screen 2</h1><button id="workspace-add-trigger" type="button" class="chip">+ Add app or folder</button></header>
+            <div id="workspace-items" class="app-list"></div>
+            <nav id="workspace-pages" class="home-pages" aria-label="Home screens"></nav>
+          </div>
         </main>
 
         <section id="item-picker" class="glass" aria-label="Add to screen" hidden><header class="picker-heading"><h2 id="picker-title">Add to screen</h2><button id="picker-close" type="button" class="chip">Close</button></header><div class="workspace-picker"><label for="workspace-app-search">Find a Windows app</label><input id="workspace-app-search" type="search" placeholder="Search installed apps…" autocomplete="off"/><div id="workspace-app-results" class="workspace-app-results" aria-label="Matching installed apps"></div><div class="workspace-picker-actions"><button type="button" id="workspace-browse-folder" class="chip">Choose folder…</button><button type="button" id="workspace-browse-file" class="chip">Choose file…</button></div><details class="workspace-path-fallback"><summary>Enter a path instead</summary><form id="workspace-path-form" class="workspace-editor"><input id="workspace-path" class="workspace-name" type="text" placeholder="Full folder or file path" aria-label="Full folder or file path" required /><button type="submit" class="chip">Add path</button></form></details><p id="workspace-path-note" class="note" role="status"></p></div></section>
@@ -83,7 +87,8 @@
         <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><span class="page-count">Changes apply automatically</span></header><div id="settings" class="settings-layout"></div></main>
 
         <p id="navigation-note" role="status"></p>
-        <nav id="page-edges" aria-label="Home screen navigation">
+          <span id="gesture-cue" aria-hidden="true" hidden></span>
+          <nav id="page-edges" aria-label="Home screen navigation">
           <button type="button" id="page-prev" class="edge-arrow" aria-label="Previous Home screen" title="Previous Home screen · Shift+Tab">‹</button>
           <button type="button" id="page-next" class="edge-arrow" aria-label="Next Home screen" title="Next Home screen · Tab">›</button>
         </nav>
@@ -100,7 +105,7 @@
       </div>
       <section id="ambient" role="dialog" aria-modal="true" aria-labelledby="ambient-title" hidden>
         <button id="ambient-close" type="button" class="chip ambient-close">Return · Esc</button>
-        <div id="ambient-content"><span id="ambient-title" class="page-kicker">A little room to think</span><strong id="ambient-clock"></strong><span id="ambient-date"></span><blockquote id="zen-quote"></blockquote><span id="zen-position" class="row-hint"></span><span id="ambient-timer"></span></div>
+        <div id="ambient-content" class="glass"><span id="ambient-title" class="page-kicker">A little room to think</span><strong id="ambient-clock"></strong><span id="ambient-date"></span><blockquote id="zen-quote"></blockquote><span id="zen-position" class="row-hint"></span><span id="ambient-timer"></span></div>
         <div class="zen-controls"><button id="zen-prev" type="button" class="chip" aria-label="Previous quote">←</button><button id="zen-pause" type="button" class="chip">Pause quotes</button><button id="zen-next" type="button" class="chip" aria-label="Next quote">→</button></div>
       </section>
     </div>
