@@ -1,8 +1,7 @@
 import { api } from "./api";
 
 export type GlassStyle = "solid" | "liquid" | "frost" | "clear" | "custom";
-/** Retained for a later roadmap phase; no rail work runs in the current build. */
-export const RAIL_AVAILABLE = false;
+export const RAIL_AVAILABLE = true;
 
 export type Settings = {
   glassStyle: GlassStyle;
@@ -23,13 +22,22 @@ export type Settings = {
   groupsFirst: boolean;
   sortBy: "name" | "frequent";
   rail: boolean;
-  railSide: "right" | "left";
   railMagnify: boolean;
   railPreviews: boolean;
   closeOnClickOff: boolean;
   closeOnBlur: boolean;
   animations: boolean;
-  fabricEntrance: boolean;
+  compactBar: boolean;
+  paneMotionMs: number;
+  surfaceWidth: number;
+  taskbarIconSize: number;
+  scrollbarWidth: number;
+  focusMinutes: number;
+  shortBreakMinutes: number;
+  longBreakMinutes: number;
+  quoteIntervalSeconds: number;
+  screenSaverEnabled: boolean;
+  screenSaverIdleMinutes: number;
 };
 
 export const DEFAULTS: Settings = {
@@ -50,14 +58,23 @@ export const DEFAULTS: Settings = {
   showLabels: true,
   groupsFirst: true,
   sortBy: "name",
-  rail: false,
-  railSide: "right",
-  railMagnify: true,
+  rail: true,
+  railMagnify: false,
   railPreviews: true,
   closeOnClickOff: true,
   closeOnBlur: true,
   animations: true,
-  fabricEntrance: true,
+  compactBar: false,
+  paneMotionMs: 320,
+  surfaceWidth: 960,
+  taskbarIconSize: 30,
+  scrollbarWidth: 8,
+  focusMinutes: 25,
+  shortBreakMinutes: 5,
+  longBreakMinutes: 15,
+  quoteIntervalSeconds: 25,
+  screenSaverEnabled: false,
+  screenSaverIdleMinutes: 5,
 };
 
 export type MaterialSettings = Pick<Settings, "paneBlur" | "refraction" | "cornerRadius" | "tileGlass">;
@@ -92,9 +109,8 @@ export function normalizeGlassStyle(value: unknown): GlassStyle {
   return typeof value === "string" && STYLES.has(value as GlassStyle) ? (value as GlassStyle) : DEFAULTS.glassStyle;
 }
 
-function load(): Settings {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+export function normalizeSettings(value: unknown): Settings {
+    const saved = value && typeof value === "object" ? value as Record<string, unknown> : {};
     const merged: Settings = { ...DEFAULTS };
     // keep only known keys of the right type, so an old or hand-edited file can't break the UI
     for (const key of Object.keys(DEFAULTS) as (keyof Settings)[]) {
@@ -107,9 +123,23 @@ function load(): Settings {
     merged.glassStyle = "frost";
     merged.clearCanvas = false;
     merged.refraction = 0;
-    if (!/^#[0-9a-f]{6}$/i.test(merged.customSurfaceColor)) merged.customSurfaceColor = DEFAULTS.customSurfaceColor;
-    merged.customSurfaceOpacity = Math.min(1, Math.max(0.2, merged.customSurfaceOpacity));
+    for (const key of ["tintColor", "customSurfaceColor"] as const) {
+      if (!/^#[0-9a-f]{6}$/i.test(merged[key])) merged[key] = DEFAULTS[key];
+    }
+    const ranges = { backdropBlur: [0, 40], backdropSaturation: [0, 3], backdropBrightness: [0.2, 2], tintStrength: [0.06, 0.5], paneBlur: [0, 40], refraction: [0, 1], cornerRadius: [0, 60], tileGlass: [0, 1], customSurfaceOpacity: [0.2, 1], paneMotionMs: [160, 500], surfaceWidth: [640, 1280], taskbarIconSize: [24, 36], scrollbarWidth: [6, 14], focusMinutes: [1, 90], shortBreakMinutes: [1, 30], longBreakMinutes: [5, 60], quoteIntervalSeconds: [5, 120], screenSaverIdleMinutes: [1, 60] } as const;
+    for (const key of Object.keys(ranges) as (keyof typeof ranges)[]) {
+      const [min, max] = ranges[key];
+      merged[key] = Number.isFinite(merged[key]) ? Math.min(max, Math.max(min, merged[key])) : DEFAULTS[key];
+    }
+    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"] })) {
+      if (!values.includes(String(merged[key as keyof Settings]))) (merged as Record<string, unknown>)[key] = DEFAULTS[key as keyof Settings];
+    }
     return merged;
+}
+
+function load(): Settings {
+  try {
+    return normalizeSettings(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"));
   } catch {
     return { ...DEFAULTS };
   }
@@ -127,6 +157,7 @@ let current: Settings = load();
 const listeners = new Set<(settings: Settings) => void>();
 let appliedCloseOnBlur: boolean | undefined;
 let appliedBackdropCapture: boolean | undefined;
+let appliedScreenSaver: string | undefined;
 
 export const settings = (): Settings => current;
 
@@ -135,7 +166,7 @@ export function onSettingsChange(listener: (settings: Settings) => void) {
 }
 
 export function updateSettings(patch: Partial<Settings>) {
-  current = { ...current, ...patch };
+  current = normalizeSettings({ ...current, ...patch });
   save();
   applySettings();
   listeners.forEach((listener) => listener(current));
@@ -169,17 +200,28 @@ export function applySettings() {
   root.setProperty("--custom-rgb", `${custom.r}, ${custom.g}, ${custom.b}`);
   root.setProperty("--custom-opacity", String(s.customSurfaceOpacity));
   root.setProperty("--tile", `${TILE_SIZES[s.iconSize]}px`);
+  root.setProperty("--pane-motion", `${s.paneMotionMs}ms`);
+  root.setProperty("--surface-width", `${s.surfaceWidth}px`);
+  root.setProperty("--dock", `${s.taskbarIconSize}px`);
+  root.setProperty("--scrollbar-width", `${s.scrollbarWidth}px`);
 
   const body = document.body.dataset;
   body.style = "frost";
   body.canvas = "frosted";
   body.labels = String(s.showLabels);
   body.rail = String(RAIL_AVAILABLE && s.rail);
-  body.railSide = s.railSide;
   body.anim = String(s.animations);
-  body.entry = s.fabricEntrance ? "fabric" : "fade";
+  body.compactBar = String(s.compactBar);
   const luminance = (custom.r * 0.2126 + custom.g * 0.7152 + custom.b * 0.0722) / 255;
   body.surfaceTone = luminance > 0.62 && s.customSurfaceOpacity > 0.55 ? "light" : "dark";
+  const screenSaverSignature = `${s.screenSaverEnabled}:${s.screenSaverIdleMinutes}`;
+  if (appliedScreenSaver !== screenSaverSignature) {
+    appliedScreenSaver = screenSaverSignature;
+    void api.setScreenSaver(s.screenSaverEnabled, s.screenSaverIdleMinutes).catch(error => {
+      appliedScreenSaver = undefined;
+      const note = document.getElementById("navigation-note"); if (note) note.textContent = `Screen saver could not be configured: ${String(error)}`;
+    });
+  }
 
   if (appliedCloseOnBlur !== s.closeOnBlur) {
     appliedCloseOnBlur = s.closeOnBlur;

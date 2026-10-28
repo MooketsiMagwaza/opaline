@@ -1,9 +1,10 @@
 import { api, type Item } from "./api";
-import { byId, el } from "./dom";
+import { byId, clamp, el } from "./dom";
 import * as groups from "./groups";
 import { iconElement } from "./icons";
 import { type MenuEntry, showMenu } from "./menu";
 import { settings } from "./settings";
+import { workspaceMenu } from "./workspaces";
 
 type Entry = { kind: "group"; group: groups.Group } | { kind: "item"; item: Item };
 type Dragged =
@@ -18,6 +19,45 @@ let openId: string | null = null;
 let popupReturnFocus: HTMLElement | null = null;
 let dragged: Dragged | null = null;
 let layoutFrame = 0;
+let popupClosingTimer: number | undefined;
+let popupOpeningFrame = 0;
+let peekTimer: number | undefined;
+let peekGeneration = 0;
+
+function hidePeek() {
+  window.clearTimeout(peekTimer);
+  peekGeneration++;
+  byId("tile-peek").hidden = true;
+}
+
+export function wirePeek(tile: HTMLElement, title: string, items: () => Promise<Item[]>, count?: number) {
+  const show = (delay: number) => {
+    hidePeek();
+    const generation = peekGeneration;
+    peekTimer = window.setTimeout(async () => {
+      let entries: Item[];
+      try { entries = await items(); } catch { entries = []; }
+      if (generation !== peekGeneration || !tile.isConnected) return;
+      const peek = byId("tile-peek");
+      const rows = entries.slice(0, 6).map(item => el("div", "peek-tile", [iconElement(item.path, item.name), el("span", "peek-name", [item.name])]));
+      const previewGrid = el("div", "peek-grid", rows);
+      previewGrid.style.setProperty("--peek-columns", String(rows.length <= 2 ? Math.max(1, rows.length) : rows.length <= 4 ? 2 : 3));
+      const more = count ? count > 6 : entries.length > 6;
+      peek.replaceChildren(el("strong", "peek-title", [title]), ...(rows.length ? [previewGrid] : [el("span", "peek-empty", ["Empty or unavailable"])]), ...(more ? [el("span", "peek-more", ["More inside…"])] : []));
+      peek.hidden = false;
+      const anchor = tile.getBoundingClientRect();
+      const box = peek.getBoundingClientRect();
+      peek.style.left = `${clamp(anchor.left + anchor.width / 2 - box.width / 2, 12, innerWidth - box.width - 12)}px`;
+      peek.style.top = `${anchor.bottom + box.height + 16 < innerHeight ? anchor.bottom + 10 : Math.max(12, anchor.top - box.height - 10)}px`;
+    }, delay);
+  };
+  tile.addEventListener("pointerenter", () => show(500));
+  tile.addEventListener("pointerleave", hidePeek);
+  tile.addEventListener("focus", () => show(0));
+  tile.addEventListener("blur", hidePeek);
+  tile.addEventListener("click", hidePeek);
+  tile.addEventListener("dragstart", hidePeek);
+}
 
 export const allItems = (): Item[] => items;
 export const isPopupOpen = (): boolean => openId !== null;
@@ -39,6 +79,9 @@ export function setQuery(next: string) {
 
 /** Back to the plain grid: no search, no open pane. Used every time the overlay opens. */
 export function reset() {
+  hidePeek();
+  window.clearTimeout(popupClosingTimer);
+  cancelAnimationFrame(popupOpeningFrame);
   query = "";
   openId = null;
   popupReturnFocus = null;
@@ -84,6 +127,7 @@ function entries(): Entry[] {
 }
 
 export function render() {
+  hidePeek();
   const list = entries();
   const grid = byId("grid");
   const searching = query.trim().length > 0;
@@ -231,10 +275,11 @@ function wireDrop(tile: HTMLElement, onDrop: (path: string) => void, accept: (pa
 function itemTile(item: Item, paneId?: string): HTMLElement {
   const tile = el("button", "tile item-tile", [iconElement(item.path, item.name), el("span", "label", [item.name])]);
   tile.type = "button";
-  tile.title = item.name;
+  if (!item.isFolder) tile.title = item.name;
   tile.setAttribute("aria-label", item.name);
   tile.dataset.path = item.path;
   tile.dataset.layoutKey = groups.itemPositionKey(item.path);
+  if (item.isFolder) wirePeek(tile, item.name, () => api.folderPreview(item.path));
 
   tile.addEventListener("click", () => launchItem(item.path));
   tile.addEventListener("contextmenu", (event) => {
@@ -274,10 +319,10 @@ function paneTile(group: groups.Group): HTMLElement {
 
   const tile = el("button", "tile pane-tile", [minis, el("span", "label", [group.name])]);
   tile.type = "button";
-  tile.title = group.name;
   tile.setAttribute("aria-label", group.name);
   tile.dataset.id = group.id;
   tile.dataset.layoutKey = groups.groupPositionKey(group.id);
+  wirePeek(tile, group.name, async () => group.items.map(path => known.get(path)).filter((item): item is Item => Boolean(item)), group.items.length);
 
   tile.addEventListener("click", () => openGroup(group.id, { from: tile }));
   tile.addEventListener("contextmenu", (event) => {
@@ -318,6 +363,7 @@ function itemMenu(item: Item): MenuEntry[] {
 
   const menu: MenuEntry[] = [
     { label: "Open", action: () => launchItem(item.path) },
+    workspaceMenu(item),
     { label: "Open file location", action: () => void api.reveal(item.path) },
     { label: "Copy path", action: () => void navigator.clipboard.writeText(item.path).catch(() => {}) },
     { separator: true },
@@ -436,6 +482,11 @@ export function openGroup(id: string, options: { rename?: boolean; from?: HTMLEl
   const group = groups.groups().find((candidate) => candidate.id === id);
   if (!group) return;
 
+  window.clearTimeout(popupClosingTimer);
+  cancelAnimationFrame(popupOpeningFrame);
+  const source = options.from ?? document.querySelector<HTMLElement>(`.pane-tile[data-id="${CSS.escape(id)}"]`);
+  // Measure before the Home surface steps back; that transform would shift the source geometry.
+  const sourceRect = source?.getBoundingClientRect();
   openId = id;
   buildPopup(group);
 
@@ -445,38 +496,41 @@ export function openGroup(id: string, options: { rename?: boolean; from?: HTMLEl
   document.body.classList.add("popup-open");
 
   // grow out of the tile it was opened from, like an iOS folder
-  const source = options.from ?? document.querySelector<HTMLElement>(`.pane-tile[data-id="${CSS.escape(id)}"]`);
   popupReturnFocus = source ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  if (source) {
-    const rect = source.getBoundingClientRect();
-    panel.style.transformOrigin = `${rect.left + rect.width / 2 - panel.offsetLeft}px ${rect.top + rect.height / 2 - panel.offsetTop}px`;
-  }
+  panel.classList.add("measuring", "initial");
+  const destination = panel.getBoundingClientRect();
+  panel.style.setProperty("--pane-from-x", sourceRect ? `${sourceRect.left + sourceRect.width / 2 - destination.left - destination.width / 2}px` : "0px");
+  panel.style.setProperty("--pane-from-y", sourceRect ? `${sourceRect.top + sourceRect.height / 2 - destination.top - destination.height / 2}px` : "0px");
+  panel.style.setProperty("--pane-from-scale", sourceRect ? String(Math.min(sourceRect.width / destination.width, sourceRect.height / destination.height)) : ".35");
   panel.classList.remove("open");
+  panel.classList.remove("measuring");
   void panel.offsetWidth;
-  panel.classList.add("open");
+  popupOpeningFrame = requestAnimationFrame(() => { panel.classList.remove("initial"); panel.classList.add("open"); });
 
   if (options.rename) {
     const input = panel.querySelector<HTMLInputElement>(".pane-name")!;
     input.focus();
     input.select();
-  }
+  } else panel.querySelector<HTMLButtonElement>(".tile")?.focus();
 }
 
 export function closePopup() {
   if (openId === null) return;
 
   openId = null;
+  cancelAnimationFrame(popupOpeningFrame);
   const popup = byId("popup");
   popup.classList.remove("open");
   document.body.classList.remove("popup-open");
-  window.setTimeout(() => {
+  const duration = settings().animations && !matchMedia("(prefers-reduced-motion: reduce)").matches ? settings().paneMotionMs : 0;
+  popupClosingTimer = window.setTimeout(() => {
     if (openId !== null) return;
     byId("popup-layer").hidden = true;
     popup.replaceChildren();
     popup.style.removeProperty("transform-origin");
     if (popupReturnFocus?.isConnected) popupReturnFocus.focus();
     popupReturnFocus = null;
-  }, 180);
+  }, duration);
 }
 
 /** Wires the popup backdrop: click to close, drop a member on it to take it out of the pane. */
@@ -539,6 +593,7 @@ export function focusFirstTile(): boolean {
 
 /** Arrow keys move through tiles. Returns true when the key was used. */
 export function handleArrow(event: KeyboardEvent): boolean {
+  if (byId("apps-surface").hidden && !openId) return false;
   const active = document.activeElement as HTMLElement | null;
   const search = byId("search");
 

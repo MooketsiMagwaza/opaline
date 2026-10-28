@@ -54,7 +54,7 @@ pub fn snapshot_rect(x: i32, y: i32, width: i32, height: i32, max_width: u32) ->
 
 /// One window's contents, even when other windows cover it.
 pub fn window_thumbnail(hwnd: i64, max_width: u32) -> Option<String> {
-    to_jpeg_data_url(imp::window(hwnd)?, max_width)
+    to_jpeg_data_url(imp::window(hwnd, max_width)?, max_width)
 }
 
 #[cfg(windows)]
@@ -176,13 +176,13 @@ mod imp {
         }
     }
 
-    pub fn window(hwnd: i64) -> Option<Frame> {
+    pub fn window(hwnd: i64, max_width: u32) -> Option<Frame> {
         unsafe {
             let hwnd = HWND(hwnd as _);
             let mut rect = RECT::default();
             GetWindowRect(hwnd, &mut rect).ok()?;
             let (width, height) = (rect.right - rect.left, rect.bottom - rect.top);
-            if width <= 0 || height <= 0 {
+            if width <= 0 || height <= 0 || width > 16384 || height > 16384 {
                 return None;
             }
 
@@ -194,12 +194,39 @@ mod imp {
             let printed =
                 PrintWindow(hwnd, memory, PRINT_WINDOW_FLAGS(PW_RENDERFULLCONTENT)).as_bool();
 
-            SelectObject(memory, previous);
-            let frame = if printed {
-                read_pixels(screen, bitmap, width, height)
+            // PrintWindow requires the full-size surface, but GDI can downsample before readback.
+            // This avoids allocating/converting/resizing a full-screen RGB image for a small card.
+            let target_width = width.min(max_width.max(1) as i32);
+            let target_height =
+                ((height as i64 * target_width as i64) / width as i64).max(1) as i32;
+            let scaled_dc = CreateCompatibleDC(Some(screen));
+            let scaled_bitmap = CreateCompatibleBitmap(screen, target_width, target_height);
+            let old_scaled = SelectObject(scaled_dc, scaled_bitmap.into());
+            SetStretchBltMode(scaled_dc, COLORONCOLOR);
+            let scaled = printed
+                && StretchBlt(
+                    scaled_dc,
+                    0,
+                    0,
+                    target_width,
+                    target_height,
+                    Some(memory),
+                    0,
+                    0,
+                    width,
+                    height,
+                    SRCCOPY,
+                )
+                .as_bool();
+            SelectObject(scaled_dc, old_scaled);
+            let frame = if scaled {
+                read_pixels(screen, scaled_bitmap, target_width, target_height)
             } else {
                 None
             };
+            let _ = DeleteObject(scaled_bitmap.into());
+            let _ = DeleteDC(scaled_dc);
+            SelectObject(memory, previous);
 
             let _ = DeleteObject(bitmap.into());
             let _ = DeleteDC(memory);
@@ -223,7 +250,7 @@ mod imp {
         None
     }
 
-    pub fn window(_hwnd: i64) -> Option<Frame> {
+    pub fn window(_hwnd: i64, _max_width: u32) -> Option<Frame> {
         None
     }
 }

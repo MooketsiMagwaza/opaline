@@ -2,7 +2,7 @@
 
 Opaline is a Windows-first desktop launcher built with **Tauri v2** (Rust backend, plain TypeScript + CSS UI). It opens a
 full-screen frosted-glass overlay on a hotkey, showing the user's Desktop items grouped into panes, a taskbar-mirror rail with
-window previews, and a settings pane. Read these, in order, before changing anything:
+window previews, and a full Settings page. Read these, in order, before changing anything:
 
 1. [WORKORDER.md](WORKORDER.md) — §0 what is verified, §2 requirements, §12 **next actions**, §13 known issues.
 2. [DEVLOG.md](DEVLOG.md) — why decisions were made, including the failed WinUI 3 beta and what was learned.
@@ -37,6 +37,18 @@ cargo test  --manifest-path src-tauri/Cargo.toml --locked
   `opaline`, `node` (vite) and `cargo` processes first. Port 1420 is the dev server.
 
 ## Rules of the road
+
+### Owner's coding standards (28 October 2026)
+
+- **YAGNI:** build when needed; avoid speculative infrastructure.
+- **DRY:** extract a shared pattern after its second real duplication, not before.
+- **Fail fast:** report actionable errors explicitly; do not silently hide failed persistence, startup or integrations.
+- **Simple first:** implement the obvious solution, then optimise where measurement shows a need.
+- **Delete aggressively:** remove obsolete paths and duplicated state when replacing them.
+- **Semantic naming:** use clear, self-documenting names for variables, parameters and APIs; prioritise comprehension over brevity for humans and coding agents.
+- **Focused responsibilities:** keep event handlers and functions small; extract a cohesive stateful workflow into a class or object when it owns several related actions. Use guard clauses to avoid deep nesting.
+
+The owner explicitly adopted these standards from their screenshot. Apply them to new and touched code without turning feature work into an unrelated rewrite.
 
 - **Never touch the user's Desktop files.** Opaline reads them; panes are metadata in `groups.json`. Tests must not move, rename or
   delete anything on a real Desktop, and must restore any pane changes they make to the user's real data.

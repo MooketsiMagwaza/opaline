@@ -2,6 +2,8 @@ import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { api, type Status } from "./api";
 import { byId, el } from "./dom";
 import { RAIL_AVAILABLE, type Settings, resetSettings, settings, updateSettings } from "./settings";
+import { createWorkspace, removeWorkspace, renameWorkspace, workspaces } from "./workspaces";
+import { refreshUsage } from "./usage";
 
 export type PanelHooks = {
   status: () => Status;
@@ -20,10 +22,12 @@ type Control =
   | { kind: "color"; key: keyof Settings; label: string; hint?: string }
   | { kind: "hotkey" }
   | { kind: "autostart" }
+  | { kind: "start-menu" }
   | { kind: "action"; label: string; hint?: string; button: string; run: (note: (text: string) => void) => void }
   | { kind: "about" };
+type SpecialControl = { kind: "workspaces" | "screen-time" };
 
-type Section = { id: string; title: string; controls: Control[] };
+type Section = { id: string; title: string; controls: (Control | SpecialControl)[] };
 
 const percent = (value: number) => `${Math.round(value * 100)}%`;
 const pixels = (value: number) => `${value} px`;
@@ -32,10 +36,10 @@ let hooks: PanelHooks;
 let current = "appearance";
 let syncers: (() => void)[] = [];
 let recording = false;
+let hotkeyEvents: AbortController | undefined;
 const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>();
 
 export const isRecordingHotkey = (): boolean => recording;
-export const isPanelOpen = (): boolean => !byId("settings").hidden;
 
 function sections(): Section[] {
   const available: Section[] = [
@@ -52,6 +56,9 @@ function sections(): Section[] {
       id: "layout",
       title: "Layout",
       controls: [
+        { kind: "toggle", key: "compactBar", label: "Compact navigation", hint: "Hide the numbered space buttons and keep the taskbar mirror. Ctrl+B expands or collapses navigation." },
+        { kind: "range", key: "surfaceWidth", label: "App area width", min: 640, max: 1280, step: 40, format: pixels },
+        { kind: "range", key: "scrollbarWidth", label: "Scrollbar width", min: 6, max: 14, step: 1, format: pixels },
         { kind: "segmented", key: "iconSize", label: "Icon size", options: [["small", "Small"], ["medium", "Medium"], ["large", "Large"]] },
         { kind: "toggle", key: "showLabels", label: "Show names" },
         { kind: "toggle", key: "groupsFirst", label: "Panes first", hint: "Show panes before loose items." },
@@ -70,10 +77,10 @@ function sections(): Section[] {
     },
     {
       id: "rail",
-      title: "Rail",
+      title: "Taskbar",
       controls: [
-        { kind: "toggle", key: "rail", label: "Show the rail", hint: "A strip mirroring your taskbar." },
-        { kind: "segmented", key: "railSide", label: "Side", options: [["right", "Right"], ["left", "Left"]] },
+        { kind: "toggle", key: "rail", label: "Show taskbar mirror", hint: "Pinned and running Windows apps at the bottom. Click to open or focus." },
+        { kind: "range", key: "taskbarIconSize", label: "Taskbar icon size", min: 24, max: 36, step: 2, format: pixels },
         { kind: "toggle", key: "railMagnify", label: "Magnify on hover" },
         { kind: "toggle", key: "railPreviews", label: "Window previews", hint: "Thumbnails when you hover an app." },
       ],
@@ -83,18 +90,24 @@ function sections(): Section[] {
       title: "Behaviour",
       controls: [
         { kind: "hotkey" },
+        { kind: "start-menu" },
         { kind: "autostart" },
         { kind: "toggle", key: "closeOnClickOff", label: "Close when clicking empty space" },
         { kind: "toggle", key: "closeOnBlur", label: "Close when you switch away" },
         { kind: "toggle", key: "animations", label: "Animations" },
-        {
-          kind: "toggle",
-          key: "fabricEntrance",
-          label: "Fabric opening animation",
-          hint: "Unfolds the already-arranged app grid upward like a sheet being laid out.",
-        },
+        { kind: "range", key: "paneMotionMs", label: "Pane opening duration", min: 160, max: 500, step: 10, format: (value) => `${value} ms`, hint: "Pane popups expand from their tile and return to it when closed." },
       ],
     },
+    { id: "workspaces", title: "Home screens", controls: [{ kind: "workspaces" }] },
+    { id: "screen-time", title: "Screen time", controls: [{ kind: "screen-time" }] },
+    { id: "focus", title: "Focus", controls: [
+      { kind: "range", key: "focusMinutes", label: "Focus session", min: 1, max: 90, step: 1, format: value => `${value} min` },
+      { kind: "range", key: "shortBreakMinutes", label: "Short break", min: 1, max: 30, step: 1, format: value => `${value} min` },
+      { kind: "range", key: "longBreakMinutes", label: "Long break", min: 5, max: 60, step: 1, format: value => `${value} min`, hint: "After every four completed focus sessions. Timers wait for you to start the next phase." },
+      { kind: "range", key: "quoteIntervalSeconds", label: "Zen quote interval", min: 5, max: 120, step: 5, format: value => `${value} sec` },
+      { kind: "toggle", key: "screenSaverEnabled", label: "Automatic screen saver", hint: "Off by default. Opens Opaline’s quiet clock after Windows is idle; any input dismisses it. Does not change the Windows lock screen or sign-in settings." },
+      { kind: "range", key: "screenSaverIdleMinutes", label: "Screen saver idle time", min: 1, max: 60, step: 1, format: value => `${value} min` },
+    ] },
     {
       id: "panes",
       title: "Panes",
@@ -129,7 +142,7 @@ function sections(): Section[] {
         {
           kind: "action",
           label: "Reset all settings",
-          hint: "Restores the default glass, layout and behaviour. Panes are kept.",
+          hint: "Restores appearance, layout and in-app behaviour. Panes, spaces, screen time, the global hotkey and login preference are kept.",
           button: "Reset",
           run: (note) => {
             resetSettings();
@@ -145,6 +158,7 @@ function sections(): Section[] {
 // ---------- rows ----------
 
 function row(label: string, hint: string | undefined, control: HTMLElement): HTMLElement {
+  control.querySelectorAll<HTMLElement>("input, select, button[role='switch']").forEach((input) => input.setAttribute("aria-label", label));
   const text = el("div", "row-text", [el("div", "row-label", [label])]);
   if (hint) text.append(el("div", "row-hint", [hint]));
   return el("div", "row", [text, control]);
@@ -244,6 +258,7 @@ function comboFrom(event: KeyboardEvent): string | null {
 }
 
 function hotkeyRow(): HTMLElement {
+  hotkeyEvents = new AbortController();
   const button = el("button", "chip");
   button.type = "button";
   const note = el("span", "note");
@@ -285,7 +300,7 @@ function hotkeyRow(): HTMLElement {
       }
       show();
     },
-    true,
+    { capture: true, signal: hotkeyEvents.signal },
   );
 
   syncers.push(show);
@@ -300,26 +315,31 @@ function autostartRow(): HTMLElement {
   const { node, show } = switchElement(
     () => enabled,
     async (value) => {
+      (node as HTMLButtonElement).disabled = true;
       try {
         if (value) await enable();
         else await disable();
         enabled = value;
-        note.textContent = "";
+        note.textContent = value ? "Opaline will start hidden at your next Windows sign-in." : "Off — Opaline will not start after sign-in.";
       } catch (error) {
         note.textContent = String(error);
       }
       show();
+      (node as HTMLButtonElement).disabled = false;
     },
   );
 
+  (node as HTMLButtonElement).disabled = true;
   void isEnabled()
     .then((value) => {
       enabled = value;
+      note.textContent = value ? "On — Opaline starts hidden after Windows sign-in." : "Off — turn this on to start after Windows sign-in.";
       show();
+      (node as HTMLButtonElement).disabled = false;
     })
-    .catch(() => {});
+    .catch((error) => { note.textContent = `Could not read login preference: ${String(error)}`; });
 
-  return row("Launch at login", "Starts in the tray when you sign in. Off until you turn it on.", el("div", "control column", [node, note]));
+  return row("Launch at login", "Start hidden in the tray at Windows sign-in. Toggle this on after installing or placing the app where you will keep it.", el("div", "control column", [node, note]));
 }
 
 function actionRow(control: Extract<Control, { kind: "action" }>): HTMLElement {
@@ -348,8 +368,71 @@ function aboutRow(): HTMLElement {
 
 // ---------- panel ----------
 
-function build(control: Control): HTMLElement {
+function workspaceControls(): HTMLElement {
+  const holder = el("div", "workspace-controls");
+  const note = el("p", "note");
+  const run = (operation: Promise<void>) => { void operation.then(() => select("workspaces")).catch((error) => { note.textContent = String(error); }); };
+  holder.append(el("p", "row-hint", ["These Home screens are available on every Windows virtual desktop. Press Tab on Home to switch between them. Alt+1 returns to the main Home screen."]));
+  workspaces().forEach((space, index) => {
+    const name = el("input", "workspace-name");
+    name.value = space.name; name.maxLength = 40;
+    name.setAttribute("aria-label", `Name for workspace ${index + 2}`);
+    const save = el("button", "chip", ["Rename"]);
+    save.addEventListener("click", () => run(renameWorkspace(space.id, name.value)));
+    const remove = el("button", "chip", ["Remove"]);
+    let confirm = false;
+    remove.addEventListener("click", () => {
+      if (!confirm) { confirm = true; remove.textContent = "Confirm removal"; return; }
+      run(removeWorkspace(space.id));
+    });
+    holder.append(row(`Home screen ${index + 2}`, `${space.items.length} saved items`, el("div", "workspace-editor", [name, save, remove])));
+  });
+  const name = el("input", "workspace-name");
+  name.placeholder = "e.g. Projects"; name.maxLength = 40; name.setAttribute("aria-label", "New workspace name");
+  const add = el("button", "chip", ["Add screen"]);
+  add.disabled = workspaces().length >= 8;
+  add.addEventListener("click", () => run(createWorkspace(name.value)));
+  holder.append(el("div", "workspace-editor", [name, add]), note);
+  return holder;
+}
+
+function screenTimeControls(): HTMLElement {
+  const note = el("p", "note");
+  const toggle = el("button", "chip", ["Loading…"]);
+  toggle.disabled = true;
+  let enabled = false;
+  const show = () => { toggle.textContent = enabled ? "Pause tracking" : "Resume tracking"; toggle.setAttribute("aria-pressed", String(enabled)); };
+  void api.screenTime().then((report) => { enabled = report.enabled; toggle.disabled = !report.supported; show(); }).catch((error) => { note.textContent = String(error); });
+  toggle.addEventListener("click", () => {
+    toggle.disabled = true;
+    void api.setScreenTime(!enabled).then(() => { enabled = !enabled; show(); void refreshUsage(); }).catch((error) => { note.textContent = String(error); }).finally(() => { toggle.disabled = false; });
+  });
+  const clear = el("button", "chip", ["Clear history"]);
+  let confirm = false;
+  clear.addEventListener("click", () => {
+    if (!confirm) { confirm = true; clear.textContent = "Confirm clear history"; return; }
+    clear.disabled = true;
+    void api.clearScreenTime().then(() => { note.textContent = "History cleared."; void refreshUsage(); }).catch((error) => { note.textContent = String(error); }).finally(() => { clear.disabled = false; confirm = false; clear.textContent = "Clear history"; });
+  });
+  return el("div", "", [el("p", "row-hint", ["Tracks the foreground, maximised app while Opaline runs, including apps launched elsewhere. Stops when idle, minimised or asleep. Totals are stored locally; no window titles or browsing history are saved. Pausing keeps your history."]), row("Tracking", undefined, toggle), row("Saved history", "Clearing cannot be undone.", clear), note]);
+}
+
+function startMenuRow(): HTMLElement {
+  const note = el("span", "note");
+  let enabled = false;
+  const { node, show } = switchElement(() => enabled, (next) => {
+    (node as HTMLButtonElement).disabled = true;
+    void api.setStartMenu(next).then(() => { enabled = next; note.textContent = ""; show(); }).catch((error) => { note.textContent = String(error); }).finally(() => { (node as HTMLButtonElement).disabled = false; });
+  });
+  (node as HTMLButtonElement).disabled = true;
+  void api.startMenuStatus().then((status) => { enabled = status.enabled; (node as HTMLButtonElement).disabled = !status.available; show(); if (!status.available) note.textContent = "Unavailable on this session; Windows Start remains active."; }).catch((error) => { note.textContent = String(error); });
+  return row("Use Opaline for the Windows key", "Off by default. A Windows-key tap opens All apps while Opaline runs. Windows shortcuts remain available. The Windows taskbar Start button and Ctrl+Esc still open Windows Start.", el("div", "control column", [node, note]));
+}
+
+function build(control: Control | SpecialControl): HTMLElement {
   switch (control.kind) {
+    case "workspaces": return workspaceControls();
+    case "screen-time": return screenTimeControls();
     case "range":
       return rangeRow(control);
     case "segmented":
@@ -362,6 +445,7 @@ function build(control: Control): HTMLElement {
       return hotkeyRow();
     case "autostart":
       return autostartRow();
+    case "start-menu": return startMenuRow();
     case "action":
       return actionRow(control);
     case "about":
@@ -370,6 +454,8 @@ function build(control: Control): HTMLElement {
 }
 
 function select(id: string) {
+  hotkeyEvents?.abort();
+  recording = false;
   current = id;
   const section = sections().find((candidate) => candidate.id === id)!;
   syncers = [];
@@ -380,7 +466,7 @@ function select(id: string) {
 
   byId("settings")
     .querySelectorAll<HTMLElement>(".nav-item")
-    .forEach((item) => item.setAttribute("aria-current", String(item.dataset.id === id)));
+    .forEach((item) => item.setAttribute("aria-current", item.dataset.id === id ? "page" : "false"));
 }
 
 export function syncPanel() {
@@ -399,28 +485,8 @@ export function initPanel(panelHooks: PanelHooks) {
     nav.append(item);
   }
 
-  const close = el("button", "nav-item close", ["Done"]);
-  close.type = "button";
-  close.addEventListener("click", closePanel);
-  nav.append(el("div", "nav-spacer"), close);
-
   byId("settings").replaceChildren(nav, el("div", "settings-body"));
   select(current);
 }
 
-export function openPanel() {
-  select(current); // rebuild so values and the about text are fresh
-  byId("settings").hidden = false;
-  document.body.classList.add("settings-open");
-}
-
-export function closePanel() {
-  recording = false;
-  byId("settings").hidden = true;
-  document.body.classList.remove("settings-open");
-}
-
-export function togglePanel() {
-  if (isPanelOpen()) closePanel();
-  else openPanel();
-}
+export function refreshPanel() { if (hooks) select(current); }

@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULTS, materialSettings, normalizeGlassStyle } from "../src/settings";
+import { DEFAULTS, materialSettings, normalizeGlassStyle, normalizeSettings } from "../src/settings";
 
 describe("theme migration", () => {
+  it("rejects corrupt enums, invalid colours and out-of-range or non-finite values", () => {
+    const result = normalizeSettings({ iconSize: "huge", sortBy: "random", tintColor: "javascript:bad", backdropBlur: -100, tintStrength: Infinity, pageShortcut: "alt-tab", compactBar: "yes", paneMotionMs: 900 });
+    expect(result.iconSize).toBe(DEFAULTS.iconSize);
+    expect(result.sortBy).toBe("name");
+    expect(result.tintColor).toBe(DEFAULTS.tintColor);
+    expect(result.backdropBlur).toBe(0);
+    expect(result.tintStrength).toBe(DEFAULTS.tintStrength);
+    expect(result.compactBar).toBe(false);
+    expect(result.paneMotionMs).toBe(500);
+    expect(normalizeSettings({ taskbarIconSize: 44 }).taskbarIconSize).toBe(36);
+    expect(normalizeSettings(null)).toEqual(DEFAULTS);
+  });
   it("keeps current themes and migrates prototype names", () => {
     expect(normalizeGlassStyle("solid")).toBe("solid");
     expect(normalizeGlassStyle("liquid")).toBe("liquid");

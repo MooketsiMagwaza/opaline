@@ -1,6 +1,6 @@
 # Platform roadmap
 
-These are planned work packages, not claims about the current `0.1.0` build. Each package must receive detailed acceptance criteria in
+These are planned work packages, not claims about the current `0.2.0` release. Each package must receive detailed acceptance criteria in
 the main work order before implementation.
 
 ## P1 — App Library
@@ -8,7 +8,7 @@ the main work order before implementation.
 Current implementation: the page switcher loads a true Windows catalogue from AppsFolder after presentation, covering classic Start-menu
 entries and packaged apps. Remaining work hardens that catalogue.
 
-- Add usage ordering and complete arrow-key navigation to the searchable **All apps** surface.
+- Arrow navigation and prefix-ranked search are implemented; finish native keyboard acceptance and usage ordering.
 - Keep the Desktop canvas and All apps as separate modes so a large app catalogue does not slow opening.
 - Cache metadata locally and refresh off the visible-frame path.
 
@@ -29,19 +29,24 @@ Any future widget system must remain optional and off the opening path.
 - A future Outlook/Google connector must be optional, least-privilege and isolated from the core launcher.
 - Event creation, reminders and account authentication are separate work packages with accessibility and privacy acceptance tests.
 
-## P2 — Start surface
+## Active — Opt-in Windows-key app list
 
-- Offer Opaline as an **opt-in Start-style app list**, opened by its own rebindable shortcut or tray command.
-- Do not patch Explorer, replace `StartMenuExperienceHost`, intercept the Windows key or change system policy.
+- The owner explicitly requested Windows-key routing on 28 October 2026. Behaviour now offers an opt-in key-tap override opening All apps, off by default. It supplements Windows rather than replacing Explorer.
+- Do not patch Explorer, replace `StartMenuExperienceHost` or change system policy. Preserve Win chords, native Start-button clicks and Ctrl+Esc; verify both Windows keys and elevated-window fallback with the owner.
 - Match Start essentials before calling it a replacement: all-apps enumeration, pinning, recent items, power/session shortcuts,
   keyboard-only use, narrator labels and a reliable escape route.
 - Keep the feature reversible: disabling it returns Opaline to the Desktop launcher without changing Windows Start.
 
 The guiding rule is that Opaline may supplement Windows, but it must never make the shell difficult to recover.
 
-## P2 — Taskbar rail (deprecated from 0.1)
+## Active — Taskbar rail and named spaces
 
-- Revisit the retained `rail.ts` and Taskband implementation only after the core overlay meets its frame-time and interaction budgets.
-- Keep it opt-in and off by default; do not restart enumeration or thumbnail work on the opening path.
-- Re-run pin completeness, packaged-app launch, focus/restore, preview latency, magnification and clipping acceptance before exposing its
-  settings again.
+- The owner requested reactivation of the retained `rail.ts` and Taskband implementation as a bottom taskbar mirror. It is configurable in Settings and refreshes after presentation, stopping when hidden.
+- Decoded thumbnail cache hits target presentation within 50 ms; cold PrintWindow captures have a separate measured budget. Validate pin completeness, packaged-app launch, focus/restore, magnification and clipping on the owner's desktop.
+- Alt+1 selects the read-only Desktop Home; Alt+2–5 select All apps, Screen time, Focus and Settings. Tab and centered side arrows change Home screens. The arrows disappear on other main pages. Ctrl+B leaves the taskbar view and a small expand control.
+- Native Windows virtual-desktop support is implemented; PowerToys Workspaces and multi-monitor restore acceptance remain open. Full scope and owner test: [session work order](SESSION_WORKORDER.md).
+
+## Active — Login startup and taskbar icon parity
+
+- Hidden startup makes the global hotkey available before Desktop/icon/rail warming completes. The installer or portable executable must remain at its registered path after enabling Launch at login; the owner sign-in test is still required.
+- A running app's window icon takes priority over its shortcut/executable icon in the mirror. ChatGPT and other taskbar identities need a side-by-side check on the owner's Windows session. The bottom Home button uses an outline house, not a Windows logo.

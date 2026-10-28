@@ -13,8 +13,8 @@
 ```text
 You are continuing work on Opaline, a Windows-first desktop launcher built with Tauri v2 (Rust backend, plain TypeScript + CSS UI).
 Pressing Ctrl+Alt+Space opens a full-screen acrylic overlay: a softened snapshot of the screen, the user's Desktop items arranged in a
-snapped grid and auto-organised into named panes, a floating search bar, a Windows AppsFolder catalogue and a settings pane. Loose items
-are icon + name; panes use one mini-icon bubble. The taskbar rail and widgets are deferred. Opaline only READS the Desktop folder; it
+snapped grid and auto-organised into named panes, a floating search bar, a Windows AppsFolder catalogue and a full Settings page. Loose items
+are icon + name; panes use one mini-icon bubble. The retained taskbar mirror is now at the bottom; widgets remain deferred. Opaline only READS the Desktop folder; it
 never moves or deletes the user's files and makes no network requests.
 
 READ FIRST, in this order:
@@ -22,11 +22,12 @@ READ FIRST, in this order:
 2. WORKORDER.md       - section 0 (what is verified), section 2 (requirements R-01 onward), section 12 (NEXT ACTIONS), section 13 (known issues).
 3. DEVLOG.md          - why decisions were made; the failed WinUI 3 beta (archive/winui3-beta/ is reference only - do not build or extend it).
 4. docs/TESTING.md    - how to run the app and drive its page with scripts/cdp.mjs without touching the mouse.
+5. docs/SESSION_WORKORDER.md - every 28 October request, current Home-screen arrows, owner release authorization and verification limits.
 
 CURRENT STATE: the app builds and runs. On the target laptop (Windows 11, Intel Iris Xe, 1920x1200 at 150% scaling), all 45 Desktop items
 show real icons, first-run auto-organise makes 12 panes, and Home uses a centred six-column grid whose sparse rows start at the first
 column. All Apps enumerated 196 usable Windows AppsFolder entries after first paint. The active visual system is one acrylic vocabulary
-with blur/tint controls; lens/refraction and rail work are off the render path. The hidden-window backdrop cache measured 25.7 ms warm
+with blur/tint controls; lens/refraction stays off the render path. Rail refresh and decoded-thumbnail warming run after presentation while visible. The earlier hidden-window backdrop cache measured 25.7 ms warm
 request-to-visible; an uncached debug open measured 252.5 ms. Pointer/restart persistence, multi-monitor, installer installation and full
 release acceptance still need owner passes.
 
@@ -35,7 +36,7 @@ DO THIS, IN ORDER (full detail in WORKORDER section 12):
 2. Verify everything in WORKORDER section 0 "Not yet verified". Use scripts/cdp.mjs for page behaviour; for the hotkey, focus-on-open,
    focus-loss hiding, tray and single-instance, write down exact manual steps for the owner to run instead of guessing. Fix bugs you find.
 3. Verify All Apps search, keyboard launch and a representative classic plus packaged app; keep enumeration after first paint.
-4. Tune the acrylic controls and fabric motion on bright/live wallpapers; complete docs/THEME_WORKORDER.md and keep warm snapshot mode under 300 ms.
+4. Tune the acrylic controls and short app-grid motion on bright/live wallpapers; complete docs/THEME_WORKORDER.md and keep warm snapshot mode under 300 ms.
 5. Complete docs/SPATIAL_WORKORDER.md's real pointer/restart pass.
 6. Build and install the release artifacts, run CI, then follow docs/RELEASING.md. Do not push or tag unless the owner says to publish.
 

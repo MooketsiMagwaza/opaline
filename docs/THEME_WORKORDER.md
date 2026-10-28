@@ -12,6 +12,7 @@ extends R-08 and R-11 in the main work order. Visual settings and layout metadat
 - Search and page navigation float independently from the apps surface.
 - One material vocabulary covers Home, All Apps, popup, settings and menus.
 - Appearance exposes only backdrop blur, tint strength and tint colour.
+- A compact pager identifies the current Home screen; the Home button sits left of the bottom taskbar. Two-line labels keep their full height, and overflowing grids scroll without a permanent fade mask hiding their final rows.
 
 ## Requirements
 
@@ -26,7 +27,15 @@ extends R-08 and R-11 in the main work order. Visual settings and layout metadat
 | V-07 | Home, All Apps, popup, settings and menus share the same fill, border, highlight, radius and shadow vocabulary | `[~]` | Full transient-surface inventory pending |
 | V-08 | Material changes introduce no per-card backdrop filters | `[~]` | Integrated-GPU trace pending |
 | V-09 | Bright and dark wallpapers preserve readable text and visible focus rings | `[~]` | Contrast and forced-colours inspection pending |
-| V-10 | Reduced motion suppresses the fabric entrance without changing layout | `[~]` | Real Windows reduced-motion pass pending |
+| V-10 | Reduced motion suppresses the short app-grid pop without changing layout | `[~]` | Browser check passed; real Windows reduced-motion pass pending |
+| V-11 | Pane popups expand from their originating group tile and reverse smoothly on close | `[~]` | Browser origin geometry/reduced-motion checks pass; owner native edge/pointer pass pending |
+| V-12 | Saved appearance is preserved; demo screenshots use current blur/tint/icon size and recognisable apps | `[~]` | W-18; 10 px / 16% / small; public app icons with synthetic folder names |
+| V-13 | Scrollable surfaces share a custom acrylic thumb whose width is adjustable | `[~]` | Browser checked at four viewports; Windows scaling/pointer pass pending; W-19 |
+| V-14 | Compact taskbar and wider content surface preserve room for apps | `[~]` | Bottom rail and 960 px surface rendered; Windows scaling pass pending; W-21 |
+| V-15 | Screen-time menu, graphs and Focus share labelled controls and visible focus | `[~]` | Browser interaction/screenshots checked; native keyboard/contrast pass pending; W-23–W-26 |
+| V-16 | Header sections use matching outline icons with hover/selected states; centered side arrows replace the top-left switcher | `[~]` | Browser visual/layout pass; real scaling pass pending; W-32 |
+| V-17 | Taskbar and search share one height, with no visible scrollbar or launcher-brand dock button | `[~]` | Browser computed geometry/scrollbar check; real scaling pass pending; W-31/W-34/W-35 |
+| V-18 | Group/folder peek uses the same acrylic material without obscuring labels permanently | `[~]` | Browser hover timing/card screenshot; Windows pointer pass pending; W-33 |
 
 `[~]` means implemented or actively merged but not accepted until the real-app checks below have been observed.
 
@@ -39,7 +48,8 @@ captured, blurred canvas
 │  ├─ app/folder: icon + label, no bubble
 │  └─ pane: rounded mini-icon bubble + label below
 ├─ floating page navigation
-└─ transient surfaces: pane popup, settings, context menu
+├─ full Settings page
+└─ transient surfaces: pane popup, item picker, context menu
 ```
 
 Only the large floating and transient surfaces may use `backdrop-filter`. Loose items add no card fill; pane bubbles use ordinary acrylic

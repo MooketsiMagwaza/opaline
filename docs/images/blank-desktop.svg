@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" role="img" aria-labelledby="title desc">
+  <title id="title">Illustrative Windows desktop with icons hidden</title>
+  <desc id="desc">A blue abstract wallpaper and an ordinary taskbar, with no icons or files on the desktop.</desc>
+  <defs>
+    <radialGradient id="wall" cx="54%" cy="47%" r="73%"><stop stop-color="#173d91"/><stop offset=".52" stop-color="#071c48"/><stop offset="1" stop-color="#031023"/></radialGradient>
+    <linearGradient id="fold" x1="0" x2="1" y1="1" y2="0"><stop stop-color="#0038b8"/><stop offset=".25" stop-color="#1669ff"/><stop offset=".52" stop-color="#47b3ff"/><stop offset=".75" stop-color="#1759dc"/><stop offset="1" stop-color="#081b5c"/></linearGradient>
+    <linearGradient id="fold2" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#133fbf"/><stop offset=".44" stop-color="#499dff"/><stop offset=".7" stop-color="#124cc7"/><stop offset="1" stop-color="#061853"/></linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="36"/></filter>
+    <filter id="shadow"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <path fill="url(#wall)" d="M0 0h1280v800H0z"/>
+  <ellipse cx="654" cy="500" rx="365" ry="185" fill="#187dff" opacity=".22" filter="url(#soft)"/>
+  <path d="M181 680C280 543 384 386 597 330c154-40 316-79 382-178 107 151 72 276-61 351-105 59-265 84-366 213-73 95-198 108-471-36Z" fill="url(#fold)" opacity=".9"/>
+  <path d="M231 612c145-148 248-144 371-132 117 11 218 11 324-100 95-99 104-163 53-228-6 150-100 212-220 241-161 39-335-9-528 219Z" fill="url(#fold2)" stroke="#76caff" stroke-opacity=".6" stroke-width="2"/>
+  <path d="M284 728c92-159 211-203 352-178 121 22 210-43 295-166 76-111 78-171 48-232 27 163-97 343-272 382-165 36-269-24-423 194Z" fill="url(#fold2)" stroke="#7ec9ff" stroke-opacity=".55" stroke-width="2"/>
+  <path d="M446 775c84-193 210-155 302-144 104 12 196-73 236-224-98 166-190 128-305 124-111-3-225 45-233 244Z" fill="#0a43bb" stroke="#549fff" stroke-opacity=".6" stroke-width="2"/>
+  <path d="M154 659c143-116 285-190 416-196" fill="none" stroke="#9de4ff" stroke-opacity=".43" stroke-width="3"/>
+  <rect x="0" y="750" width="1280" height="50" fill="#0b1728" fill-opacity=".84"/>
+  <path d="M0 750h1280" stroke="#fff" stroke-opacity=".08"/>
+  <g transform="translate(487 761)">
+    <rect x="0" y="1" width="14" height="14" rx="2" fill="#70baff"/><rect x="17" y="1" width="14" height="14" rx="2" fill="#70baff"/><rect x="0" y="18" width="14" height="14" rx="2" fill="#70baff"/><rect x="17" y="18" width="14" height="14" rx="2" fill="#70baff"/>
+    <path d="M55 9h24l6 7v17H48V10h7Z" fill="#ffce57"/><path d="M48 17h37v16H48z" fill="#f3b93a"/>
+    <circle cx="122" cy="17" r="17" fill="#256ed2"/><path d="M108 18l9-10v19l-9-9Zm13-11 15-6v32l-15-6V7Z" fill="#a5d9ff"/>
+    <circle cx="177" cy="17" r="16" fill="#1d253a"/><path d="M177 4v26M164 17h26" stroke="#e6ecff" stroke-width="3"/>
+    <path d="M222 8h23l5 6v18h-30V8Z" fill="#293447"/><path d="m225 15 6 4-6 4m10 2h10" fill="none" stroke="#c5d8f8" stroke-width="2"/>
+  </g>
+  <g fill="#ecf3ff" font-family="Segoe UI, Arial, sans-serif" font-size="12">
+    <path d="m1080 773 5-5 5 5" fill="none" stroke="#ecf3ff" stroke-width="1.7"/>
+    <path d="M1106 778v-10l7-6v16m4-11v11m4-16v16" fill="none" stroke="#ecf3ff" stroke-width="1.7"/>
+    <path d="M1135 772c5-6 12-6 17 0m-14 3c3-3 8-3 11 0" fill="none" stroke="#ecf3ff" stroke-width="1.6"/>
+    <text x="1173" y="777">ENG</text><text x="1238" y="777" text-anchor="end">20:00</text>
+  </g>
+</svg>

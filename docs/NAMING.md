@@ -20,7 +20,7 @@ Short, consistent names so code, docs, releases and the GitHub repo all read the
 | Rust package / npm package | `opaline` (library crate `opaline_lib`) |
 | Binary | `opaline` / `opaline.exe` |
 | Bundle identifier | `io.github.mooketsimagwaza.opaline` |
-| App data files | `groups.json`, `config.json` |
+| App data files | `groups.json`, `config.json`, `workspaces.json`, `screen-time.json`, `shell.json` |
 | Local storage key | `opaline.settings` |
 | Environment variable | `OPALINE_PIN=1` keeps the window open on focus loss |
 | Launch flags | `--hidden` (start in the tray), `--pin` (same as `OPALINE_PIN`) |
@@ -33,7 +33,8 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 |---|---|---|
 | **Overlay** | The full-screen launcher window | `main` window |
 | **Pane** | A named group of items (Start-menu / iPad folder) | `Group` in `groups.ts` |
-| **Rail** | The vertical taskbar mirror on the edge | `rail.ts`, `taskbar.rs` |
+| **Rail** | The horizontal taskbar mirror along the bottom | `rail.ts`, `taskbar.rs` |
+| **Home screen** | A page within Home; the first reads Desktop files, later screens contain saved app/folder shortcuts | `pages.ts`, `workspaces.ts`, `home.ts` |
 | **Lens** | The refraction applied to a glass pane's backdrop | `glass.ts` |
 | **Glass** | The material settings: style, blur, tint, saturation | `Settings` |
 | **Backdrop** | The blurred snapshot behind everything | `#backdrop` |
@@ -55,7 +56,7 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 | 0.9 | Iridescent |
 | 1.0 | Jewel |
 
-Git tags: `v0.1.0`. Release titles: `Opaline 0.1 "Annealed"`.
+Git tags follow `vX.Y.Z`; release titles use the version and codename. Version `0.2.0 "Borosilicate"` is the current release series.
 
 ## Commits and branches
 

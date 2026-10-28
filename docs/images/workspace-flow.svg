@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Opaline Home screen navigation</title><desc id="desc">Alt+1 opens the read-only Windows Desktop Home. Tab moves to empty Screen 2 and Screen 3 custom screens. Alt+2 through Alt+5 select All apps, Screen time, Focus and Settings. The Home button sits left of the taskbar mirror.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#111724"/><stop offset="1" stop-color="#25324a"/></linearGradient><linearGradient id="panel" x2="1" y2="1"><stop stop-color="#394151"/><stop offset="1" stop-color="#1c2434"/></linearGradient></defs>
+  <rect width="1200" height="650" rx="28" fill="url(#bg)"/>
+  <g font-family="Segoe UI,Arial,sans-serif" fill="#f2f5ff">
+    <text x="58" y="66" font-size="30" font-weight="600">A space for each kind of work</text>
+    <text x="58" y="102" font-size="17" fill="#b4bfd3">Your apps and folders, organised without moving your files.</text>
+    <text x="58" y="184" font-size="36" fill="#b4bfd3">‹</text><text x="103" y="184" font-size="36" fill="#b4bfd3">›</text>
+    <text x="155" y="176" font-size="15" fill="#b4bfd3">Tab changes Home screens · Alt+1–5 selects main pages</text>
+    <g transform="translate(58 230)">
+      <rect width="340" height="220" rx="24" fill="url(#panel)" stroke="#566174"/><text x="26" y="42" font-size="14" fill="#b4bfd3">ALT + 1 · HOME SCREEN 1</text><text x="26" y="78" font-size="26" font-weight="600">Home</text>
+      <g transform="translate(26 109)" fill="#8dadde"><rect width="56" height="56" rx="15"/><rect x="74" width="56" height="56" rx="15" fill="#c1a0e0"/><rect x="148" width="56" height="56" rx="15" fill="#e5bf71"/></g>
+      <text x="26" y="194" font-size="15" fill="#b4bfd3">Read-only Windows Desktop</text>
+    </g>
+    <g transform="translate(430 230)">
+      <rect width="340" height="220" rx="24" fill="url(#panel)" stroke="#566174"/><text x="26" y="42" font-size="14" fill="#b4bfd3">TAB · CUSTOM SCREEN 2</text><text x="26" y="78" font-size="26" font-weight="600">Screen 2</text><text x="26" y="124" font-size="18">Starts empty</text><text x="26" y="194" font-size="15" fill="#b4bfd3">Add Windows apps, folders or files</text>
+    </g>
+    <g transform="translate(802 230)">
+      <rect width="340" height="220" rx="24" fill="url(#panel)" stroke="#566174"/><text x="26" y="42" font-size="14" fill="#b4bfd3">TAB · CUSTOM SCREEN 3</text><text x="26" y="78" font-size="26" font-weight="600">Screen 3</text><text x="26" y="124" font-size="18">Starts empty</text><text x="26" y="194" font-size="15" fill="#b4bfd3">Rename in Settings</text>
+    </g>
+    <rect x="290" y="491" width="620" height="66" rx="22" fill="#303b50" stroke="#59657a"/>
+    <g transform="translate(330 508)"><g fill="#aacdf5"><rect width="12" height="12" rx="3"/><rect x="17" width="12" height="12" rx="3"/><rect y="17" width="12" height="12" rx="3"/><rect x="17" y="17" width="12" height="12" rx="3"/></g><rect x="70" width="32" height="32" rx="9" fill="#8dadde"/><rect x="124" width="32" height="32" rx="9" fill="#c1a0e0"/><rect x="178" width="32" height="32" rx="9" fill="#71c0b8"/><text x="236" y="22" font-size="17">Pinned + running Windows apps</text></g>
+    <text x="600" y="602" text-anchor="middle" font-size="16" fill="#b4bfd3">Home sits beside the taskbar · Windows virtual desktops keep working</text>
+  </g>
+</svg>

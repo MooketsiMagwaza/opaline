@@ -7,7 +7,7 @@ links from the early spatial-canvas prototype.
 ## Objective
 
 Keep every app, folder and pane in a predictable centred grid. Dragging changes grid order only: entries cannot be left between cells,
-overlap one another or become stranded off-screen. Search and the rail remain independent floating surfaces.
+overlap one another or become stranded off-screen. Search and the rail remain independent floating surfaces. Custom screens keep their own pinned app/folder order; the first Home screen reads the Windows Desktop without extra items.
 
 ## Requirements
 
@@ -15,12 +15,15 @@ overlap one another or become stranded off-screen. Search and the rail remain in
 |---|---|---|---|
 | S-01 | Drag a loose app or folder between snapped grid cells to reorder it | `[~]` | Implemented; real pointer/restart pass pending |
 | S-02 | Drag a pane between snapped grid cells to reorder it | `[~]` | Implemented; real pointer/restart pass pending |
-| S-03 | Every row remains centred across display-size and scaling changes | `[~]` | Flex grid centres each wrapped row; multi-monitor pass pending |
+| S-03 | Centred grid columns remain stable across display-size and scaling changes | `[~]` | CSS grid keeps sparse final rows aligned to the first column; multi-monitor pass pending |
 | S-04 | Search uses the same centred flow and does not disturb the saved order | `[~]` | Automated build passes; clear-search regression pass pending |
 | S-05 | App-to-app grouping and app-to-pane drops retain priority over reordering | `[~]` | Drop handlers retain priority; manual drag pass pending |
 | S-06 | One rounded apps surface holds the grid; search and rail float independently | `[x]` | Observed in the Windows app at 1920×1200 / 150% |
 | S-07 | A reordered entry can return to automatic order | `[~]` | Context-menu action implemented; manual pass pending |
 | S-08 | Order metadata is validated and never changes Desktop files | `[x]` | Unit-tested store clamping/order; only `groups.json` is written |
+| S-09 | Centered side arrows stay inside the viewport and clear of search and taskbar | `[~]` | Responsive browser check; full native scaling matrix pending; see W-03/W-32 |
+| S-10 | Full two-line labels fit; overflowing grids scroll to the final row without faded/clipped names | `[~]` | Fixed flex shrinking and removed the unconditional edge mask; dense-grid verification required |
+| S-11 | A smaller bottom taskbar leaves the app surface taller, including when navigation is collapsed | `[~]` | Browser geometry checked at 1280, 1024, 800 and 600 CSS px; Windows scaling pass pending |
 
 `[x]` means verified; `[~]` means implemented but still needs the indicated real-app check.
 
@@ -41,7 +44,7 @@ ranks with `y: 0`; older free-position records are read once in row-major order 
 
 ## Acceptance pass
 
-1. Reorder a folder, loose app and pane; confirm all three snap to cells and every wrapped row remains centred.
+1. Reorder a folder, loose app and pane; confirm all three snap to cells and sparse rows align with the established centred columns.
 2. Close and reopen Opaline and confirm the order persists.
 3. Resize/change monitor scaling and confirm entries stay centred, non-overlapping and on-screen.
 4. Drop one loose item onto another, then drop a third item onto the new pane; confirm grouping wins over reordering.
