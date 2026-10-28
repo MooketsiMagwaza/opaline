@@ -13,6 +13,7 @@ export function dailyChart(days: string[], values: Record<string, number>, title
   const maximum = Math.max(1, ...days.map(day => values[day] || 0));
   const caption = el("figcaption", "chart-caption", ["Select a day to see its total."]);
   const bars = el("div", "chart-bars"); bars.setAttribute("role", "group"); bars.setAttribute("aria-label", title);
+  bars.style.setProperty("--chart-days", String(days.length));
   const table = el("table", "sr-only", [el("caption", "", [title])]);
   for (const [index, day] of days.entries()) {
     const date = new Date(`${day}T12:00:00`);

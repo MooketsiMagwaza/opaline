@@ -3,6 +3,7 @@ mod capture;
 mod desktop;
 mod icons;
 mod idle;
+mod picker;
 mod start_menu;
 mod store;
 mod taskbar;
@@ -44,6 +45,7 @@ struct AppState {
     hotkey: Mutex<String>,
     hotkey_ok: AtomicBool,
     close_on_blur: AtomicBool,
+    picker_open: AtomicBool,
     capture_backdrop: AtomicBool,
     show_on_ready: AtomicBool,
     present_pending: AtomicBool,
@@ -441,6 +443,33 @@ fn workspace_item(path: String) -> Result<desktop::Item, String> {
 }
 
 #[tauri::command]
+async fn pick_workspace_item(
+    app: AppHandle,
+    kind: String,
+) -> Result<Option<desktop::Item>, String> {
+    if kind != "folder" && kind != "file" {
+        return Err("Choose a folder or file.".into());
+    }
+    let owner = main_window(&app)
+        .and_then(|window| window.hwnd().ok())
+        .map(|hwnd| hwnd.0 as isize)
+        .unwrap_or_default();
+    if app
+        .state::<AppState>()
+        .picker_open
+        .swap(true, Ordering::AcqRel)
+    {
+        return Err("Finish the open picker first.".into());
+    }
+    let chosen = tauri::async_runtime::spawn_blocking(move || picker::choose(&kind, owner)).await;
+    app.state::<AppState>()
+        .picker_open
+        .store(false, Ordering::Relaxed);
+    let path = chosen.map_err(|error| error.to_string())??;
+    path.map(workspace_item).transpose()
+}
+
+#[tauri::command]
 async fn folder_preview(path: String) -> Result<Vec<desktop::Item>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let folder = std::path::Path::new(&path);
@@ -681,6 +710,7 @@ pub fn run() {
             hotkey: Mutex::new(DEFAULT_HOTKEY.to_string()),
             hotkey_ok: AtomicBool::new(false),
             close_on_blur: AtomicBool::new(true),
+            picker_open: AtomicBool::new(false),
             capture_backdrop: AtomicBool::new(false),
             show_on_ready: AtomicBool::new(!start_hidden),
             present_pending: AtomicBool::new(false),
@@ -696,6 +726,7 @@ pub fn run() {
             list_items,
             list_apps,
             workspace_item,
+            pick_workspace_item,
             folder_preview,
             get_icon,
             get_window_icon,
@@ -747,7 +778,11 @@ pub fn run() {
                     .and_then(|last| *last)
                     .is_some_and(|last| last.elapsed() < BLUR_GRACE);
 
-                if state.close_on_blur.load(Ordering::Relaxed) && !state.pinned && !settling {
+                if state.close_on_blur.load(Ordering::Relaxed)
+                    && !state.picker_open.load(Ordering::Relaxed)
+                    && !state.pinned
+                    && !settling
+                {
                     hide(window.app_handle());
                 }
             }

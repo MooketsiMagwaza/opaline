@@ -7,6 +7,9 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 ## [Unreleased] — 0.1.0 "Annealed"
 
 ### Added
+- Six-icon header with a Dev tools workspace shortcut and Home, arranged in two brighter acrylic capsules.
+- Workspace item picker with Windows app search, native folder/file selection and advanced path entry.
+- Grouped daily charts with tighter bar spacing and a more compact Focus/Pomodoro layout and Zen presentation.
 - 500 ms group/folder hover peeks with icon grids, bounded read-only folder listing and keyboard-focus access.
 - Focus page with a configurable Pomodoro timer, completion graph, Zen reminders and an optional in-app idle screen saver.
 - Seven- and thirty-day screen-time charts, per-app drill-down and a styled period menu backed by local daily history.

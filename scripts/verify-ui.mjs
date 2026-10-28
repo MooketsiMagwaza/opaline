@@ -58,6 +58,7 @@ await page.addInitScript((manifest) => {
       case "list_apps": return items.filter(item=>!item.isFolder);
       case "get_icon": return icon(args.path);
       case "workspace_item": return { name: "Example folder", path: args.path, isFolder: true };
+      case "pick_workspace_item": return { name: args.kind === "folder" ? "Example folder" : "Example file", path: args.kind === "folder" ? "C:\\Example\\Project" : "C:\\Example\\Notes.txt", isFolder: args.kind === "folder" };
       case "folder_preview": return ["Overview.md", "Screenshots", "Notes", "Assets"].map((name, index) => ({ name, path: `preview:${index}`, isFolder: index > 0 }));
       case "rail_items": return [7, 0, 1, 5, 8].map((index, order) => ({ id: `app-${index}`, name: names[index], iconPath: items[index].path, launchPath: items[index].path, pinned: order < 4, windows: order < 3 ? [{ hwnd: order + 101, title: `${names[index]} — Example project`, minimized: false }] : [] }));
       case "thumbnail": await new Promise((resolve) => setTimeout(resolve, 180)); return data('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220"><rect width="360" height="220" fill="#202a3e"/><path d="M0 0h360v25H0z" fill="#3b4964"/><circle cx="13" cy="13" r="4" fill="#f59c9c"/><circle cx="27" cy="13" r="4" fill="#f1d08a"/><path d="M20 55h180M20 80h260M20 105h220M20 130h130" stroke="#98b9ed" stroke-width="8"/><path d="M20 160h290M20 185h250" stroke="#b4a1dd" stroke-width="8"/></svg>');
@@ -75,14 +76,21 @@ await page.route(/\/src\/launcher\.ts(?:\?.*)?$/, async (route) => {
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();
-const shot = async (name) => { await wait(400); await page.screenshot({ path: new URL(name, output).pathname.replace(/^\/(.:)/, "$1") }); };
+const shot = async (name) => {
+  await wait(400);
+  const path = new URL(name, output).pathname.replace(/^\/(.:)/, "$1");
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try { await page.screenshot({ path }); return; }
+    catch (error) { if (error.code !== "UNKNOWN" || attempt === 3) throw error; await wait(300); }
+  }
+};
 try {
   await page.goto("http://127.0.0.1:1420");
   await page.waitForSelector("#grid .tile"); await wait(1000);
   assert(await visible("#apps-surface"));
   assert.equal(await page.locator("#page-edges .edge-arrow").count(), 2);
   assert.equal(await page.locator("#page-nav, #quit-button").count(), 0);
-  assert.equal(await page.locator(".header-nav .orb").count(), 4);
+  assert.equal(await page.locator(".header-nav .orb").count(), 6);
   assert(await page.evaluate(() => {
     const search = getComputedStyle(document.getElementById("search-wrap"));
     const left = getComputedStyle(document.getElementById("header-left"));
@@ -92,6 +100,8 @@ try {
   await page.locator('#header-left [data-page="all-apps"]').click(); assert(await visible("#app-list-surface"));
   await page.locator('#header-left [data-page="focus"]').click(); assert(await visible("#focus-surface"));
   await page.locator('#header-right [data-page="screen-time"]').click(); assert(await visible("#screen-time-surface"));
+  await page.locator('#header-right [data-page="desktop"]').click(); assert(await visible("#apps-surface"));
+  await page.locator("#dev-workspace-button").click(); assert(await visible("#workspace-surface"));
   await page.keyboard.press("Alt+1");
   await page.mouse.move(640, 450);
   assert.equal(await page.locator("#rail .app-list-shortcut").count(), 0);
@@ -149,9 +159,11 @@ try {
   assert.equal(await page.locator("#usage-total").textContent(), "3 hr 17 min");
   await shot("screen-time.png");
   assert.equal(await page.locator("#usage-chart .chart-day").count(), 7);
+  assert((await page.locator("#usage-chart .chart-bars").boundingBox()).width < 260);
   await page.locator("#usage-period").click();
   await page.getByRole("menuitemradio", { name: "Last 30 days" }).click();
   assert.equal(await page.locator("#usage-chart .chart-day").count(), 30);
+  assert.equal(await page.locator("#usage-chart .chart-bars").evaluate(node => getComputedStyle(node).columnGap), "3px");
   await shot("screen-time-chart.png");
   await page.keyboard.press("Control+Alt+f");
   assert(await visible("#focus-surface"));
@@ -160,6 +172,8 @@ try {
   await wait(250);
   assert.equal(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgb(216, 233, 255)");
   await shot("focus.png");
+  assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 260);
+  assert(await page.locator("#focus-surface").evaluate(node => node.querySelector("#focus-chart .daily-chart").getBoundingClientRect().bottom <= node.querySelector(".page-scroll").getBoundingClientRect().bottom));
   await page.locator("#focus-zen").click();
   assert(await visible("#ambient"));
   assert.equal(await page.locator("#ambient").getAttribute("data-mode"), "zen");
@@ -195,10 +209,14 @@ try {
   await page.keyboard.press("Escape");
   await page.keyboard.press("Alt+3");
   assert.equal(await page.locator("#workspace-title").textContent(), "Projects");
-  await page.locator(".workspace-add summary").click();
-  await page.locator("#workspace-path").fill("C:\\Example\\Project");
-  await page.getByRole("button", { name: "Add to this space" }).click();
-  await page.waitForSelector("#workspace-items .app-list-item");
+  await page.locator("#workspace-add-trigger").click();
+  await page.locator("#workspace-app-search").fill("Visual Studio Code");
+  await shot("workspace-picker.png");
+  await page.getByRole("button", { name: "Add Visual Studio Code" }).click();
+  await page.getByRole("button", { name: "Already in this space: Visual Studio Code" }).waitFor();
+  assert(await page.getByRole("button", { name: "Already in this space: Visual Studio Code" }).isDisabled());
+  await page.locator("#workspace-browse-folder").click();
+  await page.waitForFunction(() => document.querySelectorAll("#workspace-items .app-list-item").length === 2);
   await page.keyboard.press("Control+b");
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
   assert(!(await visible("#page-edges")));
@@ -207,7 +225,7 @@ try {
   await page.reload(); await page.waitForSelector("#grid .tile"); await wait(1400);
   await page.keyboard.press("Alt+3");
   assert.equal(await page.locator("#workspace-title").textContent(), "Projects");
-  assert.equal(await page.locator("#workspace-items .app-list-item").count(), 1);
+  assert.equal(await page.locator("#workspace-items .app-list-item").count(), 2);
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
   await page.keyboard.press("Alt+1");
   await page.locator("#rail .dock-item.running").first().focus();
@@ -237,7 +255,7 @@ try {
     assert(geometry.inBounds && !geometry.overlaps, JSON.stringify({width,...geometry}));
   }
   assert.deepEqual(errors, []);
-  const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: 12, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
+  const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: 13, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result, null, 2));
 } finally { await browser.close(); }

@@ -28,6 +28,7 @@ export const api = {
   listItems: () => invoke<Item[]>("list_items"),
   listApps: () => invoke<AppEntry[]>("list_apps"),
   workspaceItem: (path: string) => invoke<Item>("workspace_item", { path }),
+  pickWorkspaceItem: (kind: "folder" | "file") => invoke<Item | null>("pick_workspace_item", { kind }),
   folderPreview: (path: string) => invoke<Item[]>("folder_preview", { path }),
   screenTime: () => invoke<UsageReport>("screen_time"),
   setScreenTime: (enabled: boolean) => invoke<void>("set_screen_time", { enabled }),

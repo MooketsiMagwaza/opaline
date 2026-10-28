@@ -55,8 +55,31 @@ function renderWorkspace() {
   const matches = space.items.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   byId("workspace-count").textContent = `${matches.length} items · Alt+${workspaces().indexOf(space) + 2}`;
   byId("workspace-items").replaceChildren(...(matches.length ? matches.map((item) => appButton(item, space.id)) : [
-    el("p", "page-empty", [query ? `Nothing matches “${query}”` : "Add apps or folders through their Options menu on Desktop or All apps. Manage spaces in Settings → Workspaces."]),
+    el("p", "page-empty", [query ? `Nothing matches “${query}”` : "Use Add items to find a Windows app or choose a folder or file."]),
   ]));
+  renderWorkspacePicker(space.id);
+}
+
+function renderWorkspacePicker(spaceId: string) {
+  const holder = byId("workspace-app-results");
+  const needle = byId<HTMLInputElement>("workspace-app-search").value.trim().toLocaleLowerCase();
+  if (!needle) { holder.replaceChildren(el("p", "row-hint", ["Search the Windows app list to add an application."])); return; }
+  const saved = new Set(workspaces().find(space => space.id === spaceId)?.items.map(item => item.path));
+  const matches = apps.filter(app => app.name.toLocaleLowerCase().includes(needle))
+    .sort((a, b) => Number(!a.name.toLocaleLowerCase().startsWith(needle)) - Number(!b.name.toLocaleLowerCase().startsWith(needle)) || a.name.localeCompare(b.name))
+    .slice(0, 12);
+  holder.replaceChildren(...(matches.length ? matches.map(app => {
+    const button = el("button", "workspace-app-choice", [iconElement(app.path, app.name), el("span", "", [app.name])]);
+    button.type = "button"; button.disabled = saved.has(app.path);
+    button.setAttribute("aria-label", `${saved.has(app.path) ? "Already in this space: " : "Add "}${app.name}`);
+    button.addEventListener("click", () => {
+      void pinItem(spaceId, { ...app, isFolder: false }).then(() => {
+        byId("workspace-path-note").textContent = `${app.name} added to this space.`;
+        byId("workspace-path-note").className = "note ok";
+      }).catch(reportWorkspaceError);
+    });
+    return button;
+  }) : [el("p", "row-hint", [appsReady ? "No matching Windows apps." : "Loading installed apps…"])]));
 }
 
 function renderNav() {
@@ -64,6 +87,12 @@ function renderNav() {
   document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => {
     button.setAttribute("aria-current", button.dataset.page === current ? "page" : "false");
   });
+  const dev = workspaces().find(space => space.name.toLocaleLowerCase() === "dev tools") ?? workspaces()[0];
+  const shortcut = byId<HTMLButtonElement>("dev-workspace-button");
+  shortcut.disabled = !dev;
+  shortcut.title = dev?.name ?? "Create a workspace in Settings";
+  shortcut.setAttribute("aria-label", dev?.name ?? "No workspace available");
+  shortcut.setAttribute("aria-current", dev?.id === current ? "page" : "false");
 }
 
 export function show(id: string, focus = true) {
@@ -90,7 +119,7 @@ export function selectSpace(index: number): boolean {
   show(id); return true;
 }
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
-export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; if (current === "all-apps") renderList(); }
+export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; if (current === "all-apps") renderList(); if (workspaces().some(space => space.id === current)) renderWorkspacePicker(current); }
 export function setQuery(next: string) { query = next; if (current === "desktop") grid.setQuery(next); if (current === "all-apps") renderList(); renderWorkspace(); setUsageQuery(next); }
 export function reset() { query = ""; show("desktop"); }
 export function activateFirst(): boolean {
@@ -118,6 +147,23 @@ export function startPages() {
 }
 export function stopPages() { window.clearInterval(usageTimer); usageTimer = undefined; }
 export function initPages() {
+  byId("workspace-add-trigger").addEventListener("click", () => {
+    byId("workspace-surface").querySelector<HTMLDetailsElement>(".workspace-add")!.open = true;
+    byId("workspace-app-search").focus();
+  });
+  byId("workspace-app-search").addEventListener("input", () => renderWorkspacePicker(current));
+  for (const kind of ["folder", "file"] as const) byId(`workspace-browse-${kind}`).addEventListener("click", () => {
+    const spaceId = current;
+    const buttons = [byId<HTMLButtonElement>("workspace-browse-folder"), byId<HTMLButtonElement>("workspace-browse-file")];
+    buttons.forEach(button => { button.disabled = true; });
+    void api.pickWorkspaceItem(kind).then(item => item && pinItem(spaceId, item).then(() => {
+      byId("workspace-path-note").textContent = `${item.name} added to this space.`;
+      byId("workspace-path-note").className = "note ok";
+    })).catch(error => {
+      byId("workspace-path-note").textContent = String(error);
+      byId("workspace-path-note").className = "note";
+    }).finally(() => { buttons.forEach(button => { button.disabled = false; }); });
+  });
   byId("workspace-path-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const spaceId = current;
@@ -130,6 +176,10 @@ export function initPages() {
   byId("page-prev").addEventListener("click", () => cycle(-1));
   byId("page-next").addEventListener("click", () => cycle());
   document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => button.addEventListener("click", () => show(button.dataset.page!)));
+  byId("dev-workspace-button").addEventListener("click", () => {
+    const dev = workspaces().find(space => space.name.toLocaleLowerCase() === "dev tools") ?? workspaces()[0];
+    if (dev) show(dev.id);
+  });
   initUsage();
   onWorkspacesChange(() => {
     if (!pages().some((page) => page.id === current)) show("desktop", false);

@@ -116,9 +116,12 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-40 | Adopt owner coding rules from the supplied screenshot | P0 | `[~]` | Added to AGENTS.md and applied to touched code; W-28 |
 | R-41 | Demo groups reflect realistic app/folder relationships | P0 | `[~]` | Browser screenshot and fixture assertions; W-29 |
 | R-42 | Taskbar icons remain sharp; Opaline does not add its own dock button | P0 | `[~]` | Larger window icon and lower hover scale; real taskbar comparison pending; W-30/W-31 |
-| R-43 | Four header icons, centered side arrows and icon-grid hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33 |
-| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Browser wheel gesture checks; real device pass pending; W-36 |
+| R-43 | Six header icons, centered side arrows and icon-grid hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33/W-37 |
 | R-44 | Taskbar scrollbar hidden and taskbar/search heights match | P0 | `[~]` | Computed-style and rendered viewport check; native scaling pass pending; W-34/W-35 |
+| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Browser wheel gesture checks; real device pass pending; W-36 |
+| R-46 | Brighter theme-matched header capsules | P0 | `[~]` | Browser visual pass; owner theme/scaling pass pending; W-38 |
+| R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |
+| R-48 | Compact grouped charts and Focus/Zen visual pass | P1 | `[~]` | Browser chart geometry and screenshots; owner visual pass pending; W-40/W-41 |
 
 ## 3. Architecture
 
@@ -236,7 +239,7 @@ blur, tint and lensing.
 ### WP13 — Demo and navigation consistency (R-41–R-44)
 - [~] Logical demo fixture: IDEs include Android Studio; project folders live in Code projects; only sample loose folders remain.
 - [~] Running-window icons prefer the larger asset; optional dock hover scale is limited. Owner icon comparison remains.
-- [~] Header has four matching icon buttons and centered side arrows; dock no longer has an Opaline launcher button.
+- [~] Header has six matching icon buttons and centered side arrows; dock no longer has an Opaline launcher button.
 - [~] 500 ms pane/folder icon-grid peek and keyboard access; native folder read is bounded. Browser timing and content checked.
 - [~] Taskbar scrollbar hidden, horizontal scrolling retained and taskbar/search heights both 52 px. Native scaling check remains.
 

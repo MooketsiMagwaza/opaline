@@ -43,7 +43,7 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
 | **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
-| **Workspaces** | Alt+1 opens Desktop; Alt+2–9 open named spaces for apps, files and folders. Pin items without moving them. |
+| **Workspaces** | Alt+1 opens Desktop; Alt+2–9 open named spaces for apps, files and folders. Add items by searching installed Windows apps or using the native folder/file picker, without moving your files. |
 | **Taskbar mirror** | The retained rail now sits at the bottom, with running indicators, focus/restore/launch and cached previews. Ctrl+B collapses page navigation. |
 | **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, with charts, per-app detail and pause/clear controls. |
 | **Focus** | Configurable Pomodoro timer, daily progression, quiet screen saver and slowly changing Zen reminders. Automatic saver is opt-in. |
@@ -62,6 +62,8 @@ Rendered examples use familiar app names and icons with synthetic folders, windo
 | Dev tools workspace | Local screen time |
 |---|---|
 | ![Apps and folders in a workspace](docs/images/workspaces.png) | ![Example screen-time totals](docs/images/screen-time.png) |
+
+![Search Windows apps to add them to a workspace](docs/images/workspace-picker.png)
 
 | Screen-time progression | Focus timer |
 |---|---|
@@ -131,7 +133,7 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the side arrows, Shift+Tab or trackpad/touch gestures to cycle between **Desktop**, named spaces and other pages. The four header icons open **All apps** and **Focus** left of search, and **Screen time** and **Settings** right of it. The bottom taskbar shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. All Apps is loaded after the first visible frame from
+Use the side arrows, Shift+Tab or trackpad/touch gestures to cycle between **Desktop**, named spaces and other pages. Six header icons put **All apps**, **Dev tools** and **Focus** left of search, with **Screen time**, **Home** and **Settings** on the right. The bottom taskbar shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. All Apps is loaded after the first visible frame from
 Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slow the opening animation.
 
 ## Works well with
