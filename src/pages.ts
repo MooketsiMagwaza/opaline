@@ -17,6 +17,8 @@ let appsReady = false;
 let query = "";
 let usageTimer: number | undefined;
 let gestureSurface: HTMLElement | null = null;
+let gestureDirection = 0;
+let gestureMode: "pinch" | "swipe" | null = null;
 
 const pages = () => [
   { id: "desktop", label: "Home", surface: "apps-surface" },
@@ -93,7 +95,7 @@ function renderNav() {
   renderHomePages();
 }
 
-export function show(id: string, focus = true) {
+export function show(id: string) {
   clearGesturePreview();
   const next = pages().find((page) => page.id === id) ?? pages()[0];
   closeMenu(); grid.reset();
@@ -109,12 +111,14 @@ export function show(id: string, focus = true) {
   if (current === "focus") refreshFocus();
   if (current === "settings") refreshPanel();
   byId<HTMLInputElement>("search").placeholder = `Search ${next.label.toLocaleLowerCase()}`;
-  if (focus) byId("search").focus();
+  byId("shell").focus({ preventScroll: true });
 }
 
 export function cycle(direction = 1) {
   const list = pages();
-  show(list[(list.findIndex((page) => page.id === current) + direction + list.length) % list.length].id);
+  const next = list[(list.findIndex((page) => page.id === current) + direction + list.length) % list.length].id;
+  if (next === "desktop") homeScreen = 0;
+  show(next);
 }
 export function selectPage(index: number): boolean {
   const id = pages()[index]?.id;
@@ -127,25 +131,30 @@ export function cycleHome(direction = 1) {
   homeScreen = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
   show("desktop");
 }
-function gestureDestination(direction: number): string {
-  if (isHome()) {
+function gestureDestination(direction: number, mode: "pinch" | "swipe"): string {
+  if (isHome() && mode === "swipe") {
     const index = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
     return index === 0 ? "Desktop" : workspaces()[index - 1].name;
   }
   const list = pages();
   return list[(list.findIndex(page => page.id === current) + direction + list.length) % list.length].label;
 }
-export function previewGesture(direction: number, progress: number) {
+export function previewGesture(direction: number, progress: number, mode: "pinch" | "swipe") {
   if (!direction) return;
-  gestureSurface = document.querySelector<HTMLElement>(".page-surface:not([hidden])");
+  gestureSurface ??= document.querySelector<HTMLElement>(".page-surface:not([hidden])");
   if (!gestureSurface) return;
   gestureSurface.dataset.gesturePreview = "true";
   gestureSurface.style.setProperty("--gesture-shift", `${-direction * progress * 84}px`);
-  gestureSurface.style.setProperty("--gesture-scale", String(direction < 0 ? 1 - progress * .055 : 1 + progress * .025));
+  const scale = mode === "swipe" ? 1 : 1 + progress * (direction < 0 ? -.055 : .025);
+  gestureSurface.style.setProperty("--gesture-scale", String(scale));
   const cue = byId("gesture-cue");
-  cue.textContent = gestureDestination(direction);
+  if (gestureDirection !== direction || gestureMode !== mode) {
+    cue.textContent = gestureDestination(direction, mode);
+    gestureDirection = direction;
+    gestureMode = mode;
+  }
   cue.style.opacity = String(Math.max(.25, progress));
-  cue.hidden = false;
+  if (cue.hidden) cue.hidden = false;
 }
 export function clearGesturePreview() {
   if (gestureSurface) {
@@ -154,17 +163,22 @@ export function clearGesturePreview() {
     gestureSurface.style.removeProperty("--gesture-scale");
     gestureSurface = null;
   }
+  gestureDirection = 0;
+  gestureMode = null;
   byId("gesture-cue").hidden = true;
 }
-export function completeGesture(direction: number) {
+export function completeGesture(direction: number, mode: "pinch" | "swipe") {
   if (!direction) return;
-  clearGesturePreview();
-  if (isHome()) cycleHome(direction); else cycle(direction);
-  if (document.body.dataset.anim === "false" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  document.querySelector<HTMLElement>(".page-surface:not([hidden])")?.animate(
-    [{ transform: `translateX(${direction * 44}px)` }, { transform: "translateX(0)" }],
-    { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
-  );
+  const navigate = () => { if (isHome() && mode === "swipe") cycleHome(direction); else cycle(direction); };
+  if (document.body.dataset.anim === "false" || matchMedia("(prefers-reduced-motion: reduce)").matches || !document.startViewTransition) {
+    navigate();
+    return;
+  }
+  document.documentElement.dataset.gestureDirection = direction > 0 ? "next" : "previous";
+  document.body.classList.add("gesture-transitioning");
+  const transition = document.startViewTransition(navigate);
+  const finish = () => { delete document.documentElement.dataset.gestureDirection; document.body.classList.remove("gesture-transitioning"); };
+  void transition.finished.then(finish, finish);
 }
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
 export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; itemPicker.setApps(next); if (current === "all-apps") renderList(); }
@@ -185,8 +199,7 @@ export function handleArrow(event: KeyboardEvent): boolean {
   const columns = Math.max(1, [...holder.children].filter((row) => (row as HTMLElement).offsetTop === (holder.firstElementChild as HTMLElement)?.offsetTop).length);
   const delta = ({ ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns } as Record<string, number>)[event.key];
   if (!delta) return false;
-  if (index + delta < 0) byId("search").focus();
-  else buttons[Math.min(buttons.length - 1, index + delta)]?.focus();
+  if (index + delta >= 0) buttons[Math.min(buttons.length - 1, index + delta)]?.focus();
   return true;
 }
 export function startPages() {
@@ -203,7 +216,7 @@ export function initPages() {
   byId("home-dock").addEventListener("click", () => { homeScreen = 0; show("desktop"); });
   initUsage();
   onWorkspacesChange(() => {
-    if (homeScreen > workspaces().length) { homeScreen = 0; show("desktop", false); }
+    if (homeScreen > workspaces().length) { homeScreen = 0; show("desktop"); }
     else { renderNav(); renderWorkspace(); }
   });
   show("desktop");

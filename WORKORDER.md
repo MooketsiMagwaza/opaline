@@ -6,7 +6,7 @@ they touch.
 
 **Patch preview:** `0.2.1` · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md)). The owner reported that real touch/trackpad pinch navigation did not work in 0.2.0; the correction, live slide preview and matching ambient surfaces are being prepared for device testing.
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-10-28 — Home navigation local-preview candidate on `feat/workspaces-screen-time`.
+**Last updated:** 2026-10-29 — 0.2.1 gesture and search-focus preview on `fix/gesture-navigation-0.2.1`.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
 
@@ -79,7 +79,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-01 | **Ctrl+Alt+Space** toggles the launcher; the combo is rebindable in settings | P0 | `[~]` | Global open/close toggling observed; rebinding not exercised |
 | R-02 | Items come straight from the Desktop folders (user + shared, OneDrive-aware); files are never moved, renamed or deleted | P0 | `[x]` | 45 items incl. shared desktop; read-only by construction. OneDrive-redirected desktop untested |
 | R-03 | Real icons for `.lnk`, `.exe`, folders, documents | P0 | `[x]` | All 45 shown on one cold start. Ten-cycle repeatability not yet checked |
-| R-04 | Search: instant, ranked, Enter launches the top hit, arrows navigate, typing anywhere searches | P0 | `[~]` | Filtering seen; Enter / arrows / type-anywhere not exercised |
+| R-04 | Search: S focuses it, instant ranked results, Enter launches the top hit and arrows navigate | P0 | `[~]` | Browser checks cover S focus and no automatic focus; native keyboard and result launch still need owner confirmation; W-49 |
 | R-05 | Panes: drag a tile onto another to make one, onto a pane to add, click to open the popup grid | P0 | `[~]` | Panes + popup seen; drag and drop not exercised |
 | R-06 | Pane naming: rename in place; names persist; new panes open into rename | P0 | `[~]` | Name field renders; rename + persistence not exercised |
 | R-07 | Auto-organise (IDEs, AI & code agents, dev tools, …), done for the user on first run, re-runnable | P0 | `[x]` | First run verified (12 panes). "Organise now" button not exercised |
@@ -123,7 +123,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-42 | Taskbar icons remain sharp; Opaline does not add its own dock button | P0 | `[~]` | Larger window icon and lower hover scale; real taskbar comparison pending; W-30/W-31 |
 | R-43 | Four header icons, Home-only side arrows and icon-grid hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33/W-37 |
 | R-44 | Taskbar scrollbar hidden and taskbar/search heights match | P0 | `[~]` | Computed-style and rendered viewport check; native scaling pass pending; W-34/W-35 |
-| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | 0.2.0 failed owner device test. 0.2.1 browser checks cover inward/previous, outward/next, two-finger left/right and partial slide cancellation; real device retest pending; W-36 |
+| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Owner confirmed physical pinch works after WebView2 input was enabled. Pinch selects Alt+1–5 pages; Home swipe selects Home screens. Browser checks cover routing, directions, quick repeats, wraparound and cancellation; owner smoothness and direction retest pending; W-36/W-50 |
 | R-49 | Shared ambient material and more active saver | P1 | `[~]` | Demo Zen/saver screenshots show the shared backdrop and acrylic; rotating prompt and motion code checked in browser. Real idle/wake and owner visual pass pending; W-48 |
 | R-46 | Brighter theme-matched header capsules | P0 | `[~]` | Browser visual pass; owner theme/scaling pass pending; W-38 |
 | R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |

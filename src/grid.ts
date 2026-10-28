@@ -615,11 +615,7 @@ export function handleArrow(event: KeyboardEvent): boolean {
   if (step === undefined) return false;
 
   const next = index + step;
-  if (next < 0) {
-    if (openId) return true;
-    search.focus();
-  } else {
-    tiles[Math.min(next, tiles.length - 1)].focus();
-  }
+  if (next < 0) return true;
+  tiles[Math.min(next, tiles.length - 1)].focus();
   return true;
 }

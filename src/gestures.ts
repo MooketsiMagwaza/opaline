@@ -1,7 +1,7 @@
 type Point = { x: number; y: number };
 type GestureHandlers = {
-  navigate: (direction: number) => void;
-  preview: (direction: number, progress: number) => void;
+  navigate: (direction: number, mode: "pinch" | "swipe") => void;
+  preview: (direction: number, progress: number, mode: "pinch" | "swipe") => void;
   cancel: () => void;
   canNavigate: (target: EventTarget | null) => boolean;
 };
@@ -13,7 +13,12 @@ export class PageGestureController {
   private wheelLastAt = 0;
   private wheelLocked = false;
   private wheelIdleTimer: number | undefined;
-  private lastNavigationAt = -Infinity;
+  private lastTouchNavigationAt = -Infinity;
+  private previewTarget = 0;
+  private previewShown = 0;
+  private previewMode: "pinch" | "swipe" = "swipe";
+  private previewFrame: number | undefined;
+  private previewLastAt = 0;
   private readonly touches = new Map<number, Point>();
   private readonly touchOrigins = new Map<number, Point>();
   private readonly movedTouches = new Set<number>();
@@ -28,18 +33,52 @@ export class PageGestureController {
     window.addEventListener("pointermove", event => this.onTouchMove(event));
     window.addEventListener("pointerup", event => this.onTouchEnd(event));
     window.addEventListener("pointercancel", event => this.onTouchEnd(event));
+    window.addEventListener("click", event => this.suppressTouchClick(event), true);
+  }
+
+  private suppressTouchClick(event: MouseEvent) {
+    if (!(event instanceof PointerEvent) || event.pointerType !== "touch") return;
+    if (performance.now() - this.lastTouchNavigationAt > 220) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  private paintPreview(now: number) {
+    const elapsed = Math.min(64, now - (this.previewLastAt || now));
+    this.previewLastAt = now;
+    this.previewShown += (this.previewTarget - this.previewShown) * (1 - Math.exp(-elapsed / 24));
+    if (Math.abs(this.previewTarget - this.previewShown) < .006) this.previewShown = this.previewTarget;
+    this.handlers.preview(Math.sign(this.previewShown), Math.abs(this.previewShown), this.previewMode);
+    this.previewFrame = this.previewShown === this.previewTarget ? undefined : requestAnimationFrame(time => this.paintPreview(time));
+  }
+
+  private queuePreview(direction: number, progress: number, mode: "pinch" | "swipe") {
+    this.previewTarget = direction * progress;
+    this.previewMode = mode;
+    if (this.previewFrame === undefined) this.previewFrame = requestAnimationFrame(time => this.paintPreview(time));
+  }
+
+  private stopPreview(cancel: boolean) {
+    if (this.previewFrame !== undefined) cancelAnimationFrame(this.previewFrame);
+    this.previewFrame = undefined;
+    this.previewLastAt = 0;
+    this.previewShown = 0;
+    this.previewTarget = 0;
+    if (cancel) this.handlers.cancel();
   }
 
   private resetWheel() {
     window.clearTimeout(this.wheelIdleTimer);
     this.wheelAmount = 0;
     this.wheelLocked = false;
-    this.handlers.cancel();
+    this.stopPreview(true);
   }
 
   private onWheel(event: WheelEvent) {
-    if (!this.handlers.canNavigate(event.target)) return;
     const pinch = event.ctrlKey && !event.altKey && !event.metaKey && event.deltaY !== 0;
+    // Wry must allow WebView2 pinch input; cancel its page zoom even outside navigable canvas regions.
+    if (pinch) event.preventDefault();
+    if (!this.handlers.canNavigate(event.target)) return;
     const swipe = !event.ctrlKey && Math.abs(event.deltaX) > Math.abs(event.deltaY) * 1.2;
     if (!pinch && !swipe) return;
     event.preventDefault();
@@ -58,12 +97,11 @@ export class PageGestureController {
     this.wheelAmount += delta;
     const progress = Math.min(1, Math.abs(this.wheelAmount) / (pinch ? 56 : 90));
     const direction = Math.sign(this.wheelAmount);
-    this.handlers.preview(direction, progress);
-    if (progress < 1 || now - this.lastNavigationAt <= 550) return;
+    this.queuePreview(direction, progress, mode);
+    if (progress < 1) return;
     this.wheelLocked = true;
-    this.lastNavigationAt = now;
-    this.handlers.navigate(direction);
-    this.handlers.cancel();
+    this.stopPreview(false);
+    this.handlers.navigate(direction, mode);
   }
 
   private touchGeometry() {
@@ -98,28 +136,33 @@ export class PageGestureController {
 
     const direction = pinch ? Math.sign(ratio - 1) : -Math.sign(driftX);
     const progress = Math.min(1, pinch ? pinchStrength : swipeStrength);
-    this.handlers.preview(direction, progress);
+    this.queuePreview(direction, progress, pinch ? "pinch" : "swipe");
     if (progress < 1) return;
     event.preventDefault();
     this.touchCommitted = true;
-    this.handlers.navigate(direction);
-    this.handlers.cancel();
+    this.lastTouchNavigationAt = performance.now();
+    this.stopPreview(false);
+    this.handlers.navigate(direction, pinch ? "pinch" : "swipe");
   }
 
   private onTouchEnd(event: PointerEvent) {
+    if (!this.touches.has(event.pointerId)) return;
     if (this.touchStart && !this.touchCommitted && this.touches.size === 2 && this.movedTouches.size === 1) {
       const ratio = this.touchGeometry().distance / Math.max(1, this.touchStart.distance);
-      if (Math.abs(ratio - 1) >= .25) { this.touchCommitted = true; this.handlers.navigate(Math.sign(ratio - 1)); }
+      if (Math.abs(ratio - 1) >= .25) {
+        this.touchCommitted = true;
+        this.lastTouchNavigationAt = performance.now();
+        this.stopPreview(false);
+        this.handlers.navigate(Math.sign(ratio - 1), "pinch");
+      }
     }
-    this.touches.delete(event.pointerId);
-    this.touchOrigins.delete(event.pointerId);
-    this.movedTouches.delete(event.pointerId);
-    if (this.touches.size >= 2) return;
-    this.touchStart = null;
-    if (!this.touchCommitted) this.handlers.cancel();
-    this.touchCommitted = false;
-    this.movedTouches.clear();
+    const committed = this.touchCommitted;
+    this.touches.clear();
     this.touchOrigins.clear();
+    this.movedTouches.clear();
+    this.touchStart = null;
+    this.touchCommitted = false;
+    if (!committed) this.stopPreview(true);
   }
 }
 

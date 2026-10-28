@@ -27,6 +27,7 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "shadow": false,
+        "zoomHotkeysEnabled": true,
         "dragDropEnabled": false
       }
     ],

@@ -2,11 +2,21 @@
 
 Newest first.
 
+## 2026-10-29 · Native pinch input, gesture routing and intentional search focus
+
+The owner confirmed that physical two-finger swipe worked while pinch initially did not. The earlier browser tests only dispatched synthetic Ctrl+wheel events; they could not prove WebView2 delivered a physical pinch. Inspection of the installed Wry source showed its default `zoom_hotkeys_enabled: false` also calls `SetIsPinchZoomEnabled(false)` on WebView2. The preview enables pinch input for the window and cancels Ctrl+wheel page zoom in the launcher gesture handler. The owner then confirmed pinch reaches Opaline. Home page arithmetic already wrapped both directions; the isolated UI check now covers both end transitions explicitly.
+
+The owner clarified the gesture destinations: pinching cycles the same five main pages as Alt+1–5, even while Home is open. Horizontal swipes cycle Home screens while on Home. Returning to Home through top-level navigation selects the Desktop screen. Browser routing checks cover both directions and the two wrap points; owner direction and smoothness acceptance remains open.
+
+Opening Opaline and changing pages previously forced focus onto search. The neutral launcher shell now takes focus, and S focuses search without entering a query character. Arrow navigation no longer unexpectedly jumps from the first tile back into search.
+
 ## 2026-10-28 · 0.2.1 gesture correction preview
 
-The owner reported that the touch/trackpad pinch path in 0.2.0 did not navigate on a real device. The old recognizer capped each trackpad event at 60 px and required 110 px of accumulation. The 0.2.1 controller accepts larger Ctrl+wheel deltas, navigates after 56 px of accumulated pinch movement or 90 px of horizontal swipe, and previews the page movement before the threshold. Two-finger touch requires a 25% distance change for pinch or 90 px of horizontal travel for swipe. Opposing finger motion selects pinch, shared horizontal motion selects swipe. Pinch-in goes to the previous Home screen and pinch-out to the next; on other main pages these select previous/next top-level pages. Releasing early returns the visible page to rest; a completed gesture slides in the destination. Browser fixtures cover both directions and cancellation; real hardware acceptance is still needed.
+The owner reported that the touch/trackpad pinch path in 0.2.0 did not navigate on a real device. The old recognizer capped each trackpad event at 60 px and required 110 px of accumulation. The 0.2.1 controller accepts larger Ctrl+wheel deltas, navigates after 56 px of accumulated pinch movement or 90 px of horizontal swipe, and previews the page movement before the threshold. Two-finger touch requires a 25% distance change for pinch or 90 px of horizontal travel for swipe. Opposing finger motion selects pinch, shared horizontal motion selects swipe. The first preview routed both gestures through Home screens; the owner later clarified that pinch belongs to the five main pages. Releasing early returns the visible page to rest; a completed gesture slides in the destination.
 
 Zen and the saver now sit over the same saved backdrop and tint as the launcher and reuse its large acrylic card. The saver adds a slow highlight and rotating short break prompts, while animation and reduced-motion settings disable the highlight. The public demo images for these modes were regenerated with synthetic data.
+
+The first 0.2.1 preview still felt choppy on the owner's device for both swipes and pinches. It wrote transforms directly for every input event, then cleared the outgoing page before animating the incoming one. The revision renders the live offset on animation frames with a short response time, captures both pages in a single View Transition, and uses directional easing through the handoff. It also stops the second touch release from clearing a transition that already committed. A separate 550 ms cooldown swallowed quick intentional follow-up swipes, so only the per-burst lock remains. Browser checks now exercise an active transition, rapid follow-up swipe and partial touch cancellation; device smoothness still needs the owner's retest.
 
 ## 2026-10-28 · 0.2.0 Borosilicate Home navigation preview
 

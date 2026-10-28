@@ -122,7 +122,6 @@ async function onPrepare(snapshot: string | null, reuseSnapshot: boolean, page =
 
   requestAnimationFrame(() => stage.classList.remove("pre"));
   window.setTimeout(() => stage.classList.remove("overlay-enter"), 220);
-  if (page !== "screen-saver") search.focus();
   pages.startPages();
   if (page !== "screen-saver") refreshAfterPresent();
 }
@@ -200,10 +199,11 @@ function handlePageKeys(event: KeyboardEvent): boolean {
   return false;
 }
 
-function focusSearchOnType(event: KeyboardEvent) {
+function focusSearchShortcut(event: KeyboardEvent) {
   const target = event.target as HTMLElement;
-  const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-  if (event.key.length !== 1 || event.ctrlKey || event.altKey || event.metaKey || editing || !byId("settings-surface").hidden) return;
+  const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
+  if (event.key.toLowerCase() !== "s" || event.ctrlKey || event.altKey || event.metaKey || editing || !byId("settings-surface").hidden) return;
+  event.preventDefault();
   if (grid.isPopupOpen()) grid.closePopup();
   search.focus();
 }
@@ -214,7 +214,7 @@ function onKey(event: KeyboardEvent) {
   if (event.ctrlKey && event.key.toLowerCase() === "q") { event.preventDefault(); void api.quit(); return; }
   if (handlePageKeys(event)) return;
   if (event.key.startsWith("Arrow") && (pages.handleArrow(event) || grid.handleArrow(event))) { event.preventDefault(); return; }
-  focusSearchOnType(event);
+  focusSearchShortcut(event);
 }
 
 function onShellClick(event: MouseEvent) {
@@ -289,9 +289,9 @@ function setupInput() {
     preview: pages.previewGesture,
     cancel: pages.clearGesturePreview,
     canNavigate: (target) => {
-      if (isMenuOpen() || grid.isPopupOpen() || !byId("item-picker").hidden) return false;
+      if (document.body.classList.contains("gesture-transitioning") || isMenuOpen() || grid.isPopupOpen() || !byId("item-picker").hidden) return false;
       if (!(target instanceof HTMLElement)) return false;
-      return !target.closest("input, textarea, #rail, #preview, #ambient, .app-list, .page-scroll, #settings, #popup, #menu");
+      return !target.closest("input, textarea, #rail, #preview, #ambient, #popup, #menu");
     },
   });
   document.addEventListener("contextmenu", (event) => event.preventDefault());

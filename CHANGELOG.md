@@ -9,9 +9,11 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 ## [0.2.1] — "Borosilicate" gesture fix preview
 
 ### Fixed
-- Trackpad pinch-in selects the previous screen and pinch-out selects the next, including larger wheel deltas; touch pinch uses a reachable threshold.
-- Pinch and horizontal swipe navigation follow Home screens while on Home, matching the side arrows and dots. Other main pages retain page navigation.
+- Enabled WebView2 pinch input; the owner confirmed physical pinch reaches Opaline in the preview. Pinch-in/out moves backward/forward through the Alt+1–5 pages.
+- Two-finger horizontal swipes follow Home screens and wrap in both directions. Outside Home, swipes move between the main pages.
 - Swipe and pinch now move the visible page during the gesture and slide the destination into place at the threshold; a short gesture eases back.
+- Smoothed gesture input frames and replaced the abrupt page handoff with one eased transition between the outgoing and incoming pages.
+- Search no longer takes focus when Opaline opens or changes pages. Press S to focus it; Home swipes wrap in both directions.
 - Zen and screen saver reuse the saved launcher backdrop and acrylic material. The saver rotates gentle break prompts.
 
 ## [0.2.0] — 2026-10-28 "Borosilicate"

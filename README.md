@@ -39,10 +39,10 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 |---|---|
 | **Consistent acrylic** | One material system covers the launcher, search and transient panels; Appearance exposes direct blur, tint-strength and tint-colour controls. |
 | **Centred app grid** | One rounded surface holds the app grid. Drag apps, folders and panes to reorder snapped grid cells; sparse final rows remain left-aligned to the same columns. Loose apps remain plain icon + name, while panes use one rounded mini-icon bubble with the name below. |
-| **Paged launcher** | Side arrows and Tab move between the Desktop Home and custom screens. Two-finger left/right swipe or pinch navigates with a live slide preview. The header opens a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
+| **Paged launcher** | Side arrows, Tab and two-finger left/right swipe move through the Home screens with wraparound. Pinch moves through the Alt+1–5 pages. Both gestures show a live slide preview. The header opens a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
-| **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
+| **Search** | Press <kbd>S</kbd> or click search to focus it. Prefix matches first; <kbd>Enter</kbd> launches and arrow keys move around. |
 | **Home screens** | Alt+1 opens a read-only view of your Windows Desktop. Tab and Shift+Tab move through simple custom screens. Each custom screen can hold apps, folders and files chosen through Windows app search or a native picker. |
 | **Taskbar mirror** | The retained rail now sits at the bottom, with running indicators, focus/restore/launch and cached previews. Ctrl+B collapses page navigation. |
 | **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, with charts, per-app detail and pause/clear controls. |
@@ -135,9 +135,9 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | Key | Does |
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | Open / close (rebindable in Settings) |
-| Type | Search anywhere |
+| <kbd>S</kbd> | Focus search without entering a character |
 | <kbd>Enter</kbd> | Launch the top result |
-| <kbd>↓</kbd> then arrows | Move through tiles |
+| <kbd>S</kbd>, then <kbd>↓</kbd> | Move from search into tiles |
 | <kbd>Esc</kbd> | Clear search → close pane/menu/settings → close Opaline |
 | Click empty space | Close |
 | Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |
