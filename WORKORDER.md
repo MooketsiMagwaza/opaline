@@ -4,7 +4,7 @@ The single source of truth for what Opaline must do, how it is built, what has a
 Everything in the original brief is traceable to a requirement ID (`R-xx`). Pull requests and commits should reference the IDs
 they touch.
 
-**Release in progress:** `0.2.0` · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md))
+**Patch preview:** `0.2.1` · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md)). The owner reported that real touch/trackpad pinch navigation did not work in 0.2.0; the correction, live slide preview and matching ambient surfaces are being prepared for device testing.
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
 **Last updated:** 2026-10-28 — Home navigation local-preview candidate on `feat/workspaces-screen-time`.
 
@@ -123,7 +123,8 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-42 | Taskbar icons remain sharp; Opaline does not add its own dock button | P0 | `[~]` | Larger window icon and lower hover scale; real taskbar comparison pending; W-30/W-31 |
 | R-43 | Four header icons, Home-only side arrows and icon-grid hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33/W-37 |
 | R-44 | Taskbar scrollbar hidden and taskbar/search heights match | P0 | `[~]` | Computed-style and rendered viewport check; native scaling pass pending; W-34/W-35 |
-| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Browser wheel gesture checks; real device pass pending; W-36 |
+| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | 0.2.0 failed owner device test. 0.2.1 browser checks cover inward/previous, outward/next, two-finger left/right and partial slide cancellation; real device retest pending; W-36 |
+| R-49 | Shared ambient material and more active saver | P1 | `[~]` | Demo Zen/saver screenshots show the shared backdrop and acrylic; rotating prompt and motion code checked in browser. Real idle/wake and owner visual pass pending; W-48 |
 | R-46 | Brighter theme-matched header capsules | P0 | `[~]` | Browser visual pass; owner theme/scaling pass pending; W-38 |
 | R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |
 | R-48 | Compact grouped charts and Focus/Zen visual pass | P1 | `[~]` | Browser chart geometry and screenshots; owner visual pass pending; W-40/W-41 |

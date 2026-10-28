@@ -17,7 +17,7 @@ await page.addInitScript((manifest) => {
   const names = ["Visual Studio Code", "Terminal", "Docker Desktop", "Client portal", "Design assets", "OBS Studio", "Design references", "Firefox", "Obsidian", "Spotify", "Documents", "Notion Calendar", "Microsoft Edge", "Discord", "WhatsApp", "Notion", "Steam", "ChatGPT", "Claude", "Prompts", "Android Studio", "Coursework", "Lecture notes", "Assignments", "Design system", "Open-source", "Developer notes", "2024", "2025", "Previous builds", "Samples", "Resources", "Templates", "Downloads", "Reference library"];
   const folderIndices = [3, 4, 6, 10, 19, ...Array.from({ length: names.length - 21 }, (_, index) => index + 21)];
   const items = names.map((name, index) => ({ name, path: `demo:${index}`, isFolder: folderIndices.includes(index) }));
-  if (!localStorage.getItem("opaline.settings")) localStorage.setItem("opaline.settings", JSON.stringify({backdropBlur:10,tintStrength:.16,tintColor:"#0b1226",iconSize:"small",rail:true,railMagnify:false}));
+  if (!localStorage.getItem("opaline.settings")) localStorage.setItem("opaline.settings", JSON.stringify({backdropBlur:10,tintStrength:.16,tintColor:"#0b1226",iconSize:"small",rail:true,railMagnify:false,quoteIntervalSeconds:5}));
   const data = (svg) => `data:image/svg+xml;base64,${btoa(svg)}`;
   const colours = ["#6ea7ff", "#ad8cff", "#f18c9b", "#e4b875", "#66c6bb", "#db9be8"];
   const icon = (path) => {
@@ -51,7 +51,7 @@ await page.addInitScript((manifest) => {
   window.__demoInvoke = async (command, args) => {
     window.__demoCalls.push(command);
     switch (command) {
-      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.2.0", codename: "Borosilicate", pinned: true };
+      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.2.1", codename: "Borosilicate", pinned: true };
       case "load_store": return localStorage.getItem(`demo:${args.name}`);
       case "save_store": if (window.__demoFailSave) throw new Error("Demo disk full"); localStorage.setItem(`demo:${args.name}`, args.json); return;
       case "list_items": return items;
@@ -76,6 +76,19 @@ await page.route(/\/src\/launcher\.ts(?:\?.*)?$/, async (route) => {
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();
+const touchPinch = (endX) => page.locator("#apps-surface").evaluate((node, endX) => {
+  const touch = (type, pointerId, clientX) => node.dispatchEvent(new PointerEvent(type, { pointerId, pointerType: "touch", clientX, clientY: 400, bubbles: true, cancelable: true }));
+  const firstEnd = endX > 600 ? 420 : 520;
+  touch("pointerdown", 1, 480); touch("pointerdown", 2, 600);
+  touch("pointermove", 1, firstEnd); touch("pointermove", 2, endX);
+  touch("pointerup", 1, firstEnd); touch("pointerup", 2, endX);
+}, endX);
+const touchSwipe = (distance) => page.locator("#apps-surface").evaluate((node, distance) => {
+  const touch = (type, pointerId, clientX) => node.dispatchEvent(new PointerEvent(type, { pointerId, pointerType: "touch", clientX, clientY: 400, bubbles: true, cancelable: true }));
+  touch("pointerdown", 1, 480); touch("pointerdown", 2, 600);
+  touch("pointermove", 1, 480 + distance); touch("pointermove", 2, 600 + distance);
+  touch("pointerup", 1, 480 + distance); touch("pointerup", 2, 600 + distance);
+}, distance);
 let screenshotCount = 0;
 const shot = async (name) => {
   await wait(400);
@@ -124,21 +137,48 @@ try {
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   await page.locator("#page-prev").click(); assert(await visible("#apps-surface"));
   await page.locator("#apps-surface").dispatchEvent("wheel", {deltaX: 120, deltaY: 2, deltaMode: 0});
-  assert(await visible("#app-list-surface"));
-  await page.keyboard.press("Alt+1");
-  await page.locator("#apps-surface").evaluate(node => {
-    const touch = (type, pointerId, clientX) => node.dispatchEvent(new PointerEvent(type, { pointerId, pointerType: "touch", clientX, clientY: 400, bubbles: true, cancelable: true }));
-    touch("pointerdown", 1, 480); touch("pointerdown", 2, 580); touch("pointermove", 2, 720);
-    touch("pointerup", 1, 480); touch("pointerup", 2, 720);
-  });
-  assert(await visible("#app-list-surface"));
+  assert(await visible("#workspace-surface"));
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   await page.keyboard.press("Alt+1");
   await wait(600);
-  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -120, deltaMode: 0});
-  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
-  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
-  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
-  assert(await visible("#app-list-surface"));
+  await touchSwipe(-115);
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await touchSwipe(115);
+  assert.equal(await page.locator("#workspace-title").textContent(), "Screen 3");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await touchPinch(720);
+  assert(await visible("#workspace-surface"));
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await touchPinch(560);
+  assert(await visible("#workspace-surface"));
+  assert.equal(await page.locator("#workspace-title").textContent(), "Screen 3");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 20, deltaMode: 0});
+  assert(await visible("#gesture-cue"));
+  assert.equal(await page.locator("#apps-surface").getAttribute("data-gesture-preview"), "true");
+  assert.notEqual(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 40, deltaMode: 0});
+  assert(await visible("#workspace-surface"));
+  assert.equal(await page.locator("#workspace-title").textContent(), "Screen 3");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -60, deltaMode: 0});
+  assert(await visible("#workspace-surface"));
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -20, deltaMode: 0});
+  assert(await visible("#gesture-cue"));
+  await wait(450);
+  assert(!(await visible("#gesture-cue")));
+  assert(!(await page.locator("#apps-surface").getAttribute("data-gesture-preview")));
+  assert(await visible("#apps-surface"));
   await page.keyboard.press("Alt+1");
   await page.locator('.pane-tile[data-id="ides"]').hover(); await wait(300);
   assert(!(await visible("#tile-peek")));
@@ -190,12 +230,16 @@ try {
   await page.locator("#focus-zen").click();
   assert(await visible("#ambient"));
   assert.equal(await page.locator("#ambient").getAttribute("data-mode"), "zen");
+  assert.equal(await page.locator("#ambient").evaluate(node => getComputedStyle(node).backgroundColor), "rgba(0, 0, 0, 0)");
+  assert(await page.locator("#ambient-content").evaluate(node => node.classList.contains("glass")));
   await shot("zen.png");
   await page.keyboard.press("Escape");
   await page.locator("#focus-saver").click();
   assert.equal(await page.locator("#ambient").getAttribute("data-mode"), "saver");
   assert.notEqual(await page.locator("#ambient-clock").textContent(), "");
+  assert.match(await page.locator("#zen-quote").textContent(), /Look away/);
   await shot("screen-saver.png");
+  await page.waitForFunction(() => document.getElementById("zen-quote").textContent !== "Look away from the screen for a moment.", null, { timeout: 7000 });
   await page.keyboard.press("Escape");
   await page.keyboard.press("Alt+1");
   const origin = await page.locator('.pane-tile[data-id="ides"]').boundingBox();

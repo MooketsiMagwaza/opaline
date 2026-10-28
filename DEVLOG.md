@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-10-28 · 0.2.1 gesture correction preview
+
+The owner reported that the touch/trackpad pinch path in 0.2.0 did not navigate on a real device. The old recognizer capped each trackpad event at 60 px and required 110 px of accumulation. The 0.2.1 controller accepts larger Ctrl+wheel deltas, navigates after 56 px of accumulated pinch movement or 90 px of horizontal swipe, and previews the page movement before the threshold. Two-finger touch requires a 25% distance change for pinch or 90 px of horizontal travel for swipe. Opposing finger motion selects pinch, shared horizontal motion selects swipe. Pinch-in goes to the previous Home screen and pinch-out to the next; on other main pages these select previous/next top-level pages. Releasing early returns the visible page to rest; a completed gesture slides in the destination. Browser fixtures cover both directions and cancellation; real hardware acceptance is still needed.
+
+Zen and the saver now sit over the same saved backdrop and tint as the launcher and reuse its large acrylic card. The saver adds a slow highlight and rotating short break prompts, while animation and reduced-motion settings disable the highlight. The public demo images for these modes were regenerated with synthetic data.
+
 ## 2026-10-28 · 0.2.0 Borosilicate Home navigation preview
 
 The owner simplified the hierarchy after reviewing the six-icon candidate. Home moved to the left of the bottom taskbar. Existing named collections, including Dev tools, are now Home screens reached with Tab and Shift+Tab; their saved `workspaces.json` data is retained. Four header destinations remain around search: All apps and Screen time on the left, Focus and Settings on the right. Alt+1–5 follows Home, All apps, Screen time, Focus, Settings. Ctrl+Tab switches those top-level pages.

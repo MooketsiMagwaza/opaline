@@ -6,6 +6,14 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+## [0.2.1] — "Borosilicate" gesture fix preview
+
+### Fixed
+- Trackpad pinch-in selects the previous screen and pinch-out selects the next, including larger wheel deltas; touch pinch uses a reachable threshold.
+- Pinch and horizontal swipe navigation follow Home screens while on Home, matching the side arrows and dots. Other main pages retain page navigation.
+- Swipe and pinch now move the visible page during the gesture and slide the destination into place at the threshold; a short gesture eases back.
+- Zen and screen saver reuse the saved launcher backdrop and acrylic material. The saver rotates gentle break prompts.
+
 ## [0.2.0] — 2026-10-28 "Borosilicate"
 
 ### Added

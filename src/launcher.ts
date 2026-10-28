@@ -284,10 +284,15 @@ function setupInput() {
 
   byId("shell").addEventListener("click", onShellClick);
   document.addEventListener("keydown", onKey);
-  initPageGestures(pages.cycle, (target) => {
-    if (isMenuOpen() || grid.isPopupOpen() || !byId("item-picker").hidden) return false;
-    if (!(target instanceof HTMLElement)) return false;
-    return !target.closest("input, textarea, #rail, #preview, #ambient, .app-list, .page-scroll, .pane-grid, #settings, #popup, #menu");
+  initPageGestures({
+    navigate: pages.completeGesture,
+    preview: pages.previewGesture,
+    cancel: pages.clearGesturePreview,
+    canNavigate: (target) => {
+      if (isMenuOpen() || grid.isPopupOpen() || !byId("item-picker").hidden) return false;
+      if (!(target instanceof HTMLElement)) return false;
+      return !target.closest("input, textarea, #rail, #preview, #ambient, .app-list, .page-scroll, #settings, #popup, #menu");
+    },
   });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
 }

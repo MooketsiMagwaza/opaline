@@ -16,6 +16,7 @@ let apps: AppEntry[] = [];
 let appsReady = false;
 let query = "";
 let usageTimer: number | undefined;
+let gestureSurface: HTMLElement | null = null;
 
 const pages = () => [
   { id: "desktop", label: "Home", surface: "apps-surface" },
@@ -93,6 +94,7 @@ function renderNav() {
 }
 
 export function show(id: string, focus = true) {
+  clearGesturePreview();
   const next = pages().find((page) => page.id === id) ?? pages()[0];
   closeMenu(); grid.reset();
   current = next.id;
@@ -124,6 +126,45 @@ export function isHome() { return current === "desktop"; }
 export function cycleHome(direction = 1) {
   homeScreen = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
   show("desktop");
+}
+function gestureDestination(direction: number): string {
+  if (isHome()) {
+    const index = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
+    return index === 0 ? "Desktop" : workspaces()[index - 1].name;
+  }
+  const list = pages();
+  return list[(list.findIndex(page => page.id === current) + direction + list.length) % list.length].label;
+}
+export function previewGesture(direction: number, progress: number) {
+  if (!direction) return;
+  gestureSurface = document.querySelector<HTMLElement>(".page-surface:not([hidden])");
+  if (!gestureSurface) return;
+  gestureSurface.dataset.gesturePreview = "true";
+  gestureSurface.style.setProperty("--gesture-shift", `${-direction * progress * 84}px`);
+  gestureSurface.style.setProperty("--gesture-scale", String(direction < 0 ? 1 - progress * .055 : 1 + progress * .025));
+  const cue = byId("gesture-cue");
+  cue.textContent = gestureDestination(direction);
+  cue.style.opacity = String(Math.max(.25, progress));
+  cue.hidden = false;
+}
+export function clearGesturePreview() {
+  if (gestureSurface) {
+    delete gestureSurface.dataset.gesturePreview;
+    gestureSurface.style.removeProperty("--gesture-shift");
+    gestureSurface.style.removeProperty("--gesture-scale");
+    gestureSurface = null;
+  }
+  byId("gesture-cue").hidden = true;
+}
+export function completeGesture(direction: number) {
+  if (!direction) return;
+  clearGesturePreview();
+  if (isHome()) cycleHome(direction); else cycle(direction);
+  if (document.body.dataset.anim === "false" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.querySelector<HTMLElement>(".page-surface:not([hidden])")?.animate(
+    [{ transform: `translateX(${direction * 44}px)` }, { transform: "translateX(0)" }],
+    { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+  );
 }
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
 export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; itemPicker.setApps(next); if (current === "all-apps") renderList(); }

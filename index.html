@@ -83,7 +83,8 @@
         <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><span class="page-count">Changes apply automatically</span></header><div id="settings" class="settings-layout"></div></main>
 
         <p id="navigation-note" role="status"></p>
-        <nav id="page-edges" aria-label="Home screen navigation">
+          <span id="gesture-cue" aria-hidden="true" hidden></span>
+          <nav id="page-edges" aria-label="Home screen navigation">
           <button type="button" id="page-prev" class="edge-arrow" aria-label="Previous Home screen" title="Previous Home screen · Shift+Tab">‹</button>
           <button type="button" id="page-next" class="edge-arrow" aria-label="Next Home screen" title="Next Home screen · Tab">›</button>
         </nav>
@@ -100,7 +101,7 @@
       </div>
       <section id="ambient" role="dialog" aria-modal="true" aria-labelledby="ambient-title" hidden>
         <button id="ambient-close" type="button" class="chip ambient-close">Return · Esc</button>
-        <div id="ambient-content"><span id="ambient-title" class="page-kicker">A little room to think</span><strong id="ambient-clock"></strong><span id="ambient-date"></span><blockquote id="zen-quote"></blockquote><span id="zen-position" class="row-hint"></span><span id="ambient-timer"></span></div>
+        <div id="ambient-content" class="glass"><span id="ambient-title" class="page-kicker">A little room to think</span><strong id="ambient-clock"></strong><span id="ambient-date"></span><blockquote id="zen-quote"></blockquote><span id="zen-position" class="row-hint"></span><span id="ambient-timer"></span></div>
         <div class="zen-controls"><button id="zen-prev" type="button" class="chip" aria-label="Previous quote">←</button><button id="zen-pause" type="button" class="chip">Pause quotes</button><button id="zen-next" type="button" class="chip" aria-label="Next quote">→</button></div>
       </section>
     </div>
