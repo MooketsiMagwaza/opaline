@@ -288,8 +288,9 @@ function setupInput() {
     navigate: pages.completeGesture,
     preview: pages.previewGesture,
     cancel: pages.clearGesturePreview,
-    canNavigate: (target) => {
+    canNavigate: (target, mode) => {
       if (document.body.classList.contains("gesture-transitioning") || isMenuOpen() || grid.isPopupOpen() || !byId("item-picker").hidden) return false;
+      if (mode === "swipe" && !pages.isHome()) return false;
       if (!(target instanceof HTMLElement)) return false;
       return !target.closest("input, textarea, #rail, #preview, #ambient, #popup, #menu");
     },

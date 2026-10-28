@@ -8,6 +8,8 @@ The owner confirmed that physical two-finger swipe worked while pinch initially 
 
 The owner clarified the gesture destinations: pinching cycles the same five main pages as Alt+1–5, even while Home is open. Horizontal swipes cycle Home screens while on Home. Returning to Home through top-level navigation selects the Desktop screen. Browser routing checks cover both directions and the two wrap points; owner direction and smoothness acceptance remains open.
 
+The owner then reported that gestures still felt laggy next to the group popup. The preview had been transforming the large backdrop-blurred Home glass surface on every input frame. Home now keeps that surface stationary during both swipe and pinch previews and moves only a content wrapper. A later owner check found that shorter swipes sometimes failed to register, so the swipe threshold is now 42 px for trackpad wheel input and 55 px for touch. Live motion responds within a short animation frame, and the content transition finishes in 220 ms. Re-entering All apps reuses its rendered list until the apps or query change. Browser checks assert that Home glass does not transform during a partial gesture and short swipes navigate; real touchpad smoothness remains for the owner to judge.
+
 Opening Opaline and changing pages previously forced focus onto search. The neutral launcher shell now takes focus, and S focuses search without entering a query character. Arrow navigation no longer unexpectedly jumps from the first tile back into search.
 
 ## 2026-10-28 · 0.2.1 gesture correction preview

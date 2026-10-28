@@ -131,6 +131,9 @@ try {
   }));
   await page.locator('#header-left [data-page="all-apps"]').click(); assert(await visible("#app-list-surface"));
   assert(!(await visible("#page-edges")));
+  await page.locator("#app-list-surface").dispatchEvent("wheel", { deltaX: 120, deltaY: 0, deltaMode: 0 });
+  assert(await visible("#app-list-surface"));
+  assert(!(await visible("#gesture-cue")));
   await shot("all-apps.png");
   await page.locator('#header-left [data-page="screen-time"]').click(); assert(await visible("#screen-time-surface"));
   await page.locator('#header-right [data-page="focus"]').click(); assert(await visible("#focus-surface"));
@@ -156,9 +159,10 @@ try {
   await page.locator("#page-next").click(); assert(await visible("#workspace-surface"));
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   await page.locator("#page-prev").click(); assert(await visible("#apps-surface"));
-  await page.locator("#apps-surface").dispatchEvent("wheel", {deltaX: 120, deltaY: 2, deltaMode: 0});
+  await page.locator("#apps-surface").dispatchEvent("wheel", {deltaX: 45, deltaY: 2, deltaMode: 0});
   await homeNamed("Dev tools");
   assert.equal(await page.locator("html").getAttribute("data-gesture-direction"), "next");
+  assert(await page.evaluate(() => document.body.classList.contains("home-gesture-transitioning")));
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement, "::view-transition-new(launcher-page)").animationTimingFunction), "cubic-bezier(0.16, 1, 0.3, 1)");
   assert(await visible("#workspace-surface"));
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
@@ -167,7 +171,13 @@ try {
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await wait(600);
-  await touchSwipe(-115);
+  await page.locator("#apps-surface").dispatchEvent("wheel", { deltaX: 22, deltaY: 0, deltaMode: 0 });
+  await page.waitForSelector("#gesture-cue:visible");
+  assert.equal(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
+  assert.equal(await page.locator("#apps-surface > .home-motion").getAttribute("data-gesture-preview"), "true");
+  await wait(400);
+  assert(await visible("#apps-surface"));
+  await touchSwipe(-60);
   await homeNamed("Dev tools");
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   const launchesBeforeTouchRelease = await page.evaluate(() => window.__demoCalls.filter(command => command === "launch").length);
@@ -201,8 +211,8 @@ try {
   await page.waitForSelector("#gesture-cue:visible");
   assert(await visible("#gesture-cue"));
   assert.equal(await page.locator("#gesture-cue").textContent(), "Settings");
-  assert.equal(await page.locator("#apps-surface").getAttribute("data-gesture-preview"), "true");
-  assert.notEqual(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
+  assert.equal(await page.locator("#apps-surface > .home-motion").getAttribute("data-gesture-preview"), "true");
+  assert.equal(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 40, deltaMode: 0});
   await page.locator("#settings-surface").waitFor({ state: "visible" });
   assert(await visible("#settings-surface"));

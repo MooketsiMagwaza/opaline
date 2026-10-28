@@ -40,8 +40,10 @@
         </header>
 
         <main id="apps-surface" class="glass page-surface" aria-label="Desktop apps and groups">
-          <div id="grid-layer"><div id="grid"></div></div>
-          <footer class="home-footer"><span id="status"></span><nav id="home-pages" class="home-pages" aria-label="Home screens"></nav></footer>
+          <div class="home-motion home-motion-desktop">
+            <div id="grid-layer"><div id="grid"></div></div>
+            <footer class="home-footer"><span id="status"></span><nav id="home-pages" class="home-pages" aria-label="Home screens"></nav></footer>
+          </div>
         </main>
 
         <main id="app-list-surface" class="glass page-surface secondary-surface" aria-label="All apps" hidden>
@@ -53,9 +55,11 @@
         </main>
 
         <main id="workspace-surface" class="glass page-surface secondary-surface" aria-label="Workspace" hidden>
-          <header class="page-heading"><h1 id="workspace-title">Screen 2</h1><button id="workspace-add-trigger" type="button" class="chip">+ Add app or folder</button></header>
-          <div id="workspace-items" class="app-list"></div>
-          <nav id="workspace-pages" class="home-pages" aria-label="Home screens"></nav>
+          <div class="home-motion home-motion-workspace">
+            <header class="page-heading"><h1 id="workspace-title">Screen 2</h1><button id="workspace-add-trigger" type="button" class="chip">+ Add app or folder</button></header>
+            <div id="workspace-items" class="app-list"></div>
+            <nav id="workspace-pages" class="home-pages" aria-label="Home screens"></nav>
+          </div>
         </main>
 
         <section id="item-picker" class="glass" aria-label="Add to screen" hidden><header class="picker-heading"><h2 id="picker-title">Add to screen</h2><button id="picker-close" type="button" class="chip">Close</button></header><div class="workspace-picker"><label for="workspace-app-search">Find a Windows app</label><input id="workspace-app-search" type="search" placeholder="Search installed apps…" autocomplete="off"/><div id="workspace-app-results" class="workspace-app-results" aria-label="Matching installed apps"></div><div class="workspace-picker-actions"><button type="button" id="workspace-browse-folder" class="chip">Choose folder…</button><button type="button" id="workspace-browse-file" class="chip">Choose file…</button></div><details class="workspace-path-fallback"><summary>Enter a path instead</summary><form id="workspace-path-form" class="workspace-editor"><input id="workspace-path" class="workspace-name" type="text" placeholder="Full folder or file path" aria-label="Full folder or file path" required /><button type="submit" class="chip">Add path</button></form></details><p id="workspace-path-note" class="note" role="status"></p></div></section>

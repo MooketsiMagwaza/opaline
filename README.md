@@ -148,7 +148,7 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the side arrows or Tab on Home to move between the Desktop and custom screens. Pinch inward to go to the previous screen; spread outward to go to the next. Horizontal swipes follow the same Home screens and cycle main pages elsewhere. Ctrl+Tab always cycles main pages. The header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right. **Home** sits beside the bottom taskbar, which shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
+Use the side arrows, Tab or a two-finger horizontal swipe on Home to move between the Desktop and custom screens. Home swipes wrap in both directions and have no page-navigation action outside Home. Pinch inward to go to the previous Alt+1–5 screen; spread outward to go to the next. Ctrl+Tab also cycles the five main screens. The header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right. **Home** sits beside the bottom taskbar, which shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
 
 ## Works well with
 
