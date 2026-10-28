@@ -53,7 +53,7 @@ WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/T
 - **Rail**: click to focus/launch, magnification, thumbnails after the optimisation below, and whether the list matches the real taskbar
   (only two entries appeared; Windows 11 stores some pins in the registry rather than as shortcuts — see §13).
 - **Performance**: snapshot-path latency, idle memory and scrolling smoothness. The transparent warm path is approximately at its 50 ms target, with the outliers noted above.
-- The 0.2.0 NSIS installer built locally; its install/uninstall pass and the remaining real interaction matrix have not yet completed. The 0.2.1 local build, format, Clippy, unit tests and locked Cargo check are clean. The owner approved shipping the patch with the persistent gesture bug documented.
+- The 0.2.0 NSIS installer built locally; its install/uninstall pass and the remaining real interaction matrix have not yet completed. The 0.2.1 local and GitHub CI checks passed. PR #4 merged; the v0.2.1 release workflow published NSIS, MSI, portable ZIP and checksums, and downloaded assets matched those checksums. Installer installation and real-device gesture acceptance remain open.
 
 **Changed after the last visual check (unverified):** clear canvas is now a transparent, capture-free fast path; backdrop capture
 downsamples in GDI; warm opens defer Desktop/rail refreshes; lenses are bounded/cached; centred grid ordering, Taskband registry pins,
@@ -90,7 +90,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-12 | Rename / ungroup / remove / add to pane via right-click as well as dragging | P0 | `[~]` | Menu renders; actions not exercised |
 | R-13 | **Rail**: bottom taskbar mirror (pinned + running); click focuses or launches | P0 | `[~]` | Retained implementation reactivated; native enumeration checked; full parity/focus/launch pass pending |
 | R-14 | Cached rail hover previews, click to focus, optional magnification | P0 | `[~]` | Decoded bounded cache, shared requests, background refresh and GDI downsampling; owner hover/focus pass pending |
-| R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | v0.2.0 CI/tag release and synthetic screenshots published; v0.2.1 release verification and unsigned-artifact hardening remain |
+| R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | v0.2.1 CI/tag release and synthetic screenshots published; downloads match checksums. Installer smoke testing and unsigned-artifact hardening remain |
 | R-16 | Convenience: usage ordering, open file location, copy path, tray, launch at login | P0 | `[~]` | Implemented; none exercised |
 | R-17 | Linux port later | P2 | `[ ]` | Non-Windows stubs compile in principle; never built |
 | R-18 | WinUI 3 attempt logged as a failed beta, source archived | P0 | `[x]` | `DEVLOG.md`, `archive/winui3-beta/` |
@@ -220,7 +220,7 @@ blur, tint and lensing.
 - [x] README, WORKORDER, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, LICENSE, CHANGELOG, templates, CI file, AGENTS.md, docs/
 - [x] Logo (`assets/logo.svg`) and generated icon set (`npm run icons`)
 - [x] DEVLOG with the failed WinUI 3 beta; source in `archive/winui3-beta/`
-- [~] Publishing metadata, tag workflow and synthetic screenshots are present; v0.2.0 CI/release ran, while v0.2.1 CI and unsigned-artifact hardening remain
+- [~] Publishing metadata, tag workflow and synthetic screenshots are present; v0.2.1 PR/main CI and release workflow passed. Installer smoke testing and unsigned-artifact hardening remain
 - **Accept:** a stranger can clone, build, run and contribute using only the repo.
 
 ### WP10 — Linux port (R-17) · P2
@@ -360,10 +360,10 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 ## 12. Next actions (ordered — start at the top)
 
-0. **Publish the authorized v0.2.1 patch.** Run CI on the gesture branch, merge the PR, tag the merge commit and verify the GitHub release assets. Document W-51 in the release notes; keep unverified native interactions open in `docs/SESSION_WORKORDER.md`.
+0. **Release record — complete.** PR #4 passed Windows CI and merged into `main`; main CI passed. Tag `v0.2.1` points to that merge commit. The release workflow published NSIS, MSI, portable ZIP and checksums, and the downloaded assets matched the checksums. W-51 is named in the release notes.
 
-1. **Confirm the clean gate in CI.** The local `npm test`, `npm run build`, `cargo fmt --check`, Clippy with warnings denied,
-   `cargo test --locked` and `cargo check --locked` gates are clean. Run the same workflow on GitHub before marking CI verified.
+1. **Keep the clean gate.** The local `npm test`, `npm run build`, `cargo fmt --check`, Clippy with warnings denied,
+   `cargo test --locked` and `cargo check --locked` gates are clean, as are the v0.2.1 PR and main Windows CI runs. Repeat them for later changes.
 2. **Verify the "not yet verified" list in §0**, using `scripts/cdp.mjs` for page behaviour and the real keyboard for the hotkey, focus
    and tray paths. Fix what breaks. Flip statuses to `[x]` only for things you saw work; note how in the Notes column.
    Priorities: hotkey toggle and focus (R-01, R-10) → drag/drop/rename/persistence (R-05, R-06) → settings persistence (R-11) →
@@ -373,7 +373,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
    50 ms for the transparent warm-open path and ≤ 300 ms for snapshot mode; report measured values rather than guessing.
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
-7. **Release follow-up.** Verify the v0.2.1 NSIS, MSI, portable ZIP and checksums produced by the tag workflow. Record installer smoke-test evidence separately; profile the gesture bug in W-51 on the owner's trackpad.
+7. **Release follow-up.** The v0.2.1 NSIS, MSI, portable ZIP and checksums are published and hash-verified. Record installer smoke-test evidence separately; profile the gesture bug in W-51 on the owner's trackpad when that work resumes.
 8. **Then P1 features** from §11, one work package at a time, each with acceptance criteria added here first.
 
 ## 13. Known issues
@@ -383,7 +383,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 - Taskband parsing deliberately consumes only self-describing link names/AppUserModelIDs from the undocumented blob and falls back safely.
 - Native cold thumbnails measured 66.5–131.6 ms after GDI downsampling. Cached demo presentation measured 13–17 ms; owner cached-hover parity remains open.
 - `Esc` in the pane-name field both closes the popup and bubbles to the global handler; confirm the intended order.
-- The v0.2.1 CI and tag workflows require a successful public run before their results can be marked verified; v0.2.0 workflows ran successfully.
+- The v0.2.1 PR/main CI and tag workflows passed on the public remote; installer installation remains a separate manual check.
 - Windows-key routing and virtual-desktop/PowerToys compatibility need real key/workflow testing; the Windows-key option remains off by default.
 
 ## 14. Out of scope (external tools)

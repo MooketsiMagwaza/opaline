@@ -6,6 +6,8 @@ Newest first.
 
 After testing the latest local preview, the owner still experienced gesture lag and intermittent missed swipes. The owner chose to ship 0.2.1 with this recorded as a persistent known bug for later work, and authorized a pull request, merge and updated release tag. W-51 tracks physical-device profiling and acceptance; browser routing and timing checks alone do not close it. The 0.2.1 documentation distinguishes the corrected swipe/pinch destinations from the unresolved interaction feel.
 
+PR #4 passed Windows CI and merged. The merged `main` CI and `v0.2.1` release workflow passed. The release published NSIS, MSI and portable downloads with `SHA256SUMS.txt`; each downloaded binary matched its listed hash. The release notes link to the synthetic screenshot gallery and name W-51. Installer installation and the remaining owner-device checks were not exercised.
+
 ## 2026-10-29 · Native pinch input, gesture routing and intentional search focus
 
 The owner confirmed that physical two-finger swipe worked while pinch initially did not. The earlier browser tests only dispatched synthetic Ctrl+wheel events; they could not prove WebView2 delivered a physical pinch. Inspection of the installed Wry source showed its default `zoom_hotkeys_enabled: false` also calls `SetIsPinchZoomEnabled(false)` on WebView2. The preview enables pinch input for the window and cancels Ctrl+wheel page zoom in the launcher gesture handler. The owner then confirmed pinch reaches Opaline. Home page arithmetic already wrapped both directions; the isolated UI check now covers both end transitions explicitly.
