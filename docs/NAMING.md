@@ -56,7 +56,7 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 | 0.9 | Iridescent |
 | 1.0 | Jewel |
 
-Git tags follow `vX.Y.Z`; release titles use the version and codename. Version `0.2.1 "Borosilicate"` is the current patch preview for the 0.2 series.
+Git tags follow `vX.Y.Z`; release titles use the version and codename. [`v0.2.1 "Borosilicate"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) is the latest patch release in the 0.2 series.
 
 ## Commits and branches
 

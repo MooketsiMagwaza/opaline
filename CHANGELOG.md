@@ -6,7 +6,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
-## [0.2.1] — "Borosilicate" gesture fix preview
+## [0.2.1] — 2026-10-29 "Borosilicate"
 
 ### Fixed
 - Enabled WebView2 pinch input; the owner confirmed physical pinch reaches Opaline in the preview. Pinch-in/out moves backward/forward through the Alt+1–5 pages.
@@ -16,6 +16,9 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Home gestures now move page content over stationary acrylic; shorter swipes register and complete more quickly.
 - Search no longer takes focus when Opaline opens or changes pages. Press S to focus it; Home swipes wrap in both directions.
 - Zen and screen saver reuse the saved launcher backdrop and acrylic material. The saver rotates gentle break prompts.
+
+### Known issue
+- Swipe and pinch navigation can still feel laggy or miss a short gesture on the owner's trackpad. Further input tuning and real-device profiling are tracked in W-51; keyboard, arrows and Home dots remain available.
 
 ## [0.2.0] — 2026-10-28 "Borosilicate"
 

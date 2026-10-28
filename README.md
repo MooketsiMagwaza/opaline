@@ -17,12 +17,14 @@
   <a href="docs/NAMING.md">Naming</a>
 </p>
 
-> **Current version: `0.2.1` "Borosilicate" preview.** Windows 11 first; Linux is planned.
+> **Latest release: [`v0.2.1` "Borosilicate"](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1).** Windows 11 first; Linux is planned.
 >
 > The TypeScript build, frontend tests and Rust unit tests are clean locally. Real Windows interaction checks remain open for
 > grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
 > [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done
 > once it has been seen working.
+
+Two-finger swipe and pinch navigation may still feel laggy or miss a short gesture on some trackpads. This remains an open [known issue](WORKORDER.md#13-known-issues); Tab and the Home dots move between Home screens, and Alt+1–5 opens the main pages.
 
 ## What it is
 

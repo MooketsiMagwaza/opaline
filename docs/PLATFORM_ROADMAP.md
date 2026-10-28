@@ -1,6 +1,6 @@
 # Platform roadmap
 
-These are planned work packages, not claims about the current `0.2.0` release. Each package must receive detailed acceptance criteria in
+These are planned work packages, not claims about the current `0.2.1` release. Each package must receive detailed acceptance criteria in
 the main work order before implementation.
 
 ## P1 — App Library
