@@ -37,11 +37,9 @@ let current = "appearance";
 let syncers: (() => void)[] = [];
 let recording = false;
 let hotkeyEvents: AbortController | undefined;
-let returnFocus: HTMLElement | null = null;
 const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>();
 
 export const isRecordingHotkey = (): boolean => recording;
-export const isPanelOpen = (): boolean => !byId("settings").hidden;
 
 function sections(): Section[] {
   const available: Section[] = [
@@ -93,21 +91,14 @@ function sections(): Section[] {
       controls: [
         { kind: "hotkey" },
         { kind: "start-menu" },
-        { kind: "segmented", key: "pageShortcut", label: "Switch pages", options: [["shift-tab", "Shift+Tab"], ["ctrl-tab", "Ctrl+Tab"]], hint: "Alt+1 opens Desktop; Alt+2–9 open your spaces. Ctrl+Alt+A opens All apps; Ctrl+Alt+T opens Screen time. Choose Ctrl+Tab to keep Shift+Tab for reverse focus." },
         { kind: "autostart" },
         { kind: "toggle", key: "closeOnClickOff", label: "Close when clicking empty space" },
         { kind: "toggle", key: "closeOnBlur", label: "Close when you switch away" },
         { kind: "toggle", key: "animations", label: "Animations" },
         { kind: "range", key: "paneMotionMs", label: "Pane opening duration", min: 160, max: 500, step: 10, format: (value) => `${value} ms`, hint: "Pane popups expand from their tile and return to it when closed." },
-        {
-          kind: "toggle",
-          key: "fabricEntrance",
-          label: "Fabric opening animation",
-          hint: "Unfolds the already-arranged app grid upward like a sheet being laid out.",
-        },
       ],
     },
-    { id: "workspaces", title: "Workspaces", controls: [{ kind: "workspaces" }] },
+    { id: "workspaces", title: "Home screens", controls: [{ kind: "workspaces" }] },
     { id: "screen-time", title: "Screen time", controls: [{ kind: "screen-time" }] },
     { id: "focus", title: "Focus", controls: [
       { kind: "range", key: "focusMinutes", label: "Focus session", min: 1, max: 90, step: 1, format: value => `${value} min` },
@@ -381,7 +372,7 @@ function workspaceControls(): HTMLElement {
   const holder = el("div", "workspace-controls");
   const note = el("p", "note");
   const run = (operation: Promise<void>) => { void operation.then(() => select("workspaces")).catch((error) => { note.textContent = String(error); }); };
-  holder.append(el("p", "row-hint", ["Desktop is always Alt+1. Add up to eight spaces for apps, folders and files. These collections are available on every Windows virtual desktop."]));
+  holder.append(el("p", "row-hint", ["These Home screens are available on every Windows virtual desktop. Press Tab on Home to switch between them. Alt+1 returns to the main Home screen."]));
   workspaces().forEach((space, index) => {
     const name = el("input", "workspace-name");
     name.value = space.name; name.maxLength = 40;
@@ -394,11 +385,11 @@ function workspaceControls(): HTMLElement {
       if (!confirm) { confirm = true; remove.textContent = "Confirm removal"; return; }
       run(removeWorkspace(space.id));
     });
-    holder.append(row(`Alt+${index + 2}`, `${space.items.length} saved items`, el("div", "workspace-editor", [name, save, remove])));
+    holder.append(row(`Home screen ${index + 2}`, `${space.items.length} saved items`, el("div", "workspace-editor", [name, save, remove])));
   });
   const name = el("input", "workspace-name");
   name.placeholder = "e.g. Projects"; name.maxLength = 40; name.setAttribute("aria-label", "New workspace name");
-  const add = el("button", "chip", ["Add space"]);
+  const add = el("button", "chip", ["Add screen"]);
   add.disabled = workspaces().length >= 8;
   add.addEventListener("click", () => run(createWorkspace(name.value)));
   holder.append(el("div", "workspace-editor", [name, add]), note);
@@ -494,32 +485,8 @@ export function initPanel(panelHooks: PanelHooks) {
     nav.append(item);
   }
 
-  const close = el("button", "nav-item close", ["Done"]);
-  close.type = "button";
-  close.addEventListener("click", closePanel);
-  nav.append(el("div", "nav-spacer"), close);
-
   byId("settings").replaceChildren(nav, el("div", "settings-body"));
   select(current);
 }
 
-export function openPanel() {
-  returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  select(current); // rebuild so values and the about text are fresh
-  byId("settings").hidden = false;
-  document.body.classList.add("settings-open");
-  byId("settings").querySelector<HTMLButtonElement>(".nav-item")?.focus();
-}
-
-export function closePanel() {
-  const wasOpen = isPanelOpen();
-  recording = false;
-  byId("settings").hidden = true;
-  document.body.classList.remove("settings-open");
-  if (wasOpen && returnFocus?.isConnected) returnFocus.focus();
-}
-
-export function togglePanel() {
-  if (isPanelOpen()) closePanel();
-  else openPanel();
-}
+export function refreshPanel() { if (hooks) select(current); }

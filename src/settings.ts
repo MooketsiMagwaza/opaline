@@ -27,9 +27,7 @@ export type Settings = {
   closeOnClickOff: boolean;
   closeOnBlur: boolean;
   animations: boolean;
-  fabricEntrance: boolean;
   compactBar: boolean;
-  pageShortcut: "shift-tab" | "ctrl-tab";
   paneMotionMs: number;
   surfaceWidth: number;
   taskbarIconSize: number;
@@ -66,9 +64,7 @@ export const DEFAULTS: Settings = {
   closeOnClickOff: true,
   closeOnBlur: true,
   animations: true,
-  fabricEntrance: true,
   compactBar: false,
-  pageShortcut: "shift-tab",
   paneMotionMs: 320,
   surfaceWidth: 960,
   taskbarIconSize: 30,
@@ -135,7 +131,7 @@ export function normalizeSettings(value: unknown): Settings {
       const [min, max] = ranges[key];
       merged[key] = Number.isFinite(merged[key]) ? Math.min(max, Math.max(min, merged[key])) : DEFAULTS[key];
     }
-    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], pageShortcut: ["shift-tab", "ctrl-tab"] })) {
+    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"] })) {
       if (!values.includes(String(merged[key as keyof Settings]))) (merged as Record<string, unknown>)[key] = DEFAULTS[key as keyof Settings];
     }
     return merged;
@@ -215,7 +211,6 @@ export function applySettings() {
   body.labels = String(s.showLabels);
   body.rail = String(RAIL_AVAILABLE && s.rail);
   body.anim = String(s.animations);
-  body.entry = s.fabricEntrance ? "fabric" : "fade";
   body.compactBar = String(s.compactBar);
   const luminance = (custom.r * 0.2126 + custom.g * 0.7152 + custom.b * 0.0722) / 255;
   body.surfaceTone = luminance > 0.62 && s.customSurfaceOpacity > 0.55 ? "light" : "dark";

@@ -43,7 +43,7 @@ await page.addInitScript((manifest) => {
       { id: "archive", name: "Archive", items: items.slice(27,30).map(item=>item.path) },
       { id: "reference", name: "Reference", items: [items[31],items[32],items[34]].map(item=>item.path) },
     ], launches: {}, layout: {} },
-    "workspaces.json": [{ id: "dev-tools", name: "Dev tools", items: items.slice(0, 4) }],
+    "workspaces.json": [{ id: "dev-tools", name: "Dev tools", items: items.slice(0, 4) }, { id: "screen-3", name: "Screen 3", items: [] }],
   };
   for (const [key, value] of Object.entries(initial)) if (localStorage.getItem(`demo:${key}`) === null) localStorage.setItem(`demo:${key}`, JSON.stringify(value));
   window.__demoCalls = [];
@@ -51,7 +51,7 @@ await page.addInitScript((manifest) => {
   window.__demoInvoke = async (command, args) => {
     window.__demoCalls.push(command);
     switch (command) {
-      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.1.0", codename: "Annealed", pinned: true };
+      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.2.0", codename: "Borosilicate", pinned: true };
       case "load_store": return localStorage.getItem(`demo:${args.name}`);
       case "save_store": if (window.__demoFailSave) throw new Error("Demo disk full"); localStorage.setItem(`demo:${args.name}`, args.json); return;
       case "list_items": return items;
@@ -76,11 +76,12 @@ await page.route(/\/src\/launcher\.ts(?:\?.*)?$/, async (route) => {
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();
+let screenshotCount = 0;
 const shot = async (name) => {
   await wait(400);
   const path = new URL(name, output).pathname.replace(/^\/(.:)/, "$1");
   for (let attempt = 0; attempt < 4; attempt++) {
-    try { await page.screenshot({ path }); return; }
+    try { await page.screenshot({ path }); screenshotCount++; return; }
     catch (error) { if (error.code !== "UNKNOWN" || attempt === 3) throw error; await wait(300); }
   }
 };
@@ -89,8 +90,11 @@ try {
   await page.waitForSelector("#grid .tile"); await wait(1000);
   assert(await visible("#apps-surface"));
   assert.equal(await page.locator("#page-edges .edge-arrow").count(), 2);
+  assert.equal(await page.locator(".home-footer .home-page-button").count(), 3);
+  assert.equal(await page.locator("#home-add-trigger").count(), 0);
+  assert(!(await visible("#status")));
   assert.equal(await page.locator("#page-nav, #quit-button").count(), 0);
-  assert.equal(await page.locator(".header-nav .orb").count(), 6);
+  assert.equal(await page.locator(".header-nav .orb").count(), 4);
   assert(await page.evaluate(() => {
     const search = getComputedStyle(document.getElementById("search-wrap"));
     const left = getComputedStyle(document.getElementById("header-left"));
@@ -98,10 +102,16 @@ try {
     return left.backgroundImage === search.backgroundImage && left.height === search.height && button.backgroundColor === "rgba(0, 0, 0, 0)";
   }));
   await page.locator('#header-left [data-page="all-apps"]').click(); assert(await visible("#app-list-surface"));
-  await page.locator('#header-left [data-page="focus"]').click(); assert(await visible("#focus-surface"));
-  await page.locator('#header-right [data-page="screen-time"]').click(); assert(await visible("#screen-time-surface"));
-  await page.locator('#header-right [data-page="desktop"]').click(); assert(await visible("#apps-surface"));
-  await page.locator("#dev-workspace-button").click(); assert(await visible("#workspace-surface"));
+  assert(!(await visible("#page-edges")));
+  await shot("all-apps.png");
+  await page.locator('#header-left [data-page="screen-time"]').click(); assert(await visible("#screen-time-surface"));
+  await page.locator('#header-right [data-page="focus"]').click(); assert(await visible("#focus-surface"));
+  await page.locator("#home-dock").click(); assert(await visible("#apps-surface"));
+  await page.keyboard.press("Tab"); assert(await visible("#workspace-surface"));
+  await page.keyboard.press("Tab"); assert.equal(await page.locator("#workspace-title").textContent(), "Screen 3");
+  assert(await visible("#page-edges"));
+  assert(!(await visible("#workspace-add-trigger")));
+  await shot("screen-3.png");
   await page.keyboard.press("Alt+1");
   await page.mouse.move(640, 450);
   assert.equal(await page.locator("#rail .app-list-shortcut").count(), 0);
@@ -111,23 +121,24 @@ try {
   assert(await page.locator("#grid .label").evaluateAll(nodes=>nodes.every(node=>node.getBoundingClientRect().height >= 30)));
   await shot("desktop.png");
   await page.locator("#page-next").click(); assert(await visible("#workspace-surface"));
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   await page.locator("#page-prev").click(); assert(await visible("#apps-surface"));
   await page.locator("#apps-surface").dispatchEvent("wheel", {deltaX: 120, deltaY: 2, deltaMode: 0});
-  assert(await visible("#workspace-surface"));
+  assert(await visible("#app-list-surface"));
   await page.keyboard.press("Alt+1");
   await page.locator("#apps-surface").evaluate(node => {
     const touch = (type, pointerId, clientX) => node.dispatchEvent(new PointerEvent(type, { pointerId, pointerType: "touch", clientX, clientY: 400, bubbles: true, cancelable: true }));
     touch("pointerdown", 1, 480); touch("pointerdown", 2, 580); touch("pointermove", 2, 720);
     touch("pointerup", 1, 480); touch("pointerup", 2, 720);
   });
-  assert(await visible("#workspace-surface"));
+  assert(await visible("#app-list-surface"));
   await page.keyboard.press("Alt+1");
   await wait(600);
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -120, deltaMode: 0});
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
-  assert(await visible("#workspace-surface"));
+  assert(await visible("#app-list-surface"));
   await page.keyboard.press("Alt+1");
   await page.locator('.pane-tile[data-id="ides"]').hover(); await wait(300);
   assert(!(await visible("#tile-peek")));
@@ -142,11 +153,12 @@ try {
   await page.locator('.item-tile[data-path="demo:30"]').click({button:"right"});
   await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter");
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('demo:workspaces.json'))[0].items.length === 5);
-  await page.keyboard.press("Alt+2");
+  await page.keyboard.press("Alt+1");
+  await page.keyboard.press("Tab");
   assert(await visible("#workspace-surface"));
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   await shot("workspaces.png");
-  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Alt+2");
   assert(await visible("#app-list-surface"));
   await page.locator("#search").fill("visual");
   await page.keyboard.press("ArrowDown");
@@ -173,7 +185,8 @@ try {
   assert.equal(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgb(216, 233, 255)");
   await shot("focus.png");
   assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 260);
-  assert(await page.locator("#focus-surface").evaluate(node => node.querySelector("#focus-chart .daily-chart").getBoundingClientRect().bottom <= node.querySelector(".page-scroll").getBoundingClientRect().bottom));
+  await page.locator("#focus-chart").scrollIntoViewIfNeeded();
+  assert(await page.locator("#focus-chart").isVisible());
   await page.locator("#focus-zen").click();
   assert(await visible("#ambient"));
   assert.equal(await page.locator("#ambient").getAttribute("data-mode"), "zen");
@@ -200,30 +213,46 @@ try {
   await page.keyboard.press("Escape"); await wait(380);
   assert(!(await visible("#popup-layer")));
   await page.locator("#settings-button").click();
+  assert(await visible("#settings-surface"));
   await page.locator('.nav-item[data-id="behaviour"]').click();
   await shot("settings.png");
+  for (const section of ["appearance", "layout", "rail", "screen-time", "focus", "panes", "about"]) {
+    await page.locator(`.nav-item[data-id="${section}"]`).click();
+    await shot(`settings-${section}.png`);
+  }
   await page.locator('.nav-item[data-id="workspaces"]').click();
+  await shot("settings-workspaces.png");
   await page.getByRole("textbox", { name: "New workspace name" }).fill("Projects");
-  await page.getByRole("button", { name: "Add space", exact: true }).click();
-  await page.waitForFunction(() => document.querySelectorAll(".workspace-controls .row").length === 2);
-  await page.keyboard.press("Escape");
-  await page.keyboard.press("Alt+3");
+  await page.getByRole("button", { name: "Add screen", exact: true }).click();
+  await page.waitForFunction(() => document.querySelectorAll(".workspace-controls .row").length === 3);
+  await page.keyboard.press("Alt+1");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
   assert.equal(await page.locator("#workspace-title").textContent(), "Projects");
-  await page.locator("#workspace-add-trigger").click();
+  await shot("empty-home-screen.png");
+  await page.locator(".workspace-empty button").click();
   await page.locator("#workspace-app-search").fill("Visual Studio Code");
   await shot("workspace-picker.png");
+  await page.keyboard.press("Tab");
+  assert(await visible("#item-picker"));
+  assert.equal(await page.evaluate(() => document.activeElement?.className), "workspace-app-choice");
   await page.getByRole("button", { name: "Add Visual Studio Code" }).click();
   await page.getByRole("button", { name: "Already in this space: Visual Studio Code" }).waitFor();
   assert(await page.getByRole("button", { name: "Already in this space: Visual Studio Code" }).isDisabled());
   await page.locator("#workspace-browse-folder").click();
   await page.waitForFunction(() => document.querySelectorAll("#workspace-items .app-list-item").length === 2);
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Control+b");
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
   assert(!(await visible("#page-edges")));
   assert.equal(await page.locator("#rail .dock-expand").count(), 1);
   await shot("compact-taskbar.png");
   await page.reload(); await page.waitForSelector("#grid .tile"); await wait(1400);
-  await page.keyboard.press("Alt+3");
+  await page.keyboard.press("Alt+1");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
   assert.equal(await page.locator("#workspace-title").textContent(), "Projects");
   assert.equal(await page.locator("#workspace-items .app-list-item").count(), 2);
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
@@ -240,8 +269,8 @@ try {
   assert.equal(await page.locator("#popup").evaluate((node) => getComputedStyle(node).transitionDuration), "0s");
   await page.keyboard.press("Escape"); await wait(30);
   await page.setViewportSize({ width: 800, height: 600 });
-  await page.locator("#settings-button").click();
-  const bounds = await page.locator("#settings").boundingBox();
+  await page.keyboard.press("Alt+5");
+  const bounds = await page.locator("#settings-surface").boundingBox();
   assert(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= 800 && bounds.y + bounds.height <= 600);
   await page.keyboard.press("Escape");
   await page.keyboard.press("Control+b");
@@ -255,7 +284,7 @@ try {
     assert(geometry.inBounds && !geometry.overlaps, JSON.stringify({width,...geometry}));
   }
   assert.deepEqual(errors, []);
-  const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: 13, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
+  const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: screenshotCount, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result, null, 2));
 } finally { await browser.close(); }

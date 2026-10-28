@@ -4,23 +4,40 @@ import * as grid from "./grid";
 import { iconElement } from "./icons";
 import { closeMenu, showMenu } from "./menu";
 import { settings, updateSettings } from "./settings";
-import { onWorkspacesChange, pinItem, reportWorkspaceError, unpinItem, workspaceMenu, workspaces } from "./workspaces";
+import { onWorkspacesChange, reportWorkspaceError, unpinItem, workspaceMenu, workspaces } from "./workspaces";
 import { initUsage, refreshUsage, renderUsage, setUsageQuery } from "./usage";
 import { refreshFocus } from "./focus";
+import { refreshPanel } from "./panel";
+import { itemPicker } from "./item-picker";
 
 let current = "desktop";
+let homeScreen = 0;
 let apps: AppEntry[] = [];
 let appsReady = false;
 let query = "";
 let usageTimer: number | undefined;
 
 const pages = () => [
-  { id: "desktop", label: "Desktop", surface: "apps-surface" },
-  ...workspaces().map((space) => ({ id: space.id, label: space.name, surface: "workspace-surface" })),
+  { id: "desktop", label: "Home", surface: "apps-surface" },
   { id: "all-apps", label: "All apps", surface: "app-list-surface" },
   { id: "screen-time", label: "Screen time", surface: "screen-time-surface" },
   { id: "focus", label: "Focus", surface: "focus-surface" },
+  { id: "settings", label: "Settings", surface: "settings-surface" },
 ];
+const activeWorkspace = () => workspaces()[homeScreen - 1];
+function renderHomePages() {
+  for (const host of [byId("home-pages"), byId("workspace-pages")]) {
+    host.replaceChildren(...["Desktop", ...workspaces().map(space => space.name)].map((name, index) => {
+      const button = el("button", "home-page-button");
+      button.type = "button";
+      button.title = name;
+      button.setAttribute("aria-label", `Home screen ${index + 1}: ${name}`);
+      button.setAttribute("aria-current", homeScreen === index ? "page" : "false");
+      button.addEventListener("click", () => { homeScreen = index; show("desktop"); });
+      return button;
+    }));
+  }
+}
 
 function appButton(item: AppEntry & Partial<Pick<Item, "isFolder">>, spaceId?: string): HTMLElement {
   const open = el("button", "app-list-item", [iconElement(item.path, item.name), el("span", "app-list-name", [item.name])]);
@@ -28,7 +45,7 @@ function appButton(item: AppEntry & Partial<Pick<Item, "isFolder">>, spaceId?: s
   open.title = item.name;
   if (item.isFolder) { open.removeAttribute("title"); grid.wirePeek(open, item.name, () => api.folderPreview(item.path)); }
   open.addEventListener("click", () => grid.launchItem(item.path));
-  const menu = spaceId ? [{ label: "Remove from workspace", action: () => { void unpinItem(spaceId, item.path).catch(reportWorkspaceError); } }]
+  const menu = spaceId ? [{ label: "Remove from screen", action: () => { void unpinItem(spaceId, item.path).catch(reportWorkspaceError); } }]
     : [workspaceMenu({ ...item, isFolder: false })];
   const more = el("button", "item-more", ["•••"]);
   more.type = "button";
@@ -49,62 +66,46 @@ function renderList() {
 }
 
 function renderWorkspace() {
-  const space = workspaces().find((space) => space.id === current);
+  const space = activeWorkspace();
   if (!space) return;
   byId("workspace-title").textContent = space.name;
+  byId("workspace-add-trigger").hidden = space.items.length === 0;
   const matches = space.items.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
-  byId("workspace-count").textContent = `${matches.length} items · Alt+${workspaces().indexOf(space) + 2}`;
   byId("workspace-items").replaceChildren(...(matches.length ? matches.map((item) => appButton(item, space.id)) : [
-    el("p", "page-empty", [query ? `Nothing matches “${query}”` : "Use Add items to find a Windows app or choose a folder or file."]),
+    query ? el("p", "page-empty", [`Nothing matches “${query}”`]) : emptyWorkspace(space.id),
   ]));
-  renderWorkspacePicker(space.id);
 }
 
-function renderWorkspacePicker(spaceId: string) {
-  const holder = byId("workspace-app-results");
-  const needle = byId<HTMLInputElement>("workspace-app-search").value.trim().toLocaleLowerCase();
-  if (!needle) { holder.replaceChildren(el("p", "row-hint", ["Search the Windows app list to add an application."])); return; }
-  const saved = new Set(workspaces().find(space => space.id === spaceId)?.items.map(item => item.path));
-  const matches = apps.filter(app => app.name.toLocaleLowerCase().includes(needle))
-    .sort((a, b) => Number(!a.name.toLocaleLowerCase().startsWith(needle)) - Number(!b.name.toLocaleLowerCase().startsWith(needle)) || a.name.localeCompare(b.name))
-    .slice(0, 12);
-  holder.replaceChildren(...(matches.length ? matches.map(app => {
-    const button = el("button", "workspace-app-choice", [iconElement(app.path, app.name), el("span", "", [app.name])]);
-    button.type = "button"; button.disabled = saved.has(app.path);
-    button.setAttribute("aria-label", `${saved.has(app.path) ? "Already in this space: " : "Add "}${app.name}`);
-    button.addEventListener("click", () => {
-      void pinItem(spaceId, { ...app, isFolder: false }).then(() => {
-        byId("workspace-path-note").textContent = `${app.name} added to this space.`;
-        byId("workspace-path-note").className = "note ok";
-      }).catch(reportWorkspaceError);
-    });
-    return button;
-  }) : [el("p", "row-hint", [appsReady ? "No matching Windows apps." : "Loading installed apps…"])]));
+function emptyWorkspace(workspaceId: string) {
+  const add = el("button", "chip", ["Add an app or folder"]);
+  add.type = "button";
+  add.addEventListener("click", () => itemPicker.open(workspaceId));
+  return el("div", "workspace-empty", [el("span", "workspace-empty-mark", ["+"]), el("strong", "", ["Make this screen yours"]), el("p", "", ["Search installed Windows apps or choose a folder or file."]), add]);
 }
 
 function renderNav() {
-  byId("page-edges").setAttribute("aria-label", `Page navigation · ${pages().find(page => page.id === current)?.label ?? "Desktop"}`);
+  byId("page-edges").setAttribute("aria-label", "Home screen navigation");
   document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => {
     button.setAttribute("aria-current", button.dataset.page === current ? "page" : "false");
   });
-  const dev = workspaces().find(space => space.name.toLocaleLowerCase() === "dev tools") ?? workspaces()[0];
-  const shortcut = byId<HTMLButtonElement>("dev-workspace-button");
-  shortcut.disabled = !dev;
-  shortcut.title = dev?.name ?? "Create a workspace in Settings";
-  shortcut.setAttribute("aria-label", dev?.name ?? "No workspace available");
-  shortcut.setAttribute("aria-current", dev?.id === current ? "page" : "false");
+  byId("home-dock").setAttribute("aria-current", current === "desktop" ? "page" : "false");
+  renderHomePages();
 }
 
 export function show(id: string, focus = true) {
   const next = pages().find((page) => page.id === id) ?? pages()[0];
   closeMenu(); grid.reset();
   current = next.id;
-  for (const surface of ["apps-surface", "workspace-surface", "app-list-surface", "screen-time-surface", "focus-surface"]) byId(surface).hidden = next.surface !== surface;
+  document.body.dataset.page = current === "desktop" && homeScreen > 0 ? "custom-screen" : current;
+  itemPicker.close();
+  const surface = current === "desktop" && homeScreen > 0 ? "workspace-surface" : next.surface;
+  for (const id of ["apps-surface", "workspace-surface", "app-list-surface", "screen-time-surface", "focus-surface", "settings-surface"]) byId(id).hidden = surface !== id;
   renderNav(); renderWorkspace();
   if (current === "desktop") grid.setQuery(query);
   if (current === "all-apps") renderList();
   if (current === "screen-time") { renderUsage(); void refreshUsage(); }
   if (current === "focus") refreshFocus();
+  if (current === "settings") refreshPanel();
   byId<HTMLInputElement>("search").placeholder = `Search ${next.label.toLocaleLowerCase()}`;
   if (focus) byId("search").focus();
 }
@@ -113,22 +114,28 @@ export function cycle(direction = 1) {
   const list = pages();
   show(list[(list.findIndex((page) => page.id === current) + direction + list.length) % list.length].id);
 }
-export function selectSpace(index: number): boolean {
-  const id = index === 0 ? "desktop" : workspaces()[index - 1]?.id;
+export function selectPage(index: number): boolean {
+  const id = pages()[index]?.id;
   if (!id) return false;
+  if (id === "desktop") homeScreen = 0;
   show(id); return true;
 }
+export function isHome() { return current === "desktop"; }
+export function cycleHome(direction = 1) {
+  homeScreen = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
+  show("desktop");
+}
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
-export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; if (current === "all-apps") renderList(); if (workspaces().some(space => space.id === current)) renderWorkspacePicker(current); }
-export function setQuery(next: string) { query = next; if (current === "desktop") grid.setQuery(next); if (current === "all-apps") renderList(); renderWorkspace(); setUsageQuery(next); }
-export function reset() { query = ""; show("desktop"); }
+export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; itemPicker.setApps(next); if (current === "all-apps") renderList(); }
+export function setQuery(next: string) { query = next; if (current === "desktop" && homeScreen === 0) grid.setQuery(next); if (current === "all-apps") renderList(); renderWorkspace(); setUsageQuery(next); }
+export function reset() { query = ""; homeScreen = 0; show("desktop"); }
 export function activateFirst(): boolean {
-  if (current === "desktop") return false;
-  if (current !== "screen-time" && current !== "focus") byId(current === "all-apps" ? "app-list" : "workspace-items").querySelector<HTMLButtonElement>(".app-list-item")?.click();
+  if (current === "desktop" && homeScreen === 0) return false;
+  if (current === "all-apps" || (current === "desktop" && homeScreen > 0)) byId(current === "all-apps" ? "app-list" : "workspace-items").querySelector<HTMLButtonElement>(".app-list-item")?.click();
   return true;
 }
 export function handleArrow(event: KeyboardEvent): boolean {
-  if (current === "desktop" || current === "screen-time" || current === "focus") return false;
+  if (current === "desktop" && homeScreen === 0 || current === "screen-time" || current === "focus" || current === "settings") return false;
   const holder = byId(current === "all-apps" ? "app-list" : "workspace-items");
   const buttons = [...holder.querySelectorAll<HTMLButtonElement>(".app-list-item")];
   const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
@@ -147,42 +154,15 @@ export function startPages() {
 }
 export function stopPages() { window.clearInterval(usageTimer); usageTimer = undefined; }
 export function initPages() {
-  byId("workspace-add-trigger").addEventListener("click", () => {
-    byId("workspace-surface").querySelector<HTMLDetailsElement>(".workspace-add")!.open = true;
-    byId("workspace-app-search").focus();
-  });
-  byId("workspace-app-search").addEventListener("input", () => renderWorkspacePicker(current));
-  for (const kind of ["folder", "file"] as const) byId(`workspace-browse-${kind}`).addEventListener("click", () => {
-    const spaceId = current;
-    const buttons = [byId<HTMLButtonElement>("workspace-browse-folder"), byId<HTMLButtonElement>("workspace-browse-file")];
-    buttons.forEach(button => { button.disabled = true; });
-    void api.pickWorkspaceItem(kind).then(item => item && pinItem(spaceId, item).then(() => {
-      byId("workspace-path-note").textContent = `${item.name} added to this space.`;
-      byId("workspace-path-note").className = "note ok";
-    })).catch(error => {
-      byId("workspace-path-note").textContent = String(error);
-      byId("workspace-path-note").className = "note";
-    }).finally(() => { buttons.forEach(button => { button.disabled = false; }); });
-  });
-  byId("workspace-path-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const spaceId = current;
-    const input = byId<HTMLInputElement>("workspace-path");
-    const button = byId("workspace-path-form").querySelector<HTMLButtonElement>("button")!;
-    button.disabled = true;
-    void api.workspaceItem(input.value).then((item) => pinItem(spaceId, item)).then(() => { input.value = ""; byId("workspace-path-note").className = "note ok"; byId("workspace-path-note").textContent = "Added to workspace."; })
-      .catch((error) => { byId("workspace-path-note").className = "note"; byId("workspace-path-note").textContent = String(error); }).finally(() => { button.disabled = false; });
-  });
-  byId("page-prev").addEventListener("click", () => cycle(-1));
-  byId("page-next").addEventListener("click", () => cycle());
+  itemPicker.init();
+  byId("workspace-add-trigger").addEventListener("click", () => { const space = activeWorkspace(); if (space) itemPicker.open(space.id); });
+  byId("page-prev").addEventListener("click", () => cycleHome(-1));
+  byId("page-next").addEventListener("click", () => cycleHome(1));
   document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => button.addEventListener("click", () => show(button.dataset.page!)));
-  byId("dev-workspace-button").addEventListener("click", () => {
-    const dev = workspaces().find(space => space.name.toLocaleLowerCase() === "dev tools") ?? workspaces()[0];
-    if (dev) show(dev.id);
-  });
+  byId("home-dock").addEventListener("click", () => { homeScreen = 0; show("desktop"); });
   initUsage();
   onWorkspacesChange(() => {
-    if (!pages().some((page) => page.id === current)) show("desktop", false);
+    if (homeScreen > workspaces().length) { homeScreen = 0; show("desktop", false); }
     else { renderNav(); renderWorkspace(); }
   });
   show("desktop");

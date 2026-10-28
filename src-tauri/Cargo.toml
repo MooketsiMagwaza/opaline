@@ -1,6 +1,6 @@
 [package]
 name = "opaline"
-version = "0.1.0"
+version = "0.2.0"
 description = "An acrylic launcher for your desktop and installed apps"
 edition = "2024"
 authors = ["MooketsiMagwaza"]

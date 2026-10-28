@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-28 · 0.2.0 Borosilicate Home navigation preview
+
+The owner simplified the hierarchy after reviewing the six-icon candidate. Home moved to the left of the bottom taskbar. Existing named collections, including Dev tools, are now Home screens reached with Tab and Shift+Tab; their saved `workspaces.json` data is retained. Four header destinations remain around search: All apps and Screen time on the left, Focus and Settings on the right. Alt+1–5 follows Home, All apps, Screen time, Focus, Settings. Ctrl+Tab switches those top-level pages.
+
+The owner clarified that Home itself must be the Windows Desktop, read-only. Its item count, text pager and Add control were removed; the pager shows dots only. New installations begin with empty Screen 2 and Screen 3. App, folder and file additions belong to custom screens, through a stateful `ItemPicker` with Windows app search, native browsing, duplicate checks and save feedback. The obsolete direct-Home metadata path was deleted. Side arrows now cycle the Home screens, including custom screens, and disappear on other main pages. The keyboard path was split into popup focus, dismissal, page shortcuts and type-to-search handlers, following the standards in `AGENTS.md`.
+
+Settings uses the main page surface and applies existing controls immediately, without a modal Done step. The fabric wave and its obsolete setting were removed. Only the already prepared app grid makes a roughly 200 ms upward pop, and reduced motion disables it. The demo gallery covers the main pages, custom screens and picker, all Settings sections, Focus modes, pane, compact taskbar and preview. An original synthetic blank-desktop illustration shows hidden icons without exposing the owner's wallpaper or notifications. Native Windows key routing, picker, login startup, virtual desktops, icon parity, timing and owner visual acceptance remain open before a draft PR.
+
+The final isolated UI pass rendered 24 screenshots at 1280 × 800 and checked layouts down to 600 × 600. It exercised Home arrow and dot navigation, custom-screen persistence, app search, picker focus, Focus, screen time, Settings and cached preview presentation. The desktop preview process is running for owner testing; its real Windows interactions are still acceptance checks.
+
 ## 2026-10-28 · Workspaces, local screen time and retained taskbar
 
 The owner requested named Alt+number spaces, maximised-app time, keyboard page switching, a compact bottom taskbar, faster cached previews, a Windows-key opt-in, smooth pane-origin motion, current appearance in realistic GitHub artwork, and a test-first draft PR. The complete intake is `docs/SESSION_WORKORDER.md`.

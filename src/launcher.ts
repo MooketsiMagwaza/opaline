@@ -7,12 +7,13 @@ import { forgetFailedIcons } from "./icons";
 import { closeMenu, isMenuOpen } from "./menu";
 import { organize } from "./organize";
 import * as pages from "./pages";
-import { closePanel, initPanel, isPanelOpen, isRecordingHotkey, syncPanel, togglePanel } from "./panel";
+import { initPanel, isRecordingHotkey, syncPanel } from "./panel";
 import { hidePreview, initRail, refreshRail, startRail, stopRail, syncRailCompact } from "./rail";
 import { RAIL_AVAILABLE, applySettings, onSettingsChange, settings } from "./settings";
 import { loadWorkspaces } from "./workspaces";
 import { closeAmbient, handleFocusKey, initFocus, openAmbient } from "./focus";
 import { initPageGestures } from "./gestures";
+import { itemPicker } from "./item-picker";
 
 const stage = byId("stage");
 const backdrop = byId<HTMLImageElement>("backdrop");
@@ -23,6 +24,7 @@ let leaving = false;
 let itemsLoaded = false;
 let itemsRequest: Promise<void> | null = null;
 let appsLoaded = false;
+let appsRequest: Promise<void> | null = null;
 let refreshTimer: number | undefined;
 
 function hint(): string {
@@ -55,7 +57,8 @@ async function loadItems() {
   itemsRequest = (async () => {
     const items = await api.listItems();
     grid.setItems(items);
-    groups.prune(new Set(items.map((item) => item.path)));
+    groups.prune(new Set(items.map(item => item.path)));
+    grid.render();
 
     if (!groups.isOrganized()) {
       organize(items);
@@ -71,9 +74,9 @@ async function loadItems() {
 
 async function loadApplications() {
   if (appsLoaded) return;
-  const applications = await api.listApps();
-  pages.setApps(applications);
-  appsLoaded = true;
+  if (appsRequest) return appsRequest;
+  appsRequest = api.listApps().then(applications => { pages.setApps(applications); appsLoaded = true; });
+  try { await appsRequest; } finally { appsRequest = null; }
 }
 
 /** Keep work that does not affect the first visible frame outside the open path. */
@@ -81,7 +84,7 @@ function refreshAfterPresent() {
   window.clearTimeout(refreshTimer);
   // Replacing the tile DOM during the entrance causes a visible hitch. Refresh after motion has
   // settled; the prewarmed content is already correct enough for the first frame.
-  const delay = settings().animations && settings().fabricEntrance ? 620 : 120;
+  const delay = settings().animations ? 210 : 70;
   refreshTimer = window.setTimeout(() => {
     if (leaving) return;
     void loadItems().catch((error) => reportLoadError("Desktop", error));
@@ -93,7 +96,6 @@ function refreshAfterPresent() {
 function resetUi() {
   closeAmbient(false);
   closeMenu();
-  closePanel();
   if (RAIL_AVAILABLE) hidePreview(true);
   grid.reset();
   pages.reset();
@@ -115,12 +117,11 @@ async function onPrepare(snapshot: string | null, reuseSnapshot: boolean, page =
   const backdropReady = reuseSnapshot ? Promise.resolve() : setBackdrop(snapshot);
   if (itemsLoaded) await backdropReady;
   else await Promise.all([backdropReady, loadItems()]);
-  const richEntrance = settings().animations && settings().fabricEntrance;
-  stage.classList.toggle("overlay-enter", richEntrance);
+  stage.classList.toggle("overlay-enter", settings().animations);
   await api.present();
 
   requestAnimationFrame(() => stage.classList.remove("pre"));
-  window.setTimeout(() => stage.classList.remove("overlay-enter"), 580);
+  window.setTimeout(() => stage.classList.remove("overlay-enter"), 220);
   if (page !== "screen-saver") search.focus();
   pages.startPages();
   if (page !== "screen-saver") refreshAfterPresent();
@@ -138,89 +139,88 @@ async function closeLauncher() {
   if (RAIL_AVAILABLE) stopRail();
   pages.stopPages();
   await api.hide();
-  // Keep the hidden window in its prepared fabric state so a subsequent native show can never
+  // Keep the hidden window prepared so a subsequent native show can never
   // expose the previous fully-open frame before launcher-prepare reaches the webview.
   stage.classList.add("pre");
 }
 
 // ---------- input ----------
 
-function onKey(event: KeyboardEvent) {
-  if (handleFocusKey(event)) return;
-  if (isRecordingHotkey()) return;
-  const modal = isPanelOpen() ? byId("settings") : grid.isPopupOpen() ? byId("popup") : null;
-  if (modal && event.key === "Tab" && !event.ctrlKey && !event.altKey && !event.metaKey) {
-    const controls = [...modal.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex='0']")].filter((node) => node.getClientRects().length > 0);
-    const first = controls[0], last = controls[controls.length - 1];
-    if (!modal.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) { event.preventDefault(); (event.shiftKey ? last : first)?.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-    return;
+function trapPopupTab(event: KeyboardEvent): boolean {
+  if (!grid.isPopupOpen() || event.key !== "Tab" || event.ctrlKey || event.altKey || event.metaKey) return false;
+  const popup = byId("popup");
+  const controls = [...popup.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex='0']")]
+    .filter(node => node.getClientRects().length > 0);
+  const first = controls[0], last = controls[controls.length - 1];
+  if (!popup.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) {
+    event.preventDefault(); (event.shiftKey ? last : first)?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first?.focus();
   }
+  return true;
+}
 
-  if (event.key === "Escape") {
-    event.preventDefault();
-    if (isMenuOpen()) closeMenu();
-    else if (isPanelOpen()) closePanel();
-    else if (grid.isPopupOpen()) grid.closePopup();
-    else if (search.value) {
-      search.value = "";
-      grid.setQuery("");
-      pages.setQuery("");
-    } else void closeLauncher();
-    return;
-  }
+function dismissCurrentLayer() {
+  if (isMenuOpen()) { closeMenu(); return; }
+  if (!byId("item-picker").hidden) { byId("item-picker").hidden = true; return; }
+  if (grid.isPopupOpen()) { grid.closePopup(); return; }
+  if (search.value) { search.value = ""; grid.setQuery(""); pages.setQuery(""); return; }
+  if (!byId("settings-surface").hidden) { pages.show("desktop"); return; }
+  void closeLauncher();
+}
 
-  if (event.ctrlKey && event.key.toLowerCase() === "q") {
-    event.preventDefault();
-    void api.quit();
-    return;
-  }
-
-  if (isPanelOpen() || isMenuOpen()) return;
+function handlePageKeys(event: KeyboardEvent): boolean {
   const target = event.target as HTMLElement;
   const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
-  const canNavigate = !editing || target === search;
-  if (canNavigate && !grid.isPopupOpen()) {
-    const cycleShortcut = settings().pageShortcut === "shift-tab"
-      ? event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey
-      : event.ctrlKey && !event.altKey && !event.metaKey;
-    if (event.key === "Tab" && cycleShortcut) {
-      event.preventDefault();
-      if (!event.repeat) pages.cycle(settings().pageShortcut === "ctrl-tab" && event.shiftKey ? -1 : 1);
-      return;
-    }
-    if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey && /^[1-9]$/.test(event.key)) {
-      if (pages.selectSpace(Number(event.key) - 1)) event.preventDefault();
-      return;
-    }
-    if (event.ctrlKey && event.altKey && !event.metaKey && ["a", "t", "f"].includes(event.key.toLowerCase())) {
-      event.preventDefault(); pages.show(event.key.toLowerCase() === "a" ? "all-apps" : event.key.toLowerCase() === "f" ? "focus" : "screen-time"); return;
-    }
-    if (event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "b") {
-      event.preventDefault(); if (!event.repeat) pages.toggleBar(); return;
-    }
-  }
-  if (event.key.startsWith("Arrow") && (pages.handleArrow(event) || grid.handleArrow(event))) {
+  if (editing && target !== search || grid.isPopupOpen() || isMenuOpen() || itemPicker.isOpen()) return false;
+  if (event.key === "Tab" && !event.ctrlKey && !event.altKey && !event.metaKey && pages.isHome()) {
     event.preventDefault();
-    return;
+    if (!event.repeat) pages.cycleHome(event.shiftKey ? -1 : 1);
+    return true;
   }
+  if (event.key === "Tab" && event.ctrlKey && !event.altKey && !event.metaKey) {
+    event.preventDefault();
+    if (!event.repeat) pages.cycle(event.shiftKey ? -1 : 1);
+    return true;
+  }
+  if (event.altKey && !event.ctrlKey && !event.shiftKey && !event.metaKey && /^[1-9]$/.test(event.key)) {
+    if (pages.selectPage(Number(event.key) - 1)) event.preventDefault();
+    return true;
+  }
+  const legacyPages: Record<string, string> = { a: "all-apps", t: "screen-time", f: "focus" };
+  if (event.ctrlKey && event.altKey && !event.metaKey && legacyPages[event.key.toLowerCase()]) {
+    event.preventDefault(); pages.show(legacyPages[event.key.toLowerCase()]);
+    return true;
+  }
+  if (event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "b") {
+    event.preventDefault();
+    if (!event.repeat) pages.toggleBar();
+    return true;
+  }
+  return false;
+}
 
-  // typing anywhere starts a search
-  const typing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-  if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey && !typing && !isPanelOpen()) {
-    if (grid.isPopupOpen()) grid.closePopup();
-    search.focus();
-  }
+function focusSearchOnType(event: KeyboardEvent) {
+  const target = event.target as HTMLElement;
+  const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+  if (event.key.length !== 1 || event.ctrlKey || event.altKey || event.metaKey || editing || !byId("settings-surface").hidden) return;
+  if (grid.isPopupOpen()) grid.closePopup();
+  search.focus();
+}
+
+function onKey(event: KeyboardEvent) {
+  if (handleFocusKey(event) || isRecordingHotkey() || trapPopupTab(event)) return;
+  if (event.key === "Escape") { event.preventDefault(); dismissCurrentLayer(); return; }
+  if (event.ctrlKey && event.key.toLowerCase() === "q") { event.preventDefault(); void api.quit(); return; }
+  if (handlePageKeys(event)) return;
+  if (event.key.startsWith("Arrow") && (pages.handleArrow(event) || grid.handleArrow(event))) { event.preventDefault(); return; }
+  focusSearchOnType(event);
 }
 
 function onShellClick(event: MouseEvent) {
   const target = event.target as HTMLElement;
 
   if (isMenuOpen()) return;
-  if (isPanelOpen()) {
-    if (!target.closest("#settings, #settings-button")) closePanel();
-    return;
-  }
   if (!settings().closeOnClickOff) return;
   if (target.closest(".tile, .glass, input, button")) return;
 
@@ -229,19 +229,7 @@ function onShellClick(event: MouseEvent) {
 
 // ---------- start ----------
 
-async function init() {
-  applySettings();
-  const statusRequest = api.status().catch(() => null);
-  await Promise.all([
-    groups.loadGroups(),
-    loadWorkspaces().catch((error) => { byId("navigation-note").textContent = `Could not load workspaces: ${String(error)}`; }),
-  ]);
-  status = (await statusRequest) ?? status;
-
-  grid.initGrid();
-  pages.initPages();
-  initFocus();
-  if (RAIL_AVAILABLE) initRail();
+function setupPanel() {
   initPanel({
     status: () => status,
     organizeNow: () => {
@@ -265,7 +253,9 @@ async function init() {
       grid.render();
     },
   });
+}
 
+function watchSettings() {
   let previousSettings = settings();
   onSettingsChange((next) => {
     const previous = previousSettings;
@@ -279,7 +269,9 @@ async function init() {
     syncPanel();
     if (next.compactBar !== previous.compactBar) syncRailCompact();
   });
+}
 
+function setupInput() {
   search.addEventListener("input", () => {
     pages.setQuery(search.value);
   });
@@ -290,28 +282,49 @@ async function init() {
     }
   });
 
-  byId("settings-button").addEventListener("click", togglePanel);
   byId("shell").addEventListener("click", onShellClick);
   document.addEventListener("keydown", onKey);
   initPageGestures(pages.cycle, (target) => {
-    if (isPanelOpen() || isMenuOpen() || grid.isPopupOpen()) return false;
+    if (isMenuOpen() || grid.isPopupOpen() || !byId("item-picker").hidden) return false;
     if (!(target instanceof HTMLElement)) return false;
     return !target.closest("input, textarea, #rail, #preview, #ambient, .app-list, .page-scroll, .pane-grid, #settings, #popup, #menu");
   });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
+}
 
+async function registerNativeEvents() {
   await listen<string>("launcher-backdrop-cache", (event) => void setBackdrop(event.payload));
   await listen("launcher-hidden", () => { closeAmbient(false); stopRail(); pages.stopPages(); window.clearTimeout(refreshTimer); });
-  await listen<string>("launcher-page", (event) => { closePanel(); search.value = ""; pages.setQuery(""); grid.setQuery(""); pages.show(event.payload); });
+  await listen<string>("launcher-page", (event) => { search.value = ""; pages.setQuery(""); grid.setQuery(""); pages.show(event.payload); });
   await listen<{ snapshot: string | null; reuseSnapshot: boolean; page: string }>("launcher-prepare", (event) =>
     void onPrepare(event.payload.snapshot, event.payload.reuseSnapshot, event.payload.page),
   );
+}
+
+async function init() {
+  applySettings();
+  const statusRequest = api.status().catch(() => null);
+  await Promise.all([
+    groups.loadGroups(),
+    loadWorkspaces().catch((error) => reportLoadError("Workspaces", error)),
+  ]);
+  status = (await statusRequest) ?? status;
+
+  grid.initGrid();
+  pages.initPages();
+  initFocus();
+  if (RAIL_AVAILABLE) initRail();
+  setupPanel();
+  watchSettings();
+  setupInput();
+  await registerNativeEvents();
 
   // Warm the grid while the window is still hidden. Icon requests remain
   // asynchronous, so this does not wait for the serial shell-icon worker.
   void loadItems().catch((error) => reportLoadError("Desktop", error));
   void api.setBackdropCapture(!settings().clearCanvas).catch(() => {});
   await api.ready();
+  void loadApplications().catch(error => reportLoadError("All apps", error));
 }
 
 void init();

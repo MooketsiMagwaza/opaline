@@ -7,7 +7,7 @@ links from the early spatial-canvas prototype.
 ## Objective
 
 Keep every app, folder and pane in a predictable centred grid. Dragging changes grid order only: entries cannot be left between cells,
-overlap one another or become stranded off-screen. Search and the rail remain independent floating surfaces.
+overlap one another or become stranded off-screen. Search and the rail remain independent floating surfaces. Custom screens keep their own pinned app/folder order; the first Home screen reads the Windows Desktop without extra items.
 
 ## Requirements
 

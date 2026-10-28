@@ -13,7 +13,7 @@
 ```text
 You are continuing work on Opaline, a Windows-first desktop launcher built with Tauri v2 (Rust backend, plain TypeScript + CSS UI).
 Pressing Ctrl+Alt+Space opens a full-screen acrylic overlay: a softened snapshot of the screen, the user's Desktop items arranged in a
-snapped grid and auto-organised into named panes, a floating search bar, a Windows AppsFolder catalogue and a settings pane. Loose items
+snapped grid and auto-organised into named panes, a floating search bar, a Windows AppsFolder catalogue and a full Settings page. Loose items
 are icon + name; panes use one mini-icon bubble. The retained taskbar mirror is now at the bottom; widgets remain deferred. Opaline only READS the Desktop folder; it
 never moves or deletes the user's files and makes no network requests.
 
@@ -36,7 +36,7 @@ DO THIS, IN ORDER (full detail in WORKORDER section 12):
 2. Verify everything in WORKORDER section 0 "Not yet verified". Use scripts/cdp.mjs for page behaviour; for the hotkey, focus-on-open,
    focus-loss hiding, tray and single-instance, write down exact manual steps for the owner to run instead of guessing. Fix bugs you find.
 3. Verify All Apps search, keyboard launch and a representative classic plus packaged app; keep enumeration after first paint.
-4. Tune the acrylic controls and fabric motion on bright/live wallpapers; complete docs/THEME_WORKORDER.md and keep warm snapshot mode under 300 ms.
+4. Tune the acrylic controls and short app-grid motion on bright/live wallpapers; complete docs/THEME_WORKORDER.md and keep warm snapshot mode under 300 ms.
 5. Complete docs/SPATIAL_WORKORDER.md's real pointer/restart pass.
 6. Build and install the release artifacts, run CI, then follow docs/RELEASING.md. Do not push or tag unless the owner says to publish.
 

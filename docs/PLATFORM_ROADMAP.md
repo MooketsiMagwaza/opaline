@@ -1,6 +1,6 @@
 # Platform roadmap
 
-These are planned work packages, not claims about the current `0.1.0` build. Each package must receive detailed acceptance criteria in
+These are planned work packages, not claims about the current `0.2.0` local preview. Each package must receive detailed acceptance criteria in
 the main work order before implementation.
 
 ## P1 — App Library
@@ -43,10 +43,10 @@ The guiding rule is that Opaline may supplement Windows, but it must never make 
 
 - The owner requested reactivation of the retained `rail.ts` and Taskband implementation as a bottom taskbar mirror. It is configurable in Settings and refreshes after presentation, stopping when hidden.
 - Decoded thumbnail cache hits target presentation within 50 ms; cold PrintWindow captures have a separate measured budget. Validate pin completeness, packaged-app launch, focus/restore, magnification and clipping on the owner's desktop.
-- Alt+1 selects Desktop; Alt+2–9 select named collections. Centered side arrows replace the wide bottom page strip. Ctrl+B leaves the taskbar view and a small expand control.
+- Alt+1 selects the read-only Desktop Home; Alt+2–5 select All apps, Screen time, Focus and Settings. Tab and centered side arrows change Home screens. The arrows disappear on other main pages. Ctrl+B leaves the taskbar view and a small expand control.
 - Native Windows virtual-desktop support is implemented; PowerToys Workspaces and multi-monitor restore acceptance remain open. Full scope and owner test: [session work order](SESSION_WORKORDER.md).
 
 ## Active — Login startup and taskbar icon parity
 
 - Hidden startup makes the global hotkey available before Desktop/icon/rail warming completes. The installer or portable executable must remain at its registered path after enabling Launch at login; the owner sign-in test is still required.
-- A running app's window icon takes priority over its shortcut/executable icon in the mirror. ChatGPT and other taskbar identities need a side-by-side check on the owner's Windows session. The bottom All apps button uses the Opaline mark, not a Windows logo.
+- A running app's window icon takes priority over its shortcut/executable icon in the mirror. ChatGPT and other taskbar identities need a side-by-side check on the owner's Windows session. The bottom Home button uses an outline house, not a Windows logo.

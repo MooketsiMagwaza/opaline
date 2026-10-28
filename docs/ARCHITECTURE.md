@@ -31,12 +31,12 @@ never photographs itself.
 ## Surfaces and themes
 
 Search is an independent floating surface. The retained taskbar rail in `rail.ts` is active at the bottom; refreshes and thumbnail warming run only while the overlay and taskbar option are active. No rail lens runs. One rounded apps surface contains the centred grid. Loose apps and folders are
-plain icon + name with no per-item bubble. A pane uses one rounded mini-icon bubble and places its name below. Popup, preview, settings
-and context menu are transient surfaces above them. This keeps hierarchy legible and bounds compositing work.
+plain icon + name with no per-item bubble. A pane uses one rounded mini-icon bubble and places its name below. The pane popup, preview,
+item picker and context menu are transient surfaces; Settings is a full page. This keeps hierarchy legible and bounds compositing work.
 
-The side arrows and keyboard/gesture navigation select Desktop, named spaces, All apps, Screen time and Focus. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session. `focus.ts` owns the Zen and screen-saver surfaces, while `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
+The side arrows and Tab cycle the read-only Desktop Home and custom screens. Ctrl+Tab and Alt+1–5 select Home, All apps, Screen time, Focus and Settings. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session. `focus.ts` owns the Zen and screen-saver surfaces, while `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
 the overlay is visible, covering classic Start-menu entries and packaged apps without adding work to the opening path. `pages.ts` owns
-page state, filtering and list rendering. It uses the same AppsFolder catalogue for searchable workspace additions; `picker.rs` opens an owned Windows folder/file dialog on a worker and returns only the chosen path for metadata storage. Widgets were removed from the current UI and remain a roadmap item.
+top-level page state and the Home-screen pager. `item-picker.ts` owns the shared searchable app/folder add flow for Home and named screens; `picker.rs` opens an owned Windows folder/file dialog on a worker and returns only the chosen path for metadata storage. Widgets were removed from the current UI and remain a roadmap item.
 
 The active material engine is deliberately narrow: one dark acrylic surface vocabulary with user-controlled backdrop blur, tint strength
 and tint colour. This keeps search, Home, All Apps and transient panels visually consistent. Older theme fields remain readable for settings
@@ -50,7 +50,7 @@ backdrop filter per card—so adding Desktop items does not add one expensive co
 - `groups.json`: virtual panes, normalized grid-order ranks and launch counts.
 - `config.json`: the hotkey needed before the UI exists.
 - `opaline.settings`: webview local storage for visual and behavioural settings.
-- `workspaces.json`: up to eight named app/file/folder collections, separate from Desktop panes.
+- `workspaces.json`: up to eight named app/file/folder collections shown as Home screens after the Desktop-based first screen.
 - `screen-time.json`: foreground/maximised executable totals, current local-day totals and the pause preference. No window titles are saved.
 - `shell.json`: the opt-in Windows-key preference.
 

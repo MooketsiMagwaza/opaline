@@ -42,7 +42,8 @@ Useful while developing:
 | Rail and hover previews | `src/rail.ts` |
 | Panes (state) and auto-organise rules | `src/groups.ts`, `src/organize.ts` |
 | Glass and lens | `src/glass.ts`, `src/launcher.css` |
-| Settings (state) and the settings pane | `src/settings.ts`, `src/panel.ts` |
+| Settings (state) and the full Settings page | `src/settings.ts`, `src/panel.ts` |
+| Home additions and shared app/folder picker | `src/home.ts`, `src/item-picker.ts` |
 | Context menu · icon cache · Rust commands · DOM helpers | `src/menu.ts`, `src/icons.ts`, `src/api.ts`, `src/dom.ts` |
 | Logo and generated icons | `assets/logo.svg`, `npm run icons` |
 
@@ -70,7 +71,7 @@ interactive app and not everything can be tested automatically.
 - **Shell icon calls go through the single icon worker.** Do not extract icons from several threads at once — it loses icons (this sank the first beta, see [DEVLOG.md](DEVLOG.md)).
 - **Keep the glass cheap.** `backdrop-filter` is expensive on integrated GPUs. Use it on large panes, not on every tile, and make sure *Clear* and *Frost* still look right.
 - Respect `prefers-reduced-motion`, keep everything reachable by keyboard, and keep text readable over any wallpaper.
-- Tune with the settings, not magic numbers: new visual parameters should become a setting with a default and a place in the settings pane.
+- Tune with the settings, not magic numbers: new visual parameters should become a setting with a default and a place in the Settings page.
 
 ## Commits and pull requests
 

@@ -1,4 +1,4 @@
-//! Two small JSON files in the app data folder. The UI owns the schema of `groups.json`;
+//! Small JSON files in the app data folder. The UI owns the schema of `groups.json`;
 //! Rust only needs `config.json` (the hotkey) before the UI exists.
 
 use std::{fs, path::PathBuf};

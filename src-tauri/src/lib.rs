@@ -30,7 +30,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use tauri_plugin_opener::OpenerExt;
 
 const DEFAULT_HOTKEY: &str = "ctrl+alt+space";
-const CODENAME: &str = "Annealed";
+const CODENAME: &str = "Borosilicate";
 // Acrylic blur hides the extra detail; a smaller frame cuts GDI readback, JPEG work and IPC size.
 const SNAPSHOT_WIDTH: u32 = 960;
 const THUMBNAIL_WIDTH: u32 = 360;

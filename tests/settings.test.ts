@@ -10,7 +10,6 @@ describe("theme migration", () => {
     expect(result.tintColor).toBe(DEFAULTS.tintColor);
     expect(result.backdropBlur).toBe(0);
     expect(result.tintStrength).toBe(DEFAULTS.tintStrength);
-    expect(result.pageShortcut).toBe("shift-tab");
     expect(result.compactBar).toBe(false);
     expect(result.paneMotionMs).toBe(500);
     expect(normalizeSettings({ taskbarIconSize: 44 }).taskbarIconSize).toBe(36);

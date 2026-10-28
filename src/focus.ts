@@ -46,7 +46,7 @@ function renderTimer() {
   byId("focus-phase").textContent = phaseLabels[timer.phase];
   byId("focus-progress").style.setProperty("--progress", String(1 - remaining / timer.durationMs));
   byId("focus-start").textContent = timer.endsAt === null ? "Start" : "Pause";
-  byId("focus-note").textContent = message || "25-minute sessions by default. Every fourth focus session earns a longer break. Change durations in Settings → Focus.";
+  byId("focus-note").textContent = message || "Stay with one task. Your next break will be ready when this session ends.";
   document.querySelectorAll<HTMLButtonElement>("[data-timer-phase]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.timerPhase === timer.phase)));
   byId("focus-completed").textContent = `${timer.dailySessions[localDateKey()] || 0} today · ${timer.completedSessions} completed`;
   if (ambient) byId("ambient-timer").textContent = timer.endsAt !== null ? `${phaseLabels[timer.phase]} · ${clockText(remaining)}` : "";

@@ -25,7 +25,10 @@ export function onWorkspacesChange(listener: () => void) { listeners.add(listene
 
 export async function loadWorkspaces() {
   const text = await api.loadStore(FILE);
-  spaces = text ? normalizeWorkspaces(JSON.parse(text)) : [{ id: "dev-tools", name: "Dev tools", items: [] }];
+  spaces = text ? normalizeWorkspaces(JSON.parse(text)) : [];
+  for (let number = spaces.length + 2; number <= 3; number++) {
+    spaces.push({ id: `screen-${number}`, name: `Screen ${number}`, items: [] });
+  }
 }
 
 function change(edit: (next: Workspace[]) => void): Promise<void> {
@@ -42,7 +45,7 @@ function change(edit: (next: Workspace[]) => void): Promise<void> {
 
 export function createWorkspace(name: string) {
   return change((next) => {
-    if (next.length >= 8) throw new Error("You can have up to eight custom spaces.");
+    if (next.length >= 8) throw new Error("You can have up to eight custom screens.");
     next.push({ id: crypto.randomUUID(), name: name.trim().slice(0, 40) || "Workspace", items: [] });
   });
 }
@@ -62,8 +65,8 @@ export function reportWorkspaceError(error: unknown) {
 }
 
 export function workspaceMenu(item: Item): MenuEntry {
-  return { label: "Add to workspace", items: spaces.map((space, index) => ({
-    label: `${space.name} · Alt+${index + 2}`,
+  return { label: "Add to custom screen", items: spaces.map((space, index) => ({
+    label: `${space.name} · Screen ${index + 2}`,
     disabled: space.items.some((other) => other.path === item.path),
     action: () => { void pinItem(space.id, item).catch(reportWorkspaceError); },
   })), disabled: spaces.length === 0 };

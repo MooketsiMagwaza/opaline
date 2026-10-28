@@ -25,7 +25,7 @@ export function renderUsage() {
     .sort((first, second) => second.seconds - first.seconds || first.name.localeCompare(second.name));
   const total = rows.reduce((sum, entry) => sum + entry.seconds, 0);
   byId("usage-total").textContent = formatDuration(total);
-  byId("usage-status").textContent = error || report?.saveError || (report?.supported === false ? "Screen time is available on Windows." : report?.enabled === false ? "Tracking paused. Saved history is kept." : "Foreground, maximised apps. Idle after 60 seconds and sleep are excluded. History stays on this device; daily history starts with this update.");
+  byId("usage-status").textContent = error || report?.saveError || (report?.supported === false ? "Screen time is available on Windows." : report?.enabled === false ? "Tracking paused. Saved history is kept." : "Foreground, maximised time only. Your history stays on this device.");
   byId("usage-insights").replaceChildren(
     el("div", "insight", [el("span", "row-hint", ["Apps used"]), el("strong", "", [String(rows.filter(entry => entry.seconds > 0).length)])]),
     el("div", "insight", [el("span", "row-hint", ["Most used"]), el("strong", "", [rows[0]?.seconds ? rows[0].name : "—"])]),

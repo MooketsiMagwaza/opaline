@@ -17,7 +17,7 @@
   <a href="docs/NAMING.md">Naming</a>
 </p>
 
-> **Status: `0.1.0` "Annealed" release candidate.** Windows 11 first; Linux is planned.
+> **Status: `0.2.0` "Borosilicate" local preview.** Windows 11 first; Linux is planned. Owner testing comes before the draft PR or public release.
 >
 > The TypeScript build, frontend tests and Rust unit tests are clean locally. The remaining release gate is the real Windows interaction
 > pass: grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
@@ -29,7 +29,7 @@
 You hide the icons on your Windows desktop and keep the files where they are. Opaline reads your Desktop folders and, on
 a hotkey, lays them out over a blurred snapshot — your wallpaper, your live wallpaper, your
 windows — like a centred home screen. Items are grouped into named **panes**, and a focused Appearance panel controls the acrylic blur and tint.
-The bottom taskbar mirror shows pinned and running apps, with cached window previews. Numbered buttons in the corner switch between Desktop and named workspaces.
+The bottom taskbar mirror shows pinned and running apps, with cached window previews. A Home button sits beside it; Tab moves between Home screens.
 
 Opaline only **reads** your Desktop. It never moves, renames or deletes your files, and it makes no network requests.
 
@@ -43,12 +43,12 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
 | **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
-| **Workspaces** | Alt+1 opens Desktop; Alt+2–9 open named spaces for apps, files and folders. Add items by searching installed Windows apps or using the native folder/file picker, without moving your files. |
+| **Home screens** | Alt+1 opens a read-only view of your Windows Desktop. Tab and Shift+Tab move through simple custom screens. Each custom screen can hold apps, folders and files chosen through Windows app search or a native picker. |
 | **Taskbar mirror** | The retained rail now sits at the bottom, with running indicators, focus/restore/launch and cached previews. Ctrl+B collapses page navigation. |
 | **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, with charts, per-app detail and pause/clear controls. |
 | **Focus** | Configurable Pomodoro timer, daily progression, quiet screen saver and slowly changing Zen reminders. Automatic saver is opt-in. |
 | **Windows key** | Opt-in Windows-key tap opens All apps while Opaline runs. Windows chords and the native Start-button click remain available. |
-| **Settings** | Acrylic blur/tint, fabric opening motion, icon size, behaviour, hotkey and opt-in launch at login. All live. |
+| **Settings** | A full page for acrylic blur/tint, icon size, behaviour, hotkey and opt-in launch at login. Changes apply as you make them. |
 | **Easy to leave** | <kbd>Esc</kbd>, click empty space, click away, or press the hotkey again. A tray icon is always there. |
 
 Feature status lives in the [work order](WORKORDER.md#4-work-packages).
@@ -57,17 +57,31 @@ Feature status lives in the [work order](WORKORDER.md#4-work-packages).
 
 Rendered examples use familiar app names and icons with synthetic folders, window contents and screen-time totals. They use the owner's current appearance values; no personal Desktop names or real captures are published.
 
-![Desktop with side arrows and the bottom taskbar mirror](docs/images/desktop.png)
-
-| Dev tools workspace | Local screen time |
+| Desktop with icons hidden | Opaline Home |
 |---|---|
-| ![Apps and folders in a workspace](docs/images/workspaces.png) | ![Example screen-time totals](docs/images/screen-time.png) |
+| ![Illustrative blank desktop with taskbar and no desktop icons](docs/images/blank-desktop.png) | ![Opaline Home with side arrows and the bottom taskbar mirror](docs/images/desktop.png) |
 
-![Search Windows apps to add them to a workspace](docs/images/workspace-picker.png)
+The blank desktop is an original illustration based on the owner's example, with no personal wallpaper, notifications or app data.
 
-| Screen-time progression | Focus timer |
+| All apps | Dev tools Home screen |
 |---|---|
-| ![Thirty-day screen-time graph with example app usage](docs/images/screen-time-chart.png) | ![Focus timer with Zen and screen saver options](docs/images/focus.png) |
+| ![Searchable Windows app catalogue](docs/images/all-apps.png) | ![Apps and folders on a Dev tools Home screen](docs/images/workspaces.png) |
+
+![Fresh empty Screen 3 with a dot pager and one Add action](docs/images/screen-3.png)
+
+![An empty named custom screen offers a direct Add app or folder action](docs/images/empty-home-screen.png)
+
+![Add Windows apps, folders or files to a custom screen](docs/images/workspace-picker.png)
+
+| Screen time | Screen-time progression | Focus timer |
+|---|---|---|
+| ![Example screen-time totals](docs/images/screen-time.png) | ![Thirty-day screen-time graph with example app usage](docs/images/screen-time-chart.png) | ![Focus timer with Zen and screen saver options](docs/images/focus.png) |
+
+| Zen | Screen saver | Settings |
+|---|---|---|
+| ![Zen quotes](docs/images/zen.png) | ![Quiet screen saver](docs/images/screen-saver.png) | ![Full-page settings](docs/images/settings.png) |
+
+[Every Settings section](docs/images/settings-appearance.png): [Layout](docs/images/settings-layout.png) · [Taskbar](docs/images/settings-rail.png) · [Workspaces](docs/images/settings-workspaces.png) · [Screen time](docs/images/settings-screen-time.png) · [Focus](docs/images/settings-focus.png) · [Panes](docs/images/settings-panes.png) · [About](docs/images/settings-about.png).
 
 ![A pane peek showing its member names after a short hover](docs/images/folder-peek.png)
 
@@ -128,13 +142,13 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | Click empty space | Close |
 | Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Quit |
-| <kbd>Alt</kbd>+<kbd>1</kbd> / <kbd>2</kbd>–<kbd>9</kbd> | Desktop / named workspaces, while Opaline is open |
-| <kbd>Shift</kbd>+<kbd>Tab</kbd> | Cycle pages; choose Ctrl+Tab in Behaviour to keep standard reverse focus |
+| <kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>5</kbd> | Home / All apps / Screen time / Focus / Settings |
+| <kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> | Next / previous Home screen |
+| <kbd>Ctrl</kbd>+<kbd>Tab</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd> | Next / previous top-level page |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the side arrows, Shift+Tab or trackpad/touch gestures to cycle between **Desktop**, named spaces and other pages. Six header icons put **All apps**, **Dev tools** and **Focus** left of search, with **Screen time**, **Home** and **Settings** on the right. The bottom taskbar shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. All Apps is loaded after the first visible frame from
-Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slow the opening animation.
+Use the side arrows or Tab on Home to move between the Desktop and custom screens. Ctrl+Tab or trackpad/touch gestures cycle between top-level pages. The header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right. **Home** sits beside the bottom taskbar, which shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
 
 ## Works well with
 
@@ -151,7 +165,7 @@ Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slo
 | Panes, grid order and launch counts | `groups.json` in the app data folder (`%APPDATA%\io.github.mooketsimagwaza.opaline`) |
 | Hotkey | `config.json`, same folder |
 | Look & behaviour settings | the webview's local storage (`opaline.settings`) |
-| Named spaces and pinned items | `workspaces.json`, same app data folder |
+| Named Home screens and pinned items | `workspaces.json`, same app data folder |
 | Local screen time / Windows-key preference | `screen-time.json` / `shell.json`, same app data folder |
 
 Delete `groups.json` to start over; Opaline will organise your desktop again on the next open.
