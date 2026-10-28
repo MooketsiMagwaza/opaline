@@ -22,7 +22,6 @@ export type Settings = {
   groupsFirst: boolean;
   sortBy: "name" | "frequent";
   rail: boolean;
-  railSide: "right" | "left";
   railMagnify: boolean;
   railPreviews: boolean;
   closeOnClickOff: boolean;
@@ -62,7 +61,6 @@ export const DEFAULTS: Settings = {
   groupsFirst: true,
   sortBy: "name",
   rail: true,
-  railSide: "right",
   railMagnify: false,
   railPreviews: true,
   closeOnClickOff: true,
@@ -132,12 +130,12 @@ export function normalizeSettings(value: unknown): Settings {
     for (const key of ["tintColor", "customSurfaceColor"] as const) {
       if (!/^#[0-9a-f]{6}$/i.test(merged[key])) merged[key] = DEFAULTS[key];
     }
-    const ranges = { backdropBlur: [0, 40], backdropSaturation: [0, 3], backdropBrightness: [0.2, 2], tintStrength: [0.06, 0.5], paneBlur: [0, 40], refraction: [0, 1], cornerRadius: [0, 60], tileGlass: [0, 1], customSurfaceOpacity: [0.2, 1], paneMotionMs: [160, 500], surfaceWidth: [640, 1280], taskbarIconSize: [24, 44], scrollbarWidth: [6, 14], focusMinutes: [1, 90], shortBreakMinutes: [1, 30], longBreakMinutes: [5, 60], quoteIntervalSeconds: [5, 120], screenSaverIdleMinutes: [1, 60] } as const;
+    const ranges = { backdropBlur: [0, 40], backdropSaturation: [0, 3], backdropBrightness: [0.2, 2], tintStrength: [0.06, 0.5], paneBlur: [0, 40], refraction: [0, 1], cornerRadius: [0, 60], tileGlass: [0, 1], customSurfaceOpacity: [0.2, 1], paneMotionMs: [160, 500], surfaceWidth: [640, 1280], taskbarIconSize: [24, 36], scrollbarWidth: [6, 14], focusMinutes: [1, 90], shortBreakMinutes: [1, 30], longBreakMinutes: [5, 60], quoteIntervalSeconds: [5, 120], screenSaverIdleMinutes: [1, 60] } as const;
     for (const key of Object.keys(ranges) as (keyof typeof ranges)[]) {
       const [min, max] = ranges[key];
       merged[key] = Number.isFinite(merged[key]) ? Math.min(max, Math.max(min, merged[key])) : DEFAULTS[key];
     }
-    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], railSide: ["right", "left"], pageShortcut: ["shift-tab", "ctrl-tab"] })) {
+    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], pageShortcut: ["shift-tab", "ctrl-tab"] })) {
       if (!values.includes(String(merged[key as keyof Settings]))) (merged as Record<string, unknown>)[key] = DEFAULTS[key as keyof Settings];
     }
     return merged;
@@ -216,7 +214,6 @@ export function applySettings() {
   body.canvas = "frosted";
   body.labels = String(s.showLabels);
   body.rail = String(RAIL_AVAILABLE && s.rail);
-  body.railSide = s.railSide;
   body.anim = String(s.animations);
   body.entry = s.fabricEntrance ? "fabric" : "fade";
   body.compactBar = String(s.compactBar);

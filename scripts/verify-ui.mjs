@@ -14,32 +14,34 @@ mkdirSync(output, { recursive: true });
 
 const iconManifest = JSON.parse(readFileSync(new URL("../docs/demo-icons/manifest.json", import.meta.url), "utf8"));
 await page.addInitScript((manifest) => {
-  const names = ["Visual Studio Code", "Terminal", "Docker Desktop", "Projects", "Design assets", "OBS Studio", "Design references", "Firefox", "Obsidian", "Spotify", "Documents", "Notion Calendar", "Microsoft Edge", "Discord", "WhatsApp", "Notion", "Steam", "ChatGPT", "Claude", "Prompts", "Android Studio", "Coursework", "Lecture notes", "Assignments", "Frontend", "Backend", "Documentation", "2024", "2025", "Previous builds", "Samples", "Resources", "Templates", "Design assets", "Reference library"];
+  const names = ["Visual Studio Code", "Terminal", "Docker Desktop", "Client portal", "Design assets", "OBS Studio", "Design references", "Firefox", "Obsidian", "Spotify", "Documents", "Notion Calendar", "Microsoft Edge", "Discord", "WhatsApp", "Notion", "Steam", "ChatGPT", "Claude", "Prompts", "Android Studio", "Coursework", "Lecture notes", "Assignments", "Design system", "Open-source", "Developer notes", "2024", "2025", "Previous builds", "Samples", "Resources", "Templates", "Downloads", "Reference library"];
   const folderIndices = [3, 4, 6, 10, 19, ...Array.from({ length: names.length - 21 }, (_, index) => index + 21)];
   const items = names.map((name, index) => ({ name, path: `demo:${index}`, isFolder: folderIndices.includes(index) }));
-  if (!localStorage.getItem("opaline.settings")) localStorage.setItem("opaline.settings", JSON.stringify({backdropBlur:10,tintStrength:.16,tintColor:"#0b1226",iconSize:"small",rail:true,railMagnify:true}));
+  if (!localStorage.getItem("opaline.settings")) localStorage.setItem("opaline.settings", JSON.stringify({backdropBlur:10,tintStrength:.16,tintColor:"#0b1226",iconSize:"small",rail:true,railMagnify:false}));
   const data = (svg) => `data:image/svg+xml;base64,${btoa(svg)}`;
   const colours = ["#6ea7ff", "#ad8cff", "#f18c9b", "#e4b875", "#66c6bb", "#db9be8"];
   const icon = (path) => {
-    const index = Number(path.split(":")[1]) || 0;
-    if (manifest[names[index]]) return manifest[names[index]];
-    if (folderIndices.includes(index)) return data('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><path d="M5 13h23l7 7h24v35H5z" fill="#eebc36"/><path d="M5 24h54v31H5z" fill="#ffdc69"/><path d="M5 25h54" stroke="#ffe99c" stroke-width="2"/></svg>');
+    const index = path.startsWith("demo:") ? Number(path.slice(5)) : -1;
+    if (index >= 0 && manifest[names[index]]) return manifest[names[index]];
+    if (index < 0 || folderIndices.includes(index)) return data('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><path d="M5 13h23l7 7h24v35H5z" fill="#eebc36"/><path d="M5 24h54v31H5z" fill="#ffdc69"/><path d="M5 25h54" stroke="#ffe99c" stroke-width="2"/></svg>');
     const shape = '<rect x="17" y="16" width="30" height="32" rx="5" fill="none" stroke="white" stroke-width="4"/><path d="M24 26h16m-16 9h10" stroke="white" stroke-width="3"/>';
     return data(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="16" fill="${colours[index % colours.length]}"/>${shape}</svg>`);
   };
   const backdrop = data('<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800"><defs><linearGradient id="b" x2="1" y2="1"><stop stop-color="#222833"/><stop offset=".5" stop-color="#161c2a"/><stop offset="1" stop-color="#0d1422"/></linearGradient></defs><path fill="url(#b)" d="M0 0h1280v800H0z"/></svg>');
   const initial = {
     "groups.json": { version: 1, organized: true, groups: [
-      { id: "development", name: "Development", items: items.slice(0, 3).map((item) => item.path) },
+      { id: "ides", name: "IDEs", items: [items[0],items[20]].map((item) => item.path) },
+      { id: "devtools", name: "Dev tools", items: [items[1],items[2]].map((item) => item.path) },
       { id: "design", name: "Creative", items: items.slice(4, 7).map((item) => item.path) },
       { id: "browsers", name: "Browsers", items: [items[7].path,items[12].path] },
       { id: "chat", name: "Chat", items: [items[13].path,items[14].path] },
-      { id: "notes", name: "Notes & planning", items: [items[8].path,items[11].path,items[15].path] },
+      { id: "notes", name: "Notes & planning", items: [items[8].path,items[10].path,items[11].path,items[15].path] },
       { id: "games", name: "Games & music", items: [items[9].path,items[16].path] },
       { id: "agents", name: "AI & code agents", items: items.slice(17,20).map(item=>item.path) },
       { id: "university", name: "University", items: items.slice(21,24).map(item=>item.path) },
-      { id: "code", name: "Code projects", items: items.slice(24,27).map(item=>item.path) },
+      { id: "code", name: "Code projects", items: [items[3],...items.slice(24,27)].map(item=>item.path) },
       { id: "archive", name: "Archive", items: items.slice(27,30).map(item=>item.path) },
+      { id: "reference", name: "Reference", items: [items[31],items[32],items[34]].map(item=>item.path) },
     ], launches: {}, layout: {} },
     "workspaces.json": [{ id: "dev-tools", name: "Dev tools", items: items.slice(0, 4) }],
   };
@@ -56,6 +58,7 @@ await page.addInitScript((manifest) => {
       case "list_apps": return items.filter(item=>!item.isFolder);
       case "get_icon": return icon(args.path);
       case "workspace_item": return { name: "Example folder", path: args.path, isFolder: true };
+      case "folder_preview": return ["Overview.md", "Screenshots", "Notes", "Assets"];
       case "rail_items": return [7, 0, 1, 5, 8].map((index, order) => ({ id: `app-${index}`, name: names[index], iconPath: items[index].path, launchPath: items[index].path, pinned: order < 4, windows: order < 3 ? [{ hwnd: order + 101, title: `${names[index]} — Example project`, minimized: false }] : [] }));
       case "thumbnail": await new Promise((resolve) => setTimeout(resolve, 180)); return data('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220"><rect width="360" height="220" fill="#202a3e"/><path d="M0 0h360v25H0z" fill="#3b4964"/><circle cx="13" cy="13" r="4" fill="#f59c9c"/><circle cx="27" cy="13" r="4" fill="#f1d08a"/><path d="M20 55h180M20 80h260M20 105h220M20 130h130" stroke="#98b9ed" stroke-width="8"/><path d="M20 160h290M20 185h250" stroke="#b4a1dd" stroke-width="8"/></svg>');
       case "screen_time": return { enabled: true, supported: true, saveError: null, entries: [0, 7, 12, 1].map((index, order) => { const day = new Date(); const key = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,"0")}-${String(day.getDate()).padStart(2,"0")}`; return { id: `usage-${index}`, name: names[index], path: items[index].path, totalSeconds: [18900, 7800, 4200, 2700][order], todaySeconds: [6480, 3120, 1680, 540][order], dailySeconds: { [key]: [6480, 3120, 1680, 540][order] } }; }) };
@@ -77,10 +80,23 @@ try {
   await page.goto("http://127.0.0.1:1420");
   await page.waitForSelector("#grid .tile"); await wait(1000);
   assert(await visible("#apps-surface"));
+  assert.equal(await page.locator("#page-tabs .page-tab").count(), 2);
+  assert.equal(await page.locator("#section-links button").count(), 3);
+  assert.equal(await page.locator("#rail .app-list-shortcut").count(), 0);
+  assert.equal(await page.locator("#rail").evaluate(node => getComputedStyle(node).scrollbarWidth), "none");
+  assert.equal(await page.locator("#rail").evaluate(node => node.getBoundingClientRect().height), await page.locator("#search-wrap").evaluate(node => node.getBoundingClientRect().height));
   assert.equal(await page.locator("#grid-layer").evaluate(node=>getComputedStyle(node).maskImage), "none");
   assert(await page.locator("#grid .label").evaluateAll(nodes=>nodes.every(node=>node.getBoundingClientRect().height >= 30)));
   await shot("desktop.png");
-  await page.locator('.item-tile[data-path="demo:10"]').click({button:"right"});
+  await page.locator('.pane-tile[data-id="ides"]').hover(); await wait(700);
+  assert(!(await visible("#tile-peek")));
+  await wait(1400);
+  assert(await visible("#tile-peek"));
+  assert.match(await page.locator("#tile-peek").textContent(), /Visual Studio Code.*Android Studio/s);
+  await shot("folder-peek.png");
+  await page.locator('.item-tile[data-path="demo:30"]').hover(); await wait(2100);
+  assert.match(await page.locator("#tile-peek").textContent(), /Overview.md/);
+  await page.locator('.item-tile[data-path="demo:30"]').click({button:"right"});
   await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter");
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('demo:workspaces.json'))[0].items.length === 5);
   await page.keyboard.press("Alt+2");
@@ -108,7 +124,8 @@ try {
   assert(await visible("#focus-surface"));
   await page.locator("#focus-start").click();
   assert.equal(await page.locator("#focus-start").textContent(), "Pause");
-  assert.equal(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgb(196, 222, 254)");
+  await wait(250);
+  assert.equal(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgb(216, 233, 255)");
   await shot("focus.png");
   await page.locator("#focus-zen").click();
   assert(await visible("#ambient"));
@@ -121,9 +138,9 @@ try {
   await shot("screen-saver.png");
   await page.keyboard.press("Escape");
   await page.keyboard.press("Alt+1");
-  const origin = await page.locator('.pane-tile[data-id="development"]').boundingBox();
+  const origin = await page.locator('.pane-tile[data-id="ides"]').boundingBox();
   const start = await page.evaluate(() => {
-    document.querySelector('.pane-tile[data-id="development"]').click();
+    document.querySelector('.pane-tile[data-id="ides"]').click();
     const rect = document.getElementById("popup").getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   });
@@ -151,6 +168,9 @@ try {
   await page.waitForSelector("#workspace-items .app-list-item");
   await page.keyboard.press("Control+b");
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
+  assert(!(await visible("#page-nav")));
+  assert.equal(await page.locator("#rail .dock-expand").count(), 1);
+  await shot("compact-taskbar.png");
   await page.reload(); await page.waitForSelector("#grid .tile"); await wait(1400);
   await page.keyboard.press("Alt+3");
   assert.equal(await page.locator("#workspace-title").textContent(), "Projects");
@@ -177,14 +197,14 @@ try {
   for (const width of [1024,800,600]) {
     await page.setViewportSize({width,height:600});
     const geometry = await page.evaluate(()=>{
-      const nav=document.getElementById('page-nav').getBoundingClientRect(), search=document.getElementById('search-wrap').getBoundingClientRect(), actions=document.querySelector('.actions').getBoundingClientRect();
+      const nav=document.getElementById('page-nav').getBoundingClientRect(), search=document.getElementById('search-wrap').getBoundingClientRect(), actions=document.querySelector('.actions').getBoundingClientRect(), links=document.getElementById('section-links').getBoundingClientRect();
       const overlaps=(a,b)=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;
-      return {inBounds:nav.left>=0&&nav.right<=innerWidth,overlaps:overlaps(nav,search)||overlaps(search,actions)};
+      return {inBounds:nav.left>=0&&nav.right<=innerWidth&&links.left>=0&&links.right<=innerWidth,overlaps:overlaps(nav,search)||overlaps(search,actions)||overlaps(links,search)||overlaps(links,actions)||overlaps(links,nav)};
     });
     assert(geometry.inBounds && !geometry.overlaps, JSON.stringify({width,...geometry}));
   }
   assert.deepEqual(errors, []);
-  const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: 10, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
+  const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: 12, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result, null, 2));
 } finally { await browser.close(); }

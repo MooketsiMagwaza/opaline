@@ -8,7 +8,7 @@
     <script type="module" src="/src/launcher.ts"></script>
   </head>
 
-  <body data-style="frost" data-canvas="frosted" data-entry="fabric" data-labels="true" data-rail="false" data-rail-side="right" data-anim="true">
+  <body data-style="frost" data-canvas="frosted" data-entry="fabric" data-labels="true" data-rail="false" data-anim="true">
     <div class="stage pre" id="stage">
       <img id="backdrop" alt="" hidden />
       <div id="tint"></div>
@@ -22,6 +22,12 @@
             </svg>
             <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search desktop and installed apps" />
           </div>
+
+          <nav id="section-links" aria-label="Sections">
+            <button type="button" data-page="all-apps">All apps</button>
+            <button type="button" data-page="screen-time">Screen time</button>
+            <button type="button" data-page="focus">Focus</button>
+          </nav>
 
           <div class="actions">
             <button type="button" class="orb glass" id="settings-button" title="Settings" aria-label="Settings">
@@ -81,7 +87,7 @@
         </main>
 
         <p id="navigation-note" role="status"></p>
-        <nav id="page-nav" class="glass" aria-label="Launcher pages">
+        <nav id="page-nav" aria-label="Workspaces and page cycling">
           <button type="button" id="page-prev" class="page-arrow" aria-label="Previous page">‹</button>
           <div id="page-tabs"></div>
           <div class="page-position"><strong id="page-label" aria-live="polite">Desktop</strong></div>
@@ -91,6 +97,7 @@
 
         <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
         <div id="preview" class="glass" hidden></div>
+        <div id="tile-peek" class="glass" role="status" hidden></div>
 
         <div id="popup-layer" hidden>
           <section id="popup" class="glass" aria-label="Pane"></section>

@@ -139,7 +139,8 @@ mod imp {
         unsafe {
             let window = HWND(hwnd as _);
             let mut result = 0usize;
-            for size in [ICON_SMALL2, ICON_BIG] {
+            // Prefer the larger window asset at dock sizes; upscaling a 16 px icon looks soft.
+            for size in [ICON_BIG, ICON_SMALL2] {
                 let _ = SendMessageTimeoutW(
                     window,
                     WM_GETICON,
@@ -154,10 +155,10 @@ mod imp {
                 }
             }
             if result == 0 {
-                result = GetClassLongPtrW(window, GCLP_HICONSM) as usize;
+                result = GetClassLongPtrW(window, GCLP_HICON) as usize;
             }
             if result == 0 {
-                result = GetClassLongPtrW(window, GCLP_HICON) as usize;
+                result = GetClassLongPtrW(window, GCLP_HICONSM) as usize;
             }
             if result == 0 {
                 return None;

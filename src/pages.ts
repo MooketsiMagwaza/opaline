@@ -1,4 +1,4 @@
-import { api, type AppEntry } from "./api";
+import { api, type AppEntry, type Item } from "./api";
 import { byId, el } from "./dom";
 import * as grid from "./grid";
 import { iconElement } from "./icons";
@@ -22,10 +22,11 @@ const pages = () => [
   { id: "focus", label: "Focus", surface: "focus-surface" },
 ];
 
-function appButton(item: AppEntry, spaceId?: string): HTMLElement {
+function appButton(item: AppEntry & Partial<Pick<Item, "isFolder">>, spaceId?: string): HTMLElement {
   const open = el("button", "app-list-item", [iconElement(item.path, item.name), el("span", "app-list-name", [item.name])]);
   open.type = "button";
   open.title = item.name;
+  if (item.isFolder) { open.removeAttribute("title"); grid.wirePeek(open, item.name, () => api.folderPreview(item.path)); }
   open.addEventListener("click", () => grid.launchItem(item.path));
   const menu = spaceId ? [{ label: "Remove from workspace", action: () => { void unpinItem(spaceId, item.path).catch(reportWorkspaceError); } }]
     : [workspaceMenu({ ...item, isFolder: false })];
@@ -59,10 +60,9 @@ function renderWorkspace() {
 }
 
 function renderNav() {
-  byId("page-tabs").replaceChildren(...pages().map((page, index) => {
-    const shortcut = index <= workspaces().length ? `Alt+${index + 1}` : page.id === "all-apps" ? "Ctrl+Alt+A" : page.id === "focus" ? "Ctrl+Alt+F" : "Ctrl+Alt+T";
-    const label = index <= workspaces().length ? String(index + 1) : page.id === "all-apps" ? "▦" : page.id === "focus" ? "◉" : "◷";
-    const button = el("button", "page-tab", [label]);
+  byId("page-tabs").replaceChildren(...pages().slice(0, workspaces().length + 1).map((page, index) => {
+    const shortcut = `Alt+${index + 1}`;
+    const button = el("button", "page-tab", [String(index + 1)]);
     button.type = "button";
     button.setAttribute("aria-current", page.id === current ? "page" : "false");
     button.title = `${page.label} (${shortcut})`;
@@ -70,6 +70,9 @@ function renderNav() {
     button.addEventListener("click", () => show(page.id));
     return button;
   }));
+  document.querySelectorAll<HTMLButtonElement>("#section-links [data-page]").forEach(button => {
+    button.setAttribute("aria-current", button.dataset.page === current ? "page" : "false");
+  });
 }
 
 export function show(id: string, focus = true) {
@@ -137,12 +140,13 @@ export function initPages() {
     const input = byId<HTMLInputElement>("workspace-path");
     const button = byId("workspace-path-form").querySelector<HTMLButtonElement>("button")!;
     button.disabled = true;
-    void api.workspaceItem(input.value).then((item) => pinItem(spaceId, item)).then(() => { input.value = ""; byId("workspace-path-note").textContent = "Added to workspace."; })
-      .catch((error) => { byId("workspace-path-note").textContent = String(error); }).finally(() => { button.disabled = false; });
+    void api.workspaceItem(input.value).then((item) => pinItem(spaceId, item)).then(() => { input.value = ""; byId("workspace-path-note").className = "note ok"; byId("workspace-path-note").textContent = "Added to workspace."; })
+      .catch((error) => { byId("workspace-path-note").className = "note"; byId("workspace-path-note").textContent = String(error); }).finally(() => { button.disabled = false; });
   });
   byId("page-prev").addEventListener("click", () => cycle(-1));
   byId("page-next").addEventListener("click", () => cycle());
   byId("bar-toggle").addEventListener("click", toggleBar);
+  document.querySelectorAll<HTMLButtonElement>("#section-links [data-page]").forEach(button => button.addEventListener("click", () => show(button.dataset.page!)));
   initUsage();
   onWorkspacesChange(() => {
     if (!pages().some((page) => page.id === current)) show("desktop", false);

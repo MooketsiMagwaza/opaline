@@ -12,6 +12,8 @@ Reviewed 28 October 2026. These are design references, not promises of platform 
 
 The compact taskbar follows the toolbar guidance to keep frequent actions distinct and make more room for content. The period dropdown and charts use the same labelled, focusable controls as the rest of Opaline. Focus is a separate destination, with a visible selected state; Zen and the screen saver have clear exit controls. These are applications of the guidance to a Windows launcher, not claims that the controls are Apple or Figma components.
 
+The owner later preferred lighter header navigation. Numbered Windows spaces and arrows stay on the left; All apps, Screen time and Focus are plain text links beside search with an active underline and hover/focus feedback. The taskbar mirror contains only apps and shares search's 52 px height. A two-second hover (or immediate keyboard focus) shows a small group/folder content peek. Demo groups are internally coherent, with Android Studio in IDEs and project folders inside Code projects.
+
 Windows integration follows [Microsoft's virtual desktop interface](https://learn.microsoft.com/windows/win32/api/shobjidl_core/nn-shobjidl_core-ivirtualdesktopmanager), [keyboard hook guidance](https://learn.microsoft.com/windows/win32/winmsg/lowlevelkeyboardproc), and [SendInput's documented integrity limitations](https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-sendinput). A Windows-key tap override supplements the shell while Opaline runs; it does not modify Windows policy or intercept the native taskbar Start button.
 
 ## Screenshot and artwork policy

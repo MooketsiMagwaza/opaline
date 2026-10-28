@@ -2,7 +2,7 @@ import { api, type RailItem, type WindowInfo } from "./api";
 import { byId, clamp, el } from "./dom";
 import { iconElement, windowIconElement, forgetClosedWindowIcons } from "./icons";
 import { settings } from "./settings";
-import { show as showPage } from "./pages";
+import { toggleBar } from "./pages";
 
 const REFRESH_MS = 3000;
 const THUMBNAIL_TTL_MS = 5000;
@@ -76,14 +76,15 @@ function renderRail() {
   const rail = byId("rail");
   rail.hidden = false;
   rail.style.setProperty("--count", String(Math.max(items.length, 1)));
-  const logo = el("img", "brand-mark"); logo.src = new URL("../assets/logo.svg", import.meta.url).href; logo.alt = "";
-  const start = el("button", "dock-item app-list-shortcut", [logo]);
-  start.type = "button";
-  start.setAttribute("aria-label", "All apps");
-  start.title = "All apps (Ctrl+Alt+A)";
-  start.addEventListener("click", () => showPage("all-apps"));
-  rail.replaceChildren(start, ...items.map(dockButton));
+  const expand = el("button", "dock-expand", ["⌃"]);
+  expand.type = "button";
+  expand.setAttribute("aria-label", "Expand page navigation (Ctrl+B)");
+  expand.title = "Expand page navigation (Ctrl+B)";
+  expand.addEventListener("click", toggleBar);
+  rail.replaceChildren(...(settings().compactBar ? [expand] : []), ...items.map(dockButton));
 }
+
+export function syncRailCompact() { if (settings().rail) renderRail(); }
 
 function activate(item: RailItem) {
   hidePreview(true);
@@ -220,13 +221,13 @@ function magnify(pointerX: number) {
   const rail = byId("rail");
   const left = rail.getBoundingClientRect().left;
 
-  for (const child of rail.children) {
+  for (const child of rail.querySelectorAll<HTMLElement>(".dock-item")) {
     const button = child as HTMLElement;
     // layout position, so the scale being applied doesn't feed back into the maths
     const centre = left + button.offsetLeft - rail.scrollLeft + button.offsetWidth / 2;
     const signedDistance = centre - pointerX;
     const distance = Math.abs(signedDistance);
-    const scale = 1 + 0.42 * Math.exp(-((distance / 78) ** 2));
+    const scale = 1 + 0.15 * Math.exp(-((distance / 78) ** 2));
     const push = Math.sign(signedDistance) * (scale - 1) * button.offsetHeight * 0.85;
     button.style.setProperty("--s", scale.toFixed(3));
     button.style.setProperty("--push", `${push.toFixed(1)}px`);
@@ -238,6 +239,12 @@ export function initRail() {
   const rail = byId("rail");
   const preview = byId("preview");
 
+  rail.addEventListener("wheel", (event) => {
+    if (rail.scrollWidth <= rail.clientWidth || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    rail.scrollLeft += event.deltaY;
+    event.preventDefault();
+  }, { passive: false });
+
   preview.addEventListener("pointerenter", () => window.clearTimeout(hideTimer));
   preview.addEventListener("pointerleave", scheduleHide);
 
@@ -248,7 +255,7 @@ export function initRail() {
   });
   rail.addEventListener("pointerleave", () => {
     cancelAnimationFrame(magnifyFrame);
-    for (const child of rail.children) {
+    for (const child of rail.querySelectorAll<HTMLElement>(".dock-item")) {
       const button = child as HTMLElement;
       button.style.removeProperty("--s");
       button.style.removeProperty("--push");

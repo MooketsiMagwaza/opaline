@@ -1,5 +1,5 @@
 import { api, type Item } from "./api";
-import { byId, el } from "./dom";
+import { byId, clamp, el } from "./dom";
 import * as groups from "./groups";
 import { iconElement } from "./icons";
 import { type MenuEntry, showMenu } from "./menu";
@@ -21,6 +21,41 @@ let dragged: Dragged | null = null;
 let layoutFrame = 0;
 let popupClosingTimer: number | undefined;
 let popupOpeningFrame = 0;
+let peekTimer: number | undefined;
+let peekGeneration = 0;
+
+function hidePeek() {
+  window.clearTimeout(peekTimer);
+  peekGeneration++;
+  byId("tile-peek").hidden = true;
+}
+
+export function wirePeek(tile: HTMLElement, title: string, names: () => Promise<string[]>, count?: number) {
+  const show = (delay: number) => {
+    hidePeek();
+    const generation = peekGeneration;
+    peekTimer = window.setTimeout(async () => {
+      let entries: string[];
+      try { entries = await names(); } catch { entries = []; }
+      if (generation !== peekGeneration || !tile.isConnected) return;
+      const peek = byId("tile-peek");
+      const rows = entries.slice(0, 6).map(name => el("div", "peek-item", [name]));
+      const more = count ? count > 6 : entries.length > 6;
+      peek.replaceChildren(el("strong", "peek-title", [title]), ...(rows.length ? rows : [el("span", "peek-empty", ["Empty or unavailable"])]), ...(more ? [el("span", "peek-more", ["More inside…"])] : []));
+      peek.hidden = false;
+      const anchor = tile.getBoundingClientRect();
+      const box = peek.getBoundingClientRect();
+      peek.style.left = `${clamp(anchor.left + anchor.width / 2 - box.width / 2, 12, innerWidth - box.width - 12)}px`;
+      peek.style.top = `${anchor.bottom + box.height + 16 < innerHeight ? anchor.bottom + 10 : Math.max(12, anchor.top - box.height - 10)}px`;
+    }, delay);
+  };
+  tile.addEventListener("pointerenter", () => show(2000));
+  tile.addEventListener("pointerleave", hidePeek);
+  tile.addEventListener("focus", () => show(0));
+  tile.addEventListener("blur", hidePeek);
+  tile.addEventListener("click", hidePeek);
+  tile.addEventListener("dragstart", hidePeek);
+}
 
 export const allItems = (): Item[] => items;
 export const isPopupOpen = (): boolean => openId !== null;
@@ -42,6 +77,7 @@ export function setQuery(next: string) {
 
 /** Back to the plain grid: no search, no open pane. Used every time the overlay opens. */
 export function reset() {
+  hidePeek();
   window.clearTimeout(popupClosingTimer);
   cancelAnimationFrame(popupOpeningFrame);
   query = "";
@@ -89,6 +125,7 @@ function entries(): Entry[] {
 }
 
 export function render() {
+  hidePeek();
   const list = entries();
   const grid = byId("grid");
   const searching = query.trim().length > 0;
@@ -236,10 +273,11 @@ function wireDrop(tile: HTMLElement, onDrop: (path: string) => void, accept: (pa
 function itemTile(item: Item, paneId?: string): HTMLElement {
   const tile = el("button", "tile item-tile", [iconElement(item.path, item.name), el("span", "label", [item.name])]);
   tile.type = "button";
-  tile.title = item.name;
+  if (!item.isFolder) tile.title = item.name;
   tile.setAttribute("aria-label", item.name);
   tile.dataset.path = item.path;
   tile.dataset.layoutKey = groups.itemPositionKey(item.path);
+  if (item.isFolder) wirePeek(tile, item.name, () => api.folderPreview(item.path));
 
   tile.addEventListener("click", () => launchItem(item.path));
   tile.addEventListener("contextmenu", (event) => {
@@ -279,10 +317,10 @@ function paneTile(group: groups.Group): HTMLElement {
 
   const tile = el("button", "tile pane-tile", [minis, el("span", "label", [group.name])]);
   tile.type = "button";
-  tile.title = group.name;
   tile.setAttribute("aria-label", group.name);
   tile.dataset.id = group.id;
   tile.dataset.layoutKey = groups.groupPositionKey(group.id);
+  wirePeek(tile, group.name, async () => group.items.map(path => known.get(path)?.name).filter((name): name is string => Boolean(name)), group.items.length);
 
   tile.addEventListener("click", () => openGroup(group.id, { from: tile }));
   tile.addEventListener("contextmenu", (event) => {

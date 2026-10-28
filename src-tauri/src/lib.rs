@@ -441,6 +441,28 @@ fn workspace_item(path: String) -> Result<desktop::Item, String> {
 }
 
 #[tauri::command]
+async fn folder_preview(path: String) -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let folder = std::path::Path::new(&path);
+        if !folder.is_absolute() || !folder.is_dir() {
+            return Err("Folder preview needs an existing folder.".into());
+        }
+        let mut names = std::fs::read_dir(folder)
+            .map_err(|error| format!("Could not read this folder: {error}"))?
+            .take(128)
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .filter(|name| name != "desktop.ini")
+            .collect::<Vec<String>>();
+        names.sort_by_key(|name| name.to_lowercase());
+        names.truncate(7);
+        Ok(names)
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
 async fn get_icon(path: String) -> Option<String> {
     tauri::async_runtime::spawn_blocking(move || icons::icon_data_url(&path))
         .await
@@ -668,6 +690,7 @@ pub fn run() {
             list_items,
             list_apps,
             workspace_item,
+            folder_preview,
             get_icon,
             get_window_icon,
             launch,

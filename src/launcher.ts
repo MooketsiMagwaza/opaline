@@ -8,7 +8,7 @@ import { closeMenu, isMenuOpen } from "./menu";
 import { organize } from "./organize";
 import * as pages from "./pages";
 import { closePanel, initPanel, isPanelOpen, isRecordingHotkey, syncPanel, togglePanel } from "./panel";
-import { hidePreview, initRail, refreshRail, startRail, stopRail } from "./rail";
+import { hidePreview, initRail, refreshRail, startRail, stopRail, syncRailCompact } from "./rail";
 import { RAIL_AVAILABLE, applySettings, onSettingsChange, settings } from "./settings";
 import { loadWorkspaces } from "./workspaces";
 import { closeAmbient, handleFocusKey, initFocus, openAmbient } from "./focus";
@@ -277,6 +277,7 @@ async function init() {
     if (RAIL_AVAILABLE && next.rail && !previous.rail) startRail();
     syncPanel();
     pages.syncBar();
+    if (next.compactBar !== previous.compactBar) syncRailCompact();
   });
 
   search.addEventListener("input", () => {

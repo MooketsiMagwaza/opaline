@@ -114,6 +114,10 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-38 | Faster hidden startup and clear launch-at-login state | P0 | `[~]` | Concurrent boot, deferred UI work, bounded icon cache; next-sign-in test remains; W-27 |
 | R-39 | Use Opaline brand mark for All apps rather than a Windows logo | P0 | `[~]` | Rendered demo screenshot; native pass remains; W-22 |
 | R-40 | Adopt owner coding rules from the supplied screenshot | P0 | `[~]` | Added to AGENTS.md and applied to touched code; W-28 |
+| R-41 | Demo groups reflect realistic app/folder relationships | P0 | `[~]` | Browser screenshot and fixture assertions; W-29 |
+| R-42 | Taskbar icons remain sharp; Opaline does not add its own dock button | P0 | `[~]` | Larger window icon and lower hover scale; real taskbar comparison pending; W-30/W-31 |
+| R-43 | Plain text section links, numbered workspace arrows and hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33 |
+| R-44 | Taskbar scrollbar hidden and taskbar/search heights match | P0 | `[~]` | Computed-style and rendered viewport check; native scaling pass pending; W-34/W-35 |
 
 ## 3. Architecture
 
@@ -227,6 +231,13 @@ blur, tint and lensing.
 - [~] Pomodoro deadline and fourth-session long break; verify hide/reopen and OS restart. Zen and the optional saver need real pointer/keyboard/idle wake checks.
 - [~] Hidden startup registers the hotkey before Desktop, icon or rail warming finishes. Login toggle clearly reports off/on; verify a stable binary path after Windows sign-in.
 - [~] Rendered demo screenshots and owner coding rules; preview test first, then draft PR.
+
+### WP13 — Demo and navigation consistency (R-41–R-44)
+- [~] Logical demo fixture: IDEs include Android Studio; project folders live in Code projects; only sample loose folders remain.
+- [~] Running-window icons prefer the larger asset; optional dock hover scale is limited. Owner icon comparison remains.
+- [~] Header has bare text links for sections, numbered workspace buttons and page arrows; dock no longer has an Opaline launcher button.
+- [~] Two-second pane/folder peek and keyboard access; native folder read is bounded. Browser timing and content checked.
+- [~] Taskbar scrollbar hidden, horizontal scrolling retained and taskbar/search heights both 52 px. Native scaling check remains.
 
 ## 5. Settings inventory
 

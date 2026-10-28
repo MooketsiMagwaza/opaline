@@ -67,6 +67,10 @@ Rendered examples use familiar app names and icons with synthetic folders, windo
 |---|---|
 | ![Thirty-day screen-time graph with example app usage](docs/images/screen-time-chart.png) | ![Focus timer with Zen and screen saver options](docs/images/focus.png) |
 
+![A pane peek showing its member names after a short hover](docs/images/folder-peek.png)
+
+![Compact navigation leaving the bottom taskbar with an expand control](docs/images/compact-taskbar.png)
+
 ![How workspace navigation fits together](docs/images/workspace-flow.svg)
 
 The [session work order](docs/SESSION_WORKORDER.md) lists every requested change, verification evidence and the owner test before a draft PR. [Design references and image policy](docs/UI_GUIDANCE.md).
@@ -127,7 +131,7 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the numbered corner buttons for **Desktop** and named spaces, the library icon for **All apps**, the clock icon for **Screen time**, and the circle for **Focus**. The bottom taskbar's All apps button uses Opaline's own mark. All Apps is loaded after the first visible frame from
+Use the numbered corner buttons and arrows for **Desktop** and named spaces. Plain text links beside search open **All apps**, **Screen time** and **Focus**. The bottom taskbar shows only pinned and running apps. Hover a pane or folder for two seconds to peek at its contents. All Apps is loaded after the first visible frame from
 Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slow the opening animation.
 
 ## Works well with

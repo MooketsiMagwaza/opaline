@@ -82,7 +82,7 @@ function sections(): Section[] {
       title: "Taskbar",
       controls: [
         { kind: "toggle", key: "rail", label: "Show taskbar mirror", hint: "Pinned and running Windows apps at the bottom. Click to open or focus." },
-        { kind: "range", key: "taskbarIconSize", label: "Taskbar icon size", min: 24, max: 44, step: 2, format: pixels },
+        { kind: "range", key: "taskbarIconSize", label: "Taskbar icon size", min: 24, max: 36, step: 2, format: pixels },
         { kind: "toggle", key: "railMagnify", label: "Magnify on hover" },
         { kind: "toggle", key: "railPreviews", label: "Window previews", hint: "Thumbnails when you hover an app." },
       ],

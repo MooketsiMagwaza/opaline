@@ -13,6 +13,7 @@ describe("theme migration", () => {
     expect(result.pageShortcut).toBe("shift-tab");
     expect(result.compactBar).toBe(false);
     expect(result.paneMotionMs).toBe(500);
+    expect(normalizeSettings({ taskbarIconSize: 44 }).taskbarIconSize).toBe(36);
     expect(normalizeSettings(null)).toEqual(DEFAULTS);
   });
   it("keeps current themes and migrates prototype names", () => {

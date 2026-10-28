@@ -33,6 +33,9 @@ extends R-08 and R-11 in the main work order. Visual settings and layout metadat
 | V-13 | Scrollable surfaces share a custom acrylic thumb whose width is adjustable | `[~]` | Browser checked at four viewports; Windows scaling/pointer pass pending; W-19 |
 | V-14 | Compact taskbar and wider content surface preserve room for apps | `[~]` | Bottom rail and 960 px surface rendered; Windows scaling pass pending; W-21 |
 | V-15 | Screen-time menu, graphs and Focus share labelled controls and visible focus | `[~]` | Browser interaction/screenshots checked; native keyboard/contrast pass pending; W-23–W-26 |
+| V-16 | Header sections use bare text with hover/selected states while numbered spaces remain on the left | `[~]` | Browser visual/layout pass; real scaling pass pending; W-32 |
+| V-17 | Taskbar and search share one height, with no visible scrollbar or launcher-brand dock button | `[~]` | Browser computed geometry/scrollbar check; real scaling pass pending; W-31/W-34/W-35 |
+| V-18 | Group/folder peek uses the same acrylic material without obscuring labels permanently | `[~]` | Browser hover timing/card screenshot; Windows pointer pass pending; W-33 |
 
 `[~]` means implemented or actively merged but not accepted until the real-app checks below have been observed.
 

@@ -7,6 +7,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 ## [Unreleased] — 0.1.0 "Annealed"
 
 ### Added
+- Two-second group/folder hover peeks with a bounded read-only folder listing and keyboard-focus access.
 - Focus page with a configurable Pomodoro timer, completion graph, Zen reminders and an optional in-app idle screen saver.
 - Seven- and thirty-day screen-time charts, per-app drill-down and a styled period menu backed by local daily history.
 - Acrylic custom scrollbars with a width setting, plus a smaller bottom taskbar and larger app surface.
@@ -39,6 +40,10 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Project documentation: README, work orders, architecture/testing/releasing guidance, contribution and security policies, naming and CI.
 
 ### Changed
+- Reworked the demo into coherent IDE, dev tools, project, notes and reference groups; Android Studio now appears with VS Code.
+- Replaced the mixed top-left page glyphs with numbered workspaces and arrows, and plain text links for All apps, Screen time and Focus beside search.
+- Removed the Opaline icon from the taskbar mirror, matched its height to search and hid its overflow scrollbar while keeping horizontal scroll available.
+- Prefer larger window icons and limit optional hover magnification to reduce blur.
 - Running taskbar apps prefer their window icon, with shortcut icons as fallback; the All apps dock button uses the Opaline mark.
 - Startup registers readiness before Desktop/icon warming finishes and loads independent stores concurrently. Launch-at-login now shows its current state explicitly.
 - Replaced the OS acrylic/blur window material with a self-rendered backdrop, so blur, tint and refraction are fully controllable.
