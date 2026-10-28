@@ -7,12 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 ## [Unreleased] — 0.1.0 "Annealed"
 
 ### Added
-- Two-second group/folder hover peeks with a bounded read-only folder listing and keyboard-focus access.
+- 500 ms group/folder hover peeks with icon grids, bounded read-only folder listing and keyboard-focus access.
 - Focus page with a configurable Pomodoro timer, completion graph, Zen reminders and an optional in-app idle screen saver.
 - Seven- and thirty-day screen-time charts, per-app drill-down and a styled period menu backed by local daily history.
 - Acrylic custom scrollbars with a width setting, plus a smaller bottom taskbar and larger app surface.
 - Owner coding rules from the supplied screenshot in `AGENTS.md`.
-- Named workspaces with Alt+1 Desktop and Alt+2–9 custom app/folder/file collections; numbered corner navigation, Shift+Tab/Ctrl+Tab cycling and Ctrl+B compact mode.
+- Named workspaces with Alt+1 Desktop and Alt+2–9 custom app/folder/file collections; centered side arrows, Shift+Tab/Ctrl+Tab cycling and Ctrl+B compact mode.
+- Touch and trackpad swipe/pinch page navigation on the launcher canvas.
 - Local foreground maximised-app screen time: Today / All time, pause/resume and clear; idle and sleep gaps excluded.
 - Reactivated the retained taskbar mirror at the bottom with a bounded decoded thumbnail cache, shared requests, background refresh and GDI downsampling before readback.
 - Opt-in Windows-key tap opens All apps; off by default, preserving Windows chords, native Start-button click and Ctrl+Esc.
@@ -41,7 +42,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ### Changed
 - Reworked the demo into coherent IDE, dev tools, project, notes and reference groups; Android Studio now appears with VS Code.
-- Replaced the mixed top-left page glyphs with numbered workspaces and arrows, and plain text links for All apps, Screen time and Focus beside search.
+- Removed the top-left page switcher and shutdown orb; centered plain arrows outside the app surface and placed matching All apps/Focus icons left of search and Screen time/Settings icons right of it.
 - Removed the Opaline icon from the taskbar mirror, matched its height to search and hid its overflow scrollbar while keeping horizontal scroll available.
 - Prefer larger window icons and limit optional hover magnification to reduce blur.
 - Running taskbar apps prefer their window icon, with shortcut icons as fallback; the All apps dock button uses the Opaline mark.

@@ -441,22 +441,28 @@ fn workspace_item(path: String) -> Result<desktop::Item, String> {
 }
 
 #[tauri::command]
-async fn folder_preview(path: String) -> Result<Vec<String>, String> {
+async fn folder_preview(path: String) -> Result<Vec<desktop::Item>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let folder = std::path::Path::new(&path);
         if !folder.is_absolute() || !folder.is_dir() {
             return Err("Folder preview needs an existing folder.".into());
         }
-        let mut names = std::fs::read_dir(folder)
+        let mut entries = std::fs::read_dir(folder)
             .map_err(|error| format!("Could not read this folder: {error}"))?
             .take(128)
             .filter_map(|entry| entry.ok())
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .filter(|name| name != "desktop.ini")
-            .collect::<Vec<String>>();
-        names.sort_by_key(|name| name.to_lowercase());
-        names.truncate(7);
-        Ok(names)
+            .filter(|entry| entry.file_name().to_string_lossy() != "desktop.ini")
+            .collect::<Vec<_>>();
+        entries.sort_by_key(|entry| entry.file_name().to_string_lossy().to_lowercase());
+        entries.truncate(7);
+        Ok(entries
+            .into_iter()
+            .map(|entry| desktop::Item {
+                name: entry.file_name().to_string_lossy().into_owned(),
+                path: entry.path().to_string_lossy().into_owned(),
+                is_folder: entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false),
+            })
+            .collect())
     })
     .await
     .map_err(|error| error.to_string())?

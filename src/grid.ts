@@ -30,18 +30,20 @@ function hidePeek() {
   byId("tile-peek").hidden = true;
 }
 
-export function wirePeek(tile: HTMLElement, title: string, names: () => Promise<string[]>, count?: number) {
+export function wirePeek(tile: HTMLElement, title: string, items: () => Promise<Item[]>, count?: number) {
   const show = (delay: number) => {
     hidePeek();
     const generation = peekGeneration;
     peekTimer = window.setTimeout(async () => {
-      let entries: string[];
-      try { entries = await names(); } catch { entries = []; }
+      let entries: Item[];
+      try { entries = await items(); } catch { entries = []; }
       if (generation !== peekGeneration || !tile.isConnected) return;
       const peek = byId("tile-peek");
-      const rows = entries.slice(0, 6).map(name => el("div", "peek-item", [name]));
+      const rows = entries.slice(0, 6).map(item => el("div", "peek-tile", [iconElement(item.path, item.name), el("span", "peek-name", [item.name])]));
+      const previewGrid = el("div", "peek-grid", rows);
+      previewGrid.style.setProperty("--peek-columns", String(rows.length <= 2 ? Math.max(1, rows.length) : rows.length <= 4 ? 2 : 3));
       const more = count ? count > 6 : entries.length > 6;
-      peek.replaceChildren(el("strong", "peek-title", [title]), ...(rows.length ? rows : [el("span", "peek-empty", ["Empty or unavailable"])]), ...(more ? [el("span", "peek-more", ["More inside…"])] : []));
+      peek.replaceChildren(el("strong", "peek-title", [title]), ...(rows.length ? [previewGrid] : [el("span", "peek-empty", ["Empty or unavailable"])]), ...(more ? [el("span", "peek-more", ["More inside…"])] : []));
       peek.hidden = false;
       const anchor = tile.getBoundingClientRect();
       const box = peek.getBoundingClientRect();
@@ -49,7 +51,7 @@ export function wirePeek(tile: HTMLElement, title: string, names: () => Promise<
       peek.style.top = `${anchor.bottom + box.height + 16 < innerHeight ? anchor.bottom + 10 : Math.max(12, anchor.top - box.height - 10)}px`;
     }, delay);
   };
-  tile.addEventListener("pointerenter", () => show(2000));
+  tile.addEventListener("pointerenter", () => show(500));
   tile.addEventListener("pointerleave", hidePeek);
   tile.addEventListener("focus", () => show(0));
   tile.addEventListener("blur", hidePeek);
@@ -320,7 +322,7 @@ function paneTile(group: groups.Group): HTMLElement {
   tile.setAttribute("aria-label", group.name);
   tile.dataset.id = group.id;
   tile.dataset.layoutKey = groups.groupPositionKey(group.id);
-  wirePeek(tile, group.name, async () => group.items.map(path => known.get(path)?.name).filter((name): name is string => Boolean(name)), group.items.length);
+  wirePeek(tile, group.name, async () => group.items.map(path => known.get(path)).filter((item): item is Item => Boolean(item)), group.items.length);
 
   tile.addEventListener("click", () => openGroup(group.id, { from: tile }));
   tile.addEventListener("contextmenu", (event) => {

@@ -60,17 +60,8 @@ function renderWorkspace() {
 }
 
 function renderNav() {
-  byId("page-tabs").replaceChildren(...pages().slice(0, workspaces().length + 1).map((page, index) => {
-    const shortcut = `Alt+${index + 1}`;
-    const button = el("button", "page-tab", [String(index + 1)]);
-    button.type = "button";
-    button.setAttribute("aria-current", page.id === current ? "page" : "false");
-    button.title = `${page.label} (${shortcut})`;
-    button.setAttribute("aria-label", `${page.label} (${shortcut})`);
-    button.addEventListener("click", () => show(page.id));
-    return button;
-  }));
-  document.querySelectorAll<HTMLButtonElement>("#section-links [data-page]").forEach(button => {
+  byId("page-edges").setAttribute("aria-label", `Page navigation · ${pages().find(page => page.id === current)?.label ?? "Desktop"}`);
+  document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => {
     button.setAttribute("aria-current", button.dataset.page === current ? "page" : "false");
   });
 }
@@ -80,7 +71,6 @@ export function show(id: string, focus = true) {
   closeMenu(); grid.reset();
   current = next.id;
   for (const surface of ["apps-surface", "workspace-surface", "app-list-surface", "screen-time-surface", "focus-surface"]) byId(surface).hidden = next.surface !== surface;
-  byId("page-label").textContent = next.label;
   renderNav(); renderWorkspace();
   if (current === "desktop") grid.setQuery(query);
   if (current === "all-apps") renderList();
@@ -100,12 +90,6 @@ export function selectSpace(index: number): boolean {
   show(id); return true;
 }
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
-export function syncBar() {
-  const compact = settings().compactBar;
-  byId("bar-toggle").textContent = compact ? "⌃" : "⌄";
-  byId("bar-toggle").setAttribute("aria-expanded", String(!compact));
-  byId("bar-toggle").setAttribute("aria-label", compact ? "Expand navigation bar (Ctrl+B)" : "Collapse to taskbar view (Ctrl+B)");
-}
 export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; if (current === "all-apps") renderList(); }
 export function setQuery(next: string) { query = next; if (current === "desktop") grid.setQuery(next); if (current === "all-apps") renderList(); renderWorkspace(); setUsageQuery(next); }
 export function reset() { query = ""; show("desktop"); }
@@ -145,12 +129,11 @@ export function initPages() {
   });
   byId("page-prev").addEventListener("click", () => cycle(-1));
   byId("page-next").addEventListener("click", () => cycle());
-  byId("bar-toggle").addEventListener("click", toggleBar);
-  document.querySelectorAll<HTMLButtonElement>("#section-links [data-page]").forEach(button => button.addEventListener("click", () => show(button.dataset.page!)));
+  document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => button.addEventListener("click", () => show(button.dataset.page!)));
   initUsage();
   onWorkspacesChange(() => {
     if (!pages().some((page) => page.id === current)) show("desktop", false);
     else { renderNav(); renderWorkspace(); }
   });
-  show("desktop"); syncBar();
+  show("desktop");
 }

@@ -17,7 +17,7 @@ verified · `[ ]` not started. **Priority:** P0 ships in 0.1.0 · P1 next · P2 
 
 ## 0. Current status
 
-**28 October candidate:** named workspaces, local screen time with daily graphs, numbered corner navigation, compact mode, the reactivated bottom taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
+**28 October candidate:** named workspaces, local screen time with daily graphs, centered side-arrow navigation, compact mode, the reactivated bottom taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
 
 The app **builds and runs**. It was started with `npm run tauri dev`, and its page was driven and screenshotted through
 WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/TESTING.md)) on the target laptop
@@ -102,7 +102,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-26 | Floating page navigation exposes Home and the installed-app catalogue without slowing the first frame | P1 | `[~]` | Windows AppsFolder enumeration runs after presentation; complete keyboard pass remains |
 | R-27 | Named app/file/folder spaces; Alt+1 Desktop, Alt+2–9 custom | P0 | `[~]` | Serialized metadata, rename/remove/pin, direct folder paths; W-03 |
 | R-28 | Local maximised foreground-app time, Today / All time, pause and clear | P0 | `[~]` | Native sampler, date/sleep tests; owner usage/idle/restart pass remains; W-01 |
-| R-29 | Numbered corner pages, cycle shortcut and compact taskbar view | P0 | `[~]` | Browser keyboard/persistence/layout checks; W-02/W-05/W-18 |
+| R-29 | Side-arrow pages, cycle shortcut and compact taskbar view | P0 | `[~]` | Browser keyboard/persistence/layout checks; W-02/W-05/W-18 |
 | R-30 | Opt-in Windows-key tap opens All apps; Windows chords retained | P0 | `[~]` | Hook available, off by default; real key/chord acceptance required; W-08 |
 | R-31 | Current Windows desktop receives Opaline; desktop-aware backdrop cache | P0 | `[~]` | Documented COM interface; real desktop/PowerToys pass remains; W-04 |
 | R-32 | Group-origin popup motion and readable two-line labels | P0 | `[~]` | Browser origin/reduced-motion checks; native pointer pass remains; W-15/W-18 |
@@ -116,7 +116,8 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-40 | Adopt owner coding rules from the supplied screenshot | P0 | `[~]` | Added to AGENTS.md and applied to touched code; W-28 |
 | R-41 | Demo groups reflect realistic app/folder relationships | P0 | `[~]` | Browser screenshot and fixture assertions; W-29 |
 | R-42 | Taskbar icons remain sharp; Opaline does not add its own dock button | P0 | `[~]` | Larger window icon and lower hover scale; real taskbar comparison pending; W-30/W-31 |
-| R-43 | Plain text section links, numbered workspace arrows and hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33 |
+| R-43 | Four header icons, centered side arrows and icon-grid hover peeks | P0 | `[~]` | Browser interaction/layout checks; Windows pointer pass pending; W-32/W-33 |
+| R-45 | Swipe/pinch page navigation for trackpads and touch | P1 | `[~]` | Browser wheel gesture checks; real device pass pending; W-36 |
 | R-44 | Taskbar scrollbar hidden and taskbar/search heights match | P0 | `[~]` | Computed-style and rendered viewport check; native scaling pass pending; W-34/W-35 |
 
 ## 3. Architecture
@@ -235,8 +236,8 @@ blur, tint and lensing.
 ### WP13 — Demo and navigation consistency (R-41–R-44)
 - [~] Logical demo fixture: IDEs include Android Studio; project folders live in Code projects; only sample loose folders remain.
 - [~] Running-window icons prefer the larger asset; optional dock hover scale is limited. Owner icon comparison remains.
-- [~] Header has bare text links for sections, numbered workspace buttons and page arrows; dock no longer has an Opaline launcher button.
-- [~] Two-second pane/folder peek and keyboard access; native folder read is bounded. Browser timing and content checked.
+- [~] Header has four matching icon buttons and centered side arrows; dock no longer has an Opaline launcher button.
+- [~] 500 ms pane/folder icon-grid peek and keyboard access; native folder read is bounded. Browser timing and content checked.
 - [~] Taskbar scrollbar hidden, horizontal scrolling retained and taskbar/search heights both 52 px. Native scaling check remains.
 
 ## 5. Settings inventory

@@ -21,7 +21,7 @@ overlap one another or become stranded off-screen. Search and the rail remain in
 | S-06 | One rounded apps surface holds the grid; search and rail float independently | `[x]` | Observed in the Windows app at 1920×1200 / 150% |
 | S-07 | A reordered entry can return to automatic order | `[~]` | Context-menu action implemented; manual pass pending |
 | S-08 | Order metadata is validated and never changes Desktop files | `[x]` | Unit-tested store clamping/order; only `groups.json` is written |
-| S-09 | Numbered corner workspace controls never overlap search, content or taskbar | `[~]` | Responsive corner placement; full native scaling matrix pending; see W-03/W-18 |
+| S-09 | Centered side arrows stay inside the viewport and clear of search and taskbar | `[~]` | Responsive browser check; full native scaling matrix pending; see W-03/W-32 |
 | S-10 | Full two-line labels fit; overflowing grids scroll to the final row without faded/clipped names | `[~]` | Fixed flex shrinking and removed the unconditional edge mask; dense-grid verification required |
 | S-11 | A smaller bottom taskbar leaves the app surface taller, including when navigation is collapsed | `[~]` | Browser geometry checked at 1280, 1024, 800 and 600 CSS px; Windows scaling pass pending |
 

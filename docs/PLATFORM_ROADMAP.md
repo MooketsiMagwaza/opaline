@@ -43,7 +43,7 @@ The guiding rule is that Opaline may supplement Windows, but it must never make 
 
 - The owner requested reactivation of the retained `rail.ts` and Taskband implementation as a bottom taskbar mirror. It is configurable in Settings and refreshes after presentation, stopping when hidden.
 - Decoded thumbnail cache hits target presentation within 50 ms; cold PrintWindow captures have a separate measured budget. Validate pin completeness, packaged-app launch, focus/restore, magnification and clipping on the owner's desktop.
-- Alt+1 selects Desktop; Alt+2–9 select named collections. Numbered corner controls replace the wide bottom page strip. Ctrl+B leaves the taskbar view and a small expand control.
+- Alt+1 selects Desktop; Alt+2–9 select named collections. Centered side arrows replace the wide bottom page strip. Ctrl+B leaves the taskbar view and a small expand control.
 - Native Windows virtual-desktop support is implemented; PowerToys Workspaces and multi-monitor restore acceptance remain open. Full scope and owner test: [session work order](SESSION_WORKORDER.md).
 
 ## Active — Login startup and taskbar icon parity

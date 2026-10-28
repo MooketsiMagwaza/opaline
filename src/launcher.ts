@@ -12,6 +12,7 @@ import { hidePreview, initRail, refreshRail, startRail, stopRail, syncRailCompac
 import { RAIL_AVAILABLE, applySettings, onSettingsChange, settings } from "./settings";
 import { loadWorkspaces } from "./workspaces";
 import { closeAmbient, handleFocusKey, initFocus, openAmbient } from "./focus";
+import { initPageGestures } from "./gestures";
 
 const stage = byId("stage");
 const backdrop = byId<HTMLImageElement>("backdrop");
@@ -276,7 +277,6 @@ async function init() {
     if (RAIL_AVAILABLE && !next.rail) stopRail();
     if (RAIL_AVAILABLE && next.rail && !previous.rail) startRail();
     syncPanel();
-    pages.syncBar();
     if (next.compactBar !== previous.compactBar) syncRailCompact();
   });
 
@@ -291,9 +291,13 @@ async function init() {
   });
 
   byId("settings-button").addEventListener("click", togglePanel);
-  byId("quit-button").addEventListener("click", () => void api.quit());
   byId("shell").addEventListener("click", onShellClick);
   document.addEventListener("keydown", onKey);
+  initPageGestures(pages.cycle, (target) => {
+    if (isPanelOpen() || isMenuOpen() || grid.isPopupOpen()) return false;
+    if (!(target instanceof HTMLElement)) return false;
+    return !target.closest("input, textarea, #rail, #preview, #ambient, .app-list, .page-scroll, .pane-grid, #settings, #popup, #menu");
+  });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
 
   await listen<string>("launcher-backdrop-cache", (event) => void setBackdrop(event.payload));

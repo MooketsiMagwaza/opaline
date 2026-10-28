@@ -22,7 +22,7 @@ READ FIRST, in this order:
 2. WORKORDER.md       - section 0 (what is verified), section 2 (requirements R-01 onward), section 12 (NEXT ACTIONS), section 13 (known issues).
 3. DEVLOG.md          - why decisions were made; the failed WinUI 3 beta (archive/winui3-beta/ is reference only - do not build or extend it).
 4. docs/TESTING.md    - how to run the app and drive its page with scripts/cdp.mjs without touching the mouse.
-5. docs/SESSION_WORKORDER.md - every 28 October request, current numbered corner UI, owner-test-before-PR gate and verification limits.
+5. docs/SESSION_WORKORDER.md - every 28 October request, current side-arrow UI, owner-test-before-PR gate and verification limits.
 
 CURRENT STATE: the app builds and runs. On the target laptop (Windows 11, Intel Iris Xe, 1920x1200 at 150% scaling), all 45 Desktop items
 show real icons, first-run auto-organise makes 12 panes, and Home uses a centred six-column grid whose sparse rows start at the first

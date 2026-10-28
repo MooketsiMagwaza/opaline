@@ -58,7 +58,7 @@ await page.addInitScript((manifest) => {
       case "list_apps": return items.filter(item=>!item.isFolder);
       case "get_icon": return icon(args.path);
       case "workspace_item": return { name: "Example folder", path: args.path, isFolder: true };
-      case "folder_preview": return ["Overview.md", "Screenshots", "Notes", "Assets"];
+      case "folder_preview": return ["Overview.md", "Screenshots", "Notes", "Assets"].map((name, index) => ({ name, path: `preview:${index}`, isFolder: index > 0 }));
       case "rail_items": return [7, 0, 1, 5, 8].map((index, order) => ({ id: `app-${index}`, name: names[index], iconPath: items[index].path, launchPath: items[index].path, pinned: order < 4, windows: order < 3 ? [{ hwnd: order + 101, title: `${names[index]} — Example project`, minimized: false }] : [] }));
       case "thumbnail": await new Promise((resolve) => setTimeout(resolve, 180)); return data('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220"><rect width="360" height="220" fill="#202a3e"/><path d="M0 0h360v25H0z" fill="#3b4964"/><circle cx="13" cy="13" r="4" fill="#f59c9c"/><circle cx="27" cy="13" r="4" fill="#f1d08a"/><path d="M20 55h180M20 80h260M20 105h220M20 130h130" stroke="#98b9ed" stroke-width="8"/><path d="M20 160h290M20 185h250" stroke="#b4a1dd" stroke-width="8"/></svg>');
       case "screen_time": return { enabled: true, supported: true, saveError: null, entries: [0, 7, 12, 1].map((index, order) => { const day = new Date(); const key = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,"0")}-${String(day.getDate()).padStart(2,"0")}`; return { id: `usage-${index}`, name: names[index], path: items[index].path, totalSeconds: [18900, 7800, 4200, 2700][order], todaySeconds: [6480, 3120, 1680, 540][order], dailySeconds: { [key]: [6480, 3120, 1680, 540][order] } }; }) };
@@ -80,22 +80,55 @@ try {
   await page.goto("http://127.0.0.1:1420");
   await page.waitForSelector("#grid .tile"); await wait(1000);
   assert(await visible("#apps-surface"));
-  assert.equal(await page.locator("#page-tabs .page-tab").count(), 2);
-  assert.equal(await page.locator("#section-links button").count(), 3);
+  assert.equal(await page.locator("#page-edges .edge-arrow").count(), 2);
+  assert.equal(await page.locator("#page-nav, #quit-button").count(), 0);
+  assert.equal(await page.locator(".header-nav .orb").count(), 4);
+  assert(await page.evaluate(() => {
+    const search = getComputedStyle(document.getElementById("search-wrap"));
+    const left = getComputedStyle(document.getElementById("header-left"));
+    const button = getComputedStyle(document.querySelector("#header-left .orb"));
+    return left.backgroundImage === search.backgroundImage && left.height === search.height && button.backgroundColor === "rgba(0, 0, 0, 0)";
+  }));
+  await page.locator('#header-left [data-page="all-apps"]').click(); assert(await visible("#app-list-surface"));
+  await page.locator('#header-left [data-page="focus"]').click(); assert(await visible("#focus-surface"));
+  await page.locator('#header-right [data-page="screen-time"]').click(); assert(await visible("#screen-time-surface"));
+  await page.keyboard.press("Alt+1");
+  await page.mouse.move(640, 450);
   assert.equal(await page.locator("#rail .app-list-shortcut").count(), 0);
   assert.equal(await page.locator("#rail").evaluate(node => getComputedStyle(node).scrollbarWidth), "none");
   assert.equal(await page.locator("#rail").evaluate(node => node.getBoundingClientRect().height), await page.locator("#search-wrap").evaluate(node => node.getBoundingClientRect().height));
   assert.equal(await page.locator("#grid-layer").evaluate(node=>getComputedStyle(node).maskImage), "none");
   assert(await page.locator("#grid .label").evaluateAll(nodes=>nodes.every(node=>node.getBoundingClientRect().height >= 30)));
   await shot("desktop.png");
-  await page.locator('.pane-tile[data-id="ides"]').hover(); await wait(700);
+  await page.locator("#page-next").click(); assert(await visible("#workspace-surface"));
+  await page.locator("#page-prev").click(); assert(await visible("#apps-surface"));
+  await page.locator("#apps-surface").dispatchEvent("wheel", {deltaX: 120, deltaY: 2, deltaMode: 0});
+  assert(await visible("#workspace-surface"));
+  await page.keyboard.press("Alt+1");
+  await page.locator("#apps-surface").evaluate(node => {
+    const touch = (type, pointerId, clientX) => node.dispatchEvent(new PointerEvent(type, { pointerId, pointerType: "touch", clientX, clientY: 400, bubbles: true, cancelable: true }));
+    touch("pointerdown", 1, 480); touch("pointerdown", 2, 580); touch("pointermove", 2, 720);
+    touch("pointerup", 1, 480); touch("pointerup", 2, 720);
+  });
+  assert(await visible("#workspace-surface"));
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -120, deltaMode: 0});
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: -45, deltaMode: 0});
+  assert(await visible("#workspace-surface"));
+  await page.keyboard.press("Alt+1");
+  await page.locator('.pane-tile[data-id="ides"]').hover(); await wait(300);
   assert(!(await visible("#tile-peek")));
-  await wait(1400);
+  await wait(280);
   assert(await visible("#tile-peek"));
+  assert.equal(await page.locator("#tile-peek .peek-tile").count(), 2);
   assert.match(await page.locator("#tile-peek").textContent(), /Visual Studio Code.*Android Studio/s);
   await shot("folder-peek.png");
-  await page.locator('.item-tile[data-path="demo:30"]').hover(); await wait(2100);
+  await page.locator('.item-tile[data-path="demo:30"]').hover(); await wait(580);
   assert.match(await page.locator("#tile-peek").textContent(), /Overview.md/);
+  assert.equal(await page.locator("#tile-peek .peek-tile").count(), 4);
   await page.locator('.item-tile[data-path="demo:30"]').click({button:"right"});
   await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter");
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('demo:workspaces.json'))[0].items.length === 5);
@@ -168,7 +201,7 @@ try {
   await page.waitForSelector("#workspace-items .app-list-item");
   await page.keyboard.press("Control+b");
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
-  assert(!(await visible("#page-nav")));
+  assert(!(await visible("#page-edges")));
   assert.equal(await page.locator("#rail .dock-expand").count(), 1);
   await shot("compact-taskbar.png");
   await page.reload(); await page.waitForSelector("#grid .tile"); await wait(1400);
@@ -197,9 +230,9 @@ try {
   for (const width of [1024,800,600]) {
     await page.setViewportSize({width,height:600});
     const geometry = await page.evaluate(()=>{
-      const nav=document.getElementById('page-nav').getBoundingClientRect(), search=document.getElementById('search-wrap').getBoundingClientRect(), actions=document.querySelector('.actions').getBoundingClientRect(), links=document.getElementById('section-links').getBoundingClientRect();
+      const prev=document.getElementById('page-prev').getBoundingClientRect(), next=document.getElementById('page-next').getBoundingClientRect(), search=document.getElementById('search-wrap').getBoundingClientRect(), left=document.getElementById('header-left').getBoundingClientRect(), right=document.getElementById('header-right').getBoundingClientRect();
       const overlaps=(a,b)=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;
-      return {inBounds:nav.left>=0&&nav.right<=innerWidth&&links.left>=0&&links.right<=innerWidth,overlaps:overlaps(nav,search)||overlaps(search,actions)||overlaps(links,search)||overlaps(links,actions)||overlaps(links,nav)};
+      return {inBounds:prev.left>=0&&next.right<=innerWidth&&left.left>=0&&right.right<=innerWidth,overlaps:overlaps(prev,search)||overlaps(next,search)||overlaps(left,search)||overlaps(right,search)};
     });
     assert(geometry.inBounds && !geometry.overlaps, JSON.stringify({width,...geometry}));
   }

@@ -57,7 +57,7 @@ Feature status lives in the [work order](WORKORDER.md#4-work-packages).
 
 Rendered examples use familiar app names and icons with synthetic folders, window contents and screen-time totals. They use the owner's current appearance values; no personal Desktop names or real captures are published.
 
-![Desktop with numbered corner spaces and the bottom taskbar mirror](docs/images/desktop.png)
+![Desktop with side arrows and the bottom taskbar mirror](docs/images/desktop.png)
 
 | Dev tools workspace | Local screen time |
 |---|---|
@@ -131,7 +131,7 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
 
-Use the numbered corner buttons and arrows for **Desktop** and named spaces. Plain text links beside search open **All apps**, **Screen time** and **Focus**. The bottom taskbar shows only pinned and running apps. Hover a pane or folder for two seconds to peek at its contents. All Apps is loaded after the first visible frame from
+Use the side arrows, Shift+Tab or trackpad/touch gestures to cycle between **Desktop**, named spaces and other pages. The four header icons open **All apps** and **Focus** left of search, and **Screen time** and **Settings** right of it. The bottom taskbar shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. All Apps is loaded after the first visible frame from
 Windows AppsFolder, so classic Start-menu shortcuts and packaged apps do not slow the opening animation.
 
 ## Works well with

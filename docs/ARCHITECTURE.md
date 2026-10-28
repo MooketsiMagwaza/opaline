@@ -34,7 +34,7 @@ Search is an independent floating surface. The retained taskbar rail in `rail.ts
 plain icon + name with no per-item bubble. A pane uses one rounded mini-icon bubble and places its name below. Popup, preview, settings
 and context menu are transient surfaces above them. This keeps hierarchy legible and bounds compositing work.
 
-The numbered corner switcher selects Desktop, named spaces, All apps, Screen time and Focus. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session. `focus.ts` owns the Zen and screen-saver surfaces, while `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
+The side arrows and keyboard/gesture navigation select Desktop, named spaces, All apps, Screen time and Focus. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session. `focus.ts` owns the Zen and screen-saver surfaces, while `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
 the overlay is visible, covering classic Start-menu entries and packaged apps without adding work to the opening path. `pages.ts` owns
 page state, filtering and list rendering. Widgets were removed from the current UI and remain a roadmap item.
 

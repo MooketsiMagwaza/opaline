@@ -15,6 +15,10 @@
 
       <div id="shell">
         <header id="top">
+          <nav id="header-left" class="header-nav glass" aria-label="Apps and focus">
+            <button type="button" class="orb" data-page="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
+            <button type="button" class="orb" data-page="focus" title="Focus" aria-label="Focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></button>
+          </nav>
           <div class="search glass" id="search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -23,27 +27,16 @@
             <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search desktop and installed apps" />
           </div>
 
-          <nav id="section-links" aria-label="Sections">
-            <button type="button" data-page="all-apps">All apps</button>
-            <button type="button" data-page="screen-time">Screen time</button>
-            <button type="button" data-page="focus">Focus</button>
-          </nav>
-
-          <div class="actions">
-            <button type="button" class="orb glass" id="settings-button" title="Settings" aria-label="Settings">
+          <nav id="header-right" class="header-nav glass" aria-label="Screen time and settings">
+            <button type="button" class="orb" data-page="screen-time" title="Screen time" aria-label="Screen time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"/><rect x="5" y="11" width="3.5" height="6" rx=".8"/><rect x="10.25" y="7" width="3.5" height="10" rx=".8"/><rect x="15.5" y="4" width="3.5" height="13" rx=".8"/></svg></button>
+            <button type="button" class="orb" id="settings-button" title="Settings" aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
                 <circle cx="16" cy="7" r="2" />
                 <circle cx="8" cy="17" r="2" />
               </svg>
             </button>
-            <button type="button" class="orb glass" id="quit-button" title="Quit Opaline (Ctrl+Q)" aria-label="Quit Opaline">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <path d="M12 3v8" />
-                <path d="M6.3 6.8a8 8 0 1 0 11.4 0" />
-              </svg>
-            </button>
-          </div>
+          </nav>
         </header>
 
         <main id="apps-surface" class="glass page-surface" aria-label="Desktop apps and groups">
@@ -87,12 +80,9 @@
         </main>
 
         <p id="navigation-note" role="status"></p>
-        <nav id="page-nav" aria-label="Workspaces and page cycling">
-          <button type="button" id="page-prev" class="page-arrow" aria-label="Previous page">‹</button>
-          <div id="page-tabs"></div>
-          <div class="page-position"><strong id="page-label" aria-live="polite">Desktop</strong></div>
-          <button type="button" id="page-next" class="page-arrow" aria-label="Next page">›</button>
-          <button type="button" id="bar-toggle" class="page-arrow" title="Compact bar (Ctrl+B)" aria-label="Collapse to taskbar view" aria-expanded="true">⌄</button>
+        <nav id="page-edges" aria-label="Page navigation">
+          <button type="button" id="page-prev" class="edge-arrow" aria-label="Previous page" title="Previous page · Shift+Tab">‹</button>
+          <button type="button" id="page-next" class="edge-arrow" aria-label="Next page" title="Next page · Shift+Tab">›</button>
         </nav>
 
         <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
