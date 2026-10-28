@@ -4,7 +4,9 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 and the project uses [Semantic Versioning](https://semver.org). Each minor release has a glass-type codename
 (see [docs/NAMING.md](docs/NAMING.md)).
 
-## [Unreleased] — 0.2.0 "Borosilicate" local preview
+## [Unreleased]
+
+## [0.2.0] — 2026-10-28 "Borosilicate"
 
 ### Added
 - Four-icon header with All apps and Screen time left of search, Focus and Settings right; Home moved beside the bottom taskbar.

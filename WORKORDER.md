@@ -4,11 +4,11 @@ The single source of truth for what Opaline must do, how it is built, what has a
 Everything in the original brief is traceable to a requirement ID (`R-xx`). Pull requests and commits should reference the IDs
 they touch.
 
-**Release in progress:** `0.2.0` local preview · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md))
+**Release in progress:** `0.2.0` · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md))
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
 **Last updated:** 2026-10-28 — Home navigation local-preview candidate on `feat/workspaces-screen-time`.
 
-**Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and the owner-test-before-PR gate.
+**Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.
@@ -19,7 +19,7 @@ verified · `[ ]` not started. **Priority:** P0 targets the current preview · P
 
 **28 October candidate:** named workspaces, local screen time with daily graphs, centered side-arrow navigation, compact mode, the reactivated bottom taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
 
-**Latest navigation revision:** Home is a read-only view of the Windows Desktop. Tab/Shift+Tab and the side arrows move through Home and two default custom screens, shown as three small dots. Alt+1–5 selects Home, All apps, Screen time, Focus and full-page Settings. A shared picker adds apps, folders or files only to custom screens. Side arrows appear on Home screens and move through those screens, while Ctrl+Tab changes the main page. The fabric entrance was removed for a short grid pop. Isolated browser screenshots cover each main screen and each Settings section. Real Windows interaction and owner acceptance remain open; no PR or public release yet.
+**Latest navigation revision:** Home is a read-only view of the Windows Desktop. Tab/Shift+Tab and the side arrows move through Home and two default custom screens, shown as three small dots. Alt+1–5 selects Home, All apps, Screen time, Focus and full-page Settings. A shared picker adds apps, folders or files only to custom screens. Side arrows appear on Home screens and move through those screens, while Ctrl+Tab changes the main page. The fabric entrance was removed for a short grid pop. Isolated browser screenshots cover each main screen and each Settings section. The owner authorized the PR, merge and v0.2.0 release on 28 October 2026; unverified real Windows interactions remain recorded below.
 
 The app **builds and runs**. It was started with `npm run tauri dev`, and its page was driven and screenshotted through
 WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/TESTING.md)) on the target laptop
@@ -239,7 +239,7 @@ blur, tint and lensing.
 - [~] Screen-time period menu, daily graphs, per-app detail and local 90-day retention; verify rollover and idle behaviour.
 - [~] Pomodoro deadline and fourth-session long break; verify hide/reopen and OS restart. Zen and the optional saver need real pointer/keyboard/idle wake checks.
 - [~] Hidden startup registers the hotkey before Desktop, icon or rail warming finishes. Login toggle clearly reports off/on; verify a stable binary path after Windows sign-in.
-- [~] Rendered demo screenshots and owner coding rules; preview test first, then draft PR.
+- [~] Rendered demo screenshots and owner coding rules; owner authorized PR, merge and v0.2.0 release after the local preview.
 
 ### WP13 — Demo and navigation consistency (R-41–R-44)
 - [~] Logical demo fixture: IDEs include Android Studio; project folders live in Code projects; only sample loose folders remain.
@@ -327,7 +327,7 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 13. Acrylic snapshot mode stays under its warm-open budget, and the short app-grid opening motion can be disabled.
 14. Move a loose item, folder and pane; restart and confirm their positions persist (full pass in `docs/SPATIAL_WORKORDER.md`).
 15. Complete `docs/THEME_WORKORDER.md`: consistent acrylic, centred app surface, pane bubbles, left-aligned sparse rows, persistence, contrast and no clipping.
-16. Complete `docs/SESSION_WORKORDER.md`: workspace shortcuts/persistence, compact mode, cached previews, Win-key opt-in/chords, real usage/idle/sleep, virtual-desktop/PowerToys compatibility. Draft PR only after the owner's test result.
+16. Complete `docs/SESSION_WORKORDER.md`: workspace shortcuts/persistence, compact mode, cached previews, Win-key opt-in/chords, real usage/idle/sleep, virtual-desktop/PowerToys compatibility. The owner authorized this PR and release while those real Windows checks remain open.
 
 ## 10. Risks & decisions
 
@@ -358,7 +358,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 ## 12. Next actions (ordered — start at the top)
 
-0. **Owner-test the 28 October candidate first.** Follow `docs/SESSION_WORKORDER.md`. Alt+1–9 selects spaces and the taskbar is active. Review the runnable build and local verification; create the draft PR only after the owner's test result. Do not publish a release as part of this change.
+0. **Prepare the authorized 0.2.0 PR and release.** Alt+1–5 selects the main pages; Tab and side arrows select Home screens. Build and test the Windows binaries, run CI, merge the PR, then tag v0.2.0. Keep unverified native interactions open in `docs/SESSION_WORKORDER.md`.
 
 1. **Confirm the clean gate in CI.** The local `npm test`, `npm run build`, `cargo fmt --check`, Clippy with warnings denied,
    `cargo test --locked` and `cargo check --locked` gates are clean. Run the same workflow on GitHub before marking CI verified.
@@ -371,7 +371,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
    50 ms for the transparent warm-open path and ≤ 300 ms for snapshot mode; report measured values rather than guessing.
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
-7. **Publish pass after owner testing.** Build/install NSIS and MSI, capture README screenshots with demo data, run CI, then tag `v0.2.0` to create the release artifacts.
+7. **Publish pass.** Build NSIS, MSI and portable binaries, capture README screenshots with demo data, run CI, then tag `v0.2.0` to create the release artifacts. Record installer smoke-test evidence separately.
 8. **Then P1 features** from §11, one work package at a time, each with acceptance criteria added here first.
 
 ## 13. Known issues

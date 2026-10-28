@@ -84,7 +84,7 @@ from the screen. Mark your capture script DPI-aware first (`SetProcessDPIAware`)
 
 ## 5. Checks to run before a pull request
 
-For this candidate, run the owner checklist in [SESSION_WORKORDER.md](SESSION_WORKORDER.md) before creating the draft PR. Browser/demo checks do not replace the real Windows-key, virtual-desktop, pointer, installer and CI gates.
+For this release, use the owner checklist in [SESSION_WORKORDER.md](SESSION_WORKORDER.md) to complete the remaining real Windows checks. Browser/demo checks do not replace the Windows-key, virtual-desktop, pointer, installer and CI gates.
 
 `scripts/verify-ui.mjs` uses an isolated browser context and mocked native calls to check four-icon navigation, Alt+1–5, dot-only Home screens, read-only Desktop Home, custom-screen additions, Windows app search and simulated picker selection, workspace persistence, popup geometry, popup focus, full-page Settings, compact mode, 500 ms icon-grid pane/folder peeks, taskbar scrollbar and height, grouped screen-time and Focus charts, timer, Zen, saver, reduced motion and responsive layout. It regenerates public UI screenshots with saved appearance values and synthetic folder/preview/usage data. `scripts/capture-blank-desktop.mjs` renders a separate original blank-desktop illustration as PNG. Start Vite first; provide Playwright through Node resolution or `OPALINE_PLAYWRIGHT_MODULE`, and optionally `OPALINE_BROWSER_PATH` for an installed Chromium/Edge binary. See [UI_GUIDANCE.md](UI_GUIDANCE.md) for app-icon attribution. These checks cannot verify real Windows taskbar icon parity, Win-key routing, virtual desktops, idle wake or login startup; use the owner test in `SESSION_WORKORDER.md` for those.
 

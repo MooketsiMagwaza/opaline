@@ -56,7 +56,7 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 | 0.9 | Iridescent |
 | 1.0 | Jewel |
 
-Git tags follow `vX.Y.Z`; release titles use the version and codename. The current `0.2.0 "Borosilicate"` build is a local preview and has no release tag yet.
+Git tags follow `vX.Y.Z`; release titles use the version and codename. Version `0.2.0 "Borosilicate"` is the current release series.
 
 ## Commits and branches
 

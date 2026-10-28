@@ -15,13 +15,14 @@ describe("workspace persistence", () => {
   it("serializes concurrent edits and keeps memory unchanged when saving fails", async () => {
     vi.mocked(api.loadStore).mockResolvedValue(JSON.stringify([{ id: "dev", name: "Dev", items: [] }]));
     await loadWorkspaces();
+    expect(workspaces().map(space => space.name)).toEqual(["Dev", "Screen 3"]);
     await Promise.all([pinItem("dev", { path: "editor", name: "Editor", isFolder: false }), createWorkspace("Projects")]);
-    expect(workspaces()).toHaveLength(2);
+    expect(workspaces()).toHaveLength(3);
     expect(workspaces()[0].items[0].name).toBe("Editor");
     vi.mocked(api.saveStore).mockRejectedValueOnce(new Error("disk full"));
     await expect(createWorkspace("Not saved")).rejects.toThrow("disk full");
-    expect(workspaces()).toHaveLength(2);
-    await createWorkspace("Recovered");
     expect(workspaces()).toHaveLength(3);
+    await createWorkspace("Recovered");
+    expect(workspaces()).toHaveLength(4);
   });
 });

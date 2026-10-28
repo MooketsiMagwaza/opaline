@@ -17,10 +17,10 @@
   <a href="docs/NAMING.md">Naming</a>
 </p>
 
-> **Status: `0.2.0` "Borosilicate" local preview.** Windows 11 first; Linux is planned. Owner testing comes before the draft PR or public release.
+> **Current version: `0.2.0` "Borosilicate".** Windows 11 first; Linux is planned.
 >
-> The TypeScript build, frontend tests and Rust unit tests are clean locally. The remaining release gate is the real Windows interaction
-> pass: grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
+> The TypeScript build, frontend tests and Rust unit tests are clean locally. Real Windows interaction checks remain open for
+> grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
 > [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done
 > once it has been seen working.
 
@@ -39,7 +39,7 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 |---|---|
 | **Consistent acrylic** | One material system covers the launcher, search and transient panels; Appearance exposes direct blur, tint-strength and tint-colour controls. |
 | **Centred app grid** | One rounded surface holds the app grid. Drag apps, folders and panes to reorder snapped grid cells; sparse final rows remain left-aligned to the same columns. Loose apps remain plain icon + name, while panes use one rounded mini-icon bubble with the name below. |
-| **Paged launcher** | Previous/next controls switch between Home and a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
+| **Paged launcher** | Side arrows and Tab move between the Desktop Home and custom screens. The header opens a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
 | **Search** | Type anywhere. Prefix matches first, <kbd>Enter</kbd> launches, arrow keys move around. |
@@ -89,7 +89,7 @@ The blank desktop is an original illustration based on the owner's example, with
 
 ![How workspace navigation fits together](docs/images/workspace-flow.svg)
 
-The [session work order](docs/SESSION_WORKORDER.md) lists every requested change, verification evidence and the owner test before a draft PR. [Design references and image policy](docs/UI_GUIDANCE.md).
+The [session work order](docs/SESSION_WORKORDER.md) lists every requested change, verification evidence and remaining Windows checks. [Design references and image policy](docs/UI_GUIDANCE.md).
 
 ## Download
 
@@ -99,7 +99,7 @@ Download the NSIS installer, MSI installer or portable Windows ZIP from the
 The first public Windows builds are unsigned, so Microsoft Defender SmartScreen may ask for confirmation. Verify the published
 `SHA256SUMS.txt` before running a download. Code signing is a release-hardening follow-up, not something the installer bypasses.
 
-Until the first tagged release is published, build locally with the development steps below.
+To build from source, use the development steps below.
 
 ## Quick start (development)
 

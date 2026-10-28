@@ -1,6 +1,6 @@
-# Opaline 0.2.0 local preview work order — 28 October 2026
+# Opaline 0.2.0 work order — 28 October 2026
 
-This is the complete intake from the owner's messages in this chat. It extends the main work order; it does not mark earlier release gates complete. `[~]` means implemented with the verification limits below; `[ ]` means waiting. Nothing is published until the owner has tested this branch.
+This is the complete intake from the owner's messages in this chat. It extends the main work order; it does not mark earlier release gates complete. `[~]` means implemented with the verification limits below; `[ ]` means waiting. The owner authorized the PR, merge and v0.2.0 release on 28 October 2026; the checks below remain open until exercised.
 
 | ID | Owner's request | Implementation / acceptance | Status |
 |---|---|---|---|
@@ -17,7 +17,7 @@ This is the complete intake from the owner's messages in this chat. It extends t
 | W-11 | Read Apple UI and Figma guidance | Apply stable top-level destinations, useful labels, visible state, reusable controls and purposeful component naming; document primary sources and decisions in `UI_GUIDANCE.md`. Tab is reserved for Home screen switching only on Home; the picker and popup retain focus navigation. | `[~]` |
 | W-12 | Screenshots and illustrations for GitHub | Rendered UI screenshots cover Home, every top-level page, populated and empty custom screens, custom-screen picker, Focus, Zen, saver, pane, compact bar, preview and all Settings sections. Original blank-desktop artwork illustrates hidden icons. No real Desktop names, titles or captures in Git. | `[~]` |
 | W-13 | Commit appropriately on the right branch | Work on `feat/workspaces-screen-time`; commit code, checks, work orders and demo artwork locally. Keep temporary reports/debug data out of Git. | `[~]` |
-| W-14 | Draft a pull request after the owner tests | Deliver a runnable build and a short test checklist first. Wait for the owner's test result before pushing or creating the draft PR. | `[ ]` |
+| W-14 | Pull request after the local preview | Runnable build and short test checklist delivered. Owner authorized creating and merging the PR, then publishing v0.2.0 on 28 October. Real Windows acceptance remains open and must be described honestly. | `[~]` |
 | W-15 | Smooth group popup originating from its tile | Measure source/destination, translate and scale from the group tile, reverse on close; avoid cutting off the closing transition; cancel stale animation callbacks; respect reduced motion and animation settings. | `[~]` |
 | W-16 | Why WebView2 appears separate; should it be a subprocess? | Checked the current process tree: `msedgewebview2.exe` has `opaline.exe` as parent. Task Manager's visual grouping differs from parentage. Keep Tauri's supported process isolation; document memory/process behaviour in `ARCHITECTURE.md`. | `[~]` |
 | W-17 | Put every request into work orders; make existing work orders ready | This intake links every message to an acceptance target. Update main, theme, spatial and platform docs to remove stale deferral/settings/shortcut statements. Existing release gates remain open until observed. | `[~]` |
@@ -56,18 +56,18 @@ This is the complete intake from the owner's messages in this chat. It extends t
 
 - Frontend unit tests cover settings validation, serialized workspace writes and deadline-based focus transitions.
 - Native unit tests cover usage attribution, pause, sleep gaps, local-date rollover and persistence serialization.
-- `scripts/verify-ui.mjs` runs the actual frontend in an isolated browser with mocked OS calls: page shortcuts, Home/named-screen additions, library arrows/search reset, workspace creation/persistence, popup-origin geometry and focus, full-page Settings, compact mode, reduced motion, narrow layout and preview presentation. Screenshots are demo illustrations, not evidence of Windows shell integration.
+- `scripts/verify-ui.mjs` runs the actual frontend in an isolated browser with mocked OS calls: page shortcuts, read-only Desktop Home, custom-screen additions, Home arrows/search reset, workspace creation/persistence, popup-origin geometry and focus, full-page Settings, compact mode, reduced motion, narrow layout and preview presentation. Screenshots are demo illustrations, not evidence of Windows shell integration.
 - Native Windows integration, real taskbar parity, cold captures, Win-key interception, PowerToys Workspaces, multiple displays, installation and CI require the separate native/owner acceptance record. Do not infer success from demo fixtures.
 - Native debug command checks: 197 installed apps, eight rail entries, one successful real capture; cold capture samples 66.5 and 131.6 ms. Isolated store round-trip, pause/resume, folder metadata and traversal rejection passed. Hook available and left off. Browser cached preview samples 9–33 ms with no page errors; full real key/workspace acceptance remains open. The latest running-window icon and login-start changes have not had a native acceptance pass.
 
-## Owner test before the draft PR
+## Remaining real Windows checks
 
 1. Open Opaline. Check Alt+1–5 in order, Tab/Shift+Tab across Home screens, Ctrl+Tab between main pages, side arrows and the bottom Home button.
-2. Add an app or folder to Home and a named Home screen; rename the named screen, restart and check contents. Cancel the picker once and ensure nothing is added. Check on another Windows virtual desktop and with your workspace restore workflow.
+2. Confirm Home reads Desktop items without an Add control. Add an app or folder to a custom screen; rename the screen, restart and check contents. Cancel the picker once and ensure nothing is added. Check on another Windows virtual desktop and with your workspace restore workflow.
 3. Ctrl+B: only the taskbar mirror and expand control remain at the bottom. Check pinned/running apps, launch/focus/restore and several hover previews.
 4. Hover a group or folder for half a second: a small icon grid should appear and leave cleanly when you move away. Open a group near each edge. Confirm it expands from its own tile, closes smoothly, and keeps keyboard focus inside until Escape.
 5. Use a maximised app for a minute, open Screen time, then compare background/minimised/idle/sleep behaviour. Check pause/resume and restart persistence. Clear only history you intend to delete.
 6. In Behaviour enable the Windows-key option. Tap Win: All apps should open. Check Win+E, Win+R and Win+Ctrl+Arrow, then turn the option off. Native Start-button click and Ctrl+Esc remain available.
 7. Open Focus with Ctrl+Alt+F. Start/pause a short test timer, hide and reopen Opaline, try Zen and Screen saver, then opt into the idle screen saver if desired. Confirm the usage graph and period menu after a day change.
 8. In the full Settings page, change appearance and check that it applies and survives restart. In Behaviour check Launch at login. It is currently off on this machine. Turn it on from the stable preview/install location and sign out/in or restart to confirm hidden tray startup and hotkey availability. Compare ChatGPT's running icon with the actual Windows taskbar.
-9. Report the result here. Only then create the draft PR; do not tag or publish a release as part of this work.
+9. Record results against these checks. The owner has authorized the PR, merge and v0.2.0 release; do not mark a check complete without observing it.
