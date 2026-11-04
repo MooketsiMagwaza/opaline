@@ -31,6 +31,9 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Expanded the six built-in presets into distinct complete material profiles. Windows Mica now uses a flatter, mostly opaque WinUI 3-inspired treatment instead of sharing Opaline Frost's material.
 - Changed precision-touchpad recognition to commit once, consume the complete inertial tail and re-arm after a bounded quiet period. A 280 ms safety release prevents a stalled WebView2 View Transition from waiting for pointer movement; physical owner-device acceptance remains open.
 - Inlined the already-loaded stylesheet into isolated Settings simulations, eliminating repeated preview stylesheet requests and transient black frames.
+- Fixed Space on a focused Focus button (Reset, Finish, duration presets, phase tabs) toggling the timer instead of activating that button.
+- Fixed Settings Done reverting a change made while Settings was open, such as Ctrl+B; Done now applies only the edits staged in Settings.
+- Settings previews now update in place instead of reloading on every slider tick, share one backdrop image rather than embedding a copy each, and are no longer rebuilt while Settings is hidden.
 
 ### Planning
 - Scoped the planned 0.3.0 experience update: a Focus-first UI redesign, optional intention and completion feedback, a compact running timer, four-edge Opaline taskbar placement, a live panel customiser, and versioned restart caches with measured performance budgets.
