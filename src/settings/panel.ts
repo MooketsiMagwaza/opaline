@@ -796,7 +796,9 @@ function select(id: string) {
 export function syncPanel() {
   absorbLiveSettings();
   syncers.forEach((sync) => sync());
-  rebuildLivePreview();
+  // Opening Settings rebuilds the preview from the live DOM, so a hidden panel need not pay for it
+  // every time a setting changes elsewhere (Focus presets, Ctrl+B).
+  if (!byId("settings-surface").hidden) rebuildLivePreview();
   syncCommitBar();
 }
 
