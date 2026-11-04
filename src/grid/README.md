@@ -8,7 +8,8 @@ renames or deletes real Desktop files.
 - `index.ts` coordinates rendering, search, tile activation, pane popups and keyboard movement. Main exports: `setItems`, `render`, `sortHome`,
   `openGroup`, `closePopup`, `focusFirstTile` and `handleArrow`.
 - `groups.ts` owns the persisted pane/group store, launch counts and absolute manual layout positions.
-- `workspaces.ts` owns named Home screens and their pinned app/folder entries (at most `MAX_WORKSPACES`, and the next default name).
+- `workspaces.ts` owns named Home screens and their pinned app/folder entries (at most `MAX_WORKSPACES`, and the next default name). A fresh profile has none: Home starts with Desktop and a plus page, and the two empty "Screen 2" and
+  "Screen 3" placeholders older versions seeded are dropped on load (`withoutSeededScreens`).
 - `drag.ts` owns one drag session, insertion markers and drop routing for Home and pane grids.
 - `order.ts` is the pure geometry layer that separates centre-to-group from edge-to-insert.
 - `organize.ts` applies the ordered, editable definitions in `organize-rules.ts` without touching already-grouped items.

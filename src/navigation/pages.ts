@@ -11,7 +11,8 @@ import { refreshPanel } from "../settings/panel";
 import { setPreviewApps } from "../settings/launcher-preview";
 import { itemPicker } from "../grid/item-picker";
 import { initTray } from "./tray";
-import { clearPreview, endTransition, motionAllowed, playCommit, showPreview, type GestureMode, type GestureSource } from "./gesture-motion";
+import { clearPreview, endTransition, isCommitting, motionAllowed, playCommit, showPreview, type GestureMode, type GestureSource } from "./gesture-motion";
+import { fadeIn } from "../core/motion";
 
 let current = "desktop";
 let homeScreen = 0;
@@ -171,6 +172,8 @@ export function show(id: string) {
   if (current === "focus") refreshFocus();
   if (current === "settings") refreshPanel();
   byId<HTMLInputElement>("search").placeholder = `Search ${next.label.toLocaleLowerCase()}`;
+  // Opening the overlay and a gesture commit have their own motion; everything else eases in rather than flicking over.
+  if (!isCommitting() && !byId("stage").classList.contains("pre")) fadeIn(byId(surface));
   byId("shell").focus({ preventScroll: true });
   // On the new-screen page the plus is the one thing to act on, so Enter and Space work straight away.
   if (current === "desktop" && isNewScreenPage()) byId("workspace-items").querySelector<HTMLElement>("button")?.focus();

@@ -216,12 +216,17 @@ function showPreview(item: RailItem, anchor: HTMLElement) {
   card.replaceChildren(title, body);
   card.hidden = false;
 
-  // Sit above the bottom taskbar, centred on the icon.
+  // Sit on the side of the icon that faces into the screen, centred on it.
   const rect = anchor.getBoundingClientRect();
   const box = card.getBoundingClientRect();
-  const left = rect.left + rect.width / 2 - box.width / 2;
+  const edge = settings().railEdge;
+  const gap = 16;
+  const centredX = rect.left + rect.width / 2 - box.width / 2;
+  const centredY = rect.top + rect.height / 2 - box.height / 2;
+  const left = edge === "left" ? rect.right + gap : edge === "right" ? rect.left - box.width - gap : centredX;
+  const top = edge === "top" ? rect.bottom + gap : edge === "bottom" ? rect.top - box.height - gap : centredY;
   card.style.left = `${clamp(left, 12, window.innerWidth - box.width - 12)}px`;
-  card.style.top = `${clamp(rect.top - box.height - 16, 12, window.innerHeight - box.height - 12)}px`;
+  card.style.top = `${clamp(top, 12, window.innerHeight - box.height - 12)}px`;
 }
 
 export function hidePreview(immediately = false) {
@@ -238,20 +243,27 @@ export function hidePreview(immediately = false) {
 
 // ---------- magnification ----------
 
-function magnify(pointerX: number) {
+const isVertical = (): boolean => settings().railEdge === "left" || settings().railEdge === "right";
+
+/** Magnifies the icons near the pointer along the taskbar's own axis: across a horizontal bar, down a vertical one. */
+function magnify(pointerAlong: number) {
   const rail = byId("rail");
-  const left = rail.getBoundingClientRect().left;
+  const vertical = isVertical();
+  const box = rail.getBoundingClientRect();
+  const start = vertical ? box.top : box.left;
 
   for (const child of rail.querySelectorAll<HTMLElement>(".dock-item")) {
     const button = child as HTMLElement;
     // layout position, so the scale being applied doesn't feed back into the maths
-    const centre = left + button.offsetLeft - rail.scrollLeft + button.offsetWidth / 2;
-    const signedDistance = centre - pointerX;
+    const offset = vertical ? button.offsetTop - rail.scrollTop : button.offsetLeft - rail.scrollLeft;
+    const centre = start + offset + (vertical ? button.offsetHeight : button.offsetWidth) / 2;
+    const signedDistance = centre - pointerAlong;
     const distance = Math.abs(signedDistance);
     const scale = 1 + 0.15 * Math.exp(-((distance / 78) ** 2));
     const push = Math.sign(signedDistance) * (scale - 1) * button.offsetHeight * 0.85;
     button.style.setProperty("--s", scale.toFixed(3));
-    button.style.setProperty("--push", `${push.toFixed(1)}px`);
+    button.style.setProperty("--push-x", vertical ? "0px" : `${push.toFixed(1)}px`);
+    button.style.setProperty("--push-y", vertical ? `${push.toFixed(1)}px` : "0px");
     button.style.zIndex = String(Math.round(scale * 100));
   }
 }
@@ -261,7 +273,8 @@ export function initRail() {
   const preview = byId("preview");
 
   rail.addEventListener("wheel", (event) => {
-    if (rail.scrollWidth <= rail.clientWidth || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    // A vertical taskbar scrolls natively; only a horizontal one needs the wheel turned sideways.
+    if (isVertical() || rail.scrollWidth <= rail.clientWidth || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
     rail.scrollLeft += event.deltaY;
     event.preventDefault();
   }, { passive: false });
@@ -272,14 +285,15 @@ export function initRail() {
   rail.addEventListener("pointermove", (event) => {
     if (!settings().railMagnify || !settings().animations || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     cancelAnimationFrame(magnifyFrame);
-    magnifyFrame = requestAnimationFrame(() => magnify(event.clientX));
+    magnifyFrame = requestAnimationFrame(() => magnify(isVertical() ? event.clientY : event.clientX));
   });
   rail.addEventListener("pointerleave", () => {
     cancelAnimationFrame(magnifyFrame);
     for (const child of rail.querySelectorAll<HTMLElement>(".dock-item")) {
       const button = child as HTMLElement;
       button.style.removeProperty("--s");
-      button.style.removeProperty("--push");
+      button.style.removeProperty("--push-x");
+      button.style.removeProperty("--push-y");
       button.style.removeProperty("z-index");
     }
   });

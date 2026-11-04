@@ -7,7 +7,8 @@ import { byId, el } from "../core/dom";
 import type { QuickSort } from "../grid";
 import { createLauncherPreview, updateLauncherPreview } from "./launcher-preview";
 import { helpControl } from "./help";
-import { DEFAULTS, NAVIGATION_LABELS, RAIL_AVAILABLE, normalizeSettings, type Settings, settings, updateSettings } from "./store";
+import { fadeIn } from "../core/motion";
+import { DEFAULTS, NAVIGATION_LABELS, normalizeSettings, type Settings, settings, updateSettings } from "./store";
 import { createWorkspace, removeWorkspace, renameWorkspace, workspaces } from "../grid/workspaces";
 import { refreshUsage } from "../activity";
 import { absorbLiveChanges, stagedChanges } from "./draft";
@@ -22,11 +23,15 @@ export type PanelHooks = {
 };
 
 type Option = [value: string, label: string];
+/** A control that only works alongside another setting: it is disabled, with the reason beside it, while that setting is off. */
+type Requirement = { key: keyof Settings; because: string };
 
 type Control =
   | { kind: "range"; key: keyof Settings; label: string; min: number; max: number; step: number; format: (value: number) => string; hint?: string }
-  | { kind: "segmented"; key: keyof Settings; label: string; options: Option[]; hint?: string; onlyWhen?: { key: keyof Settings; value: string } }
-  | { kind: "toggle"; key: keyof Settings; label: string; hint?: string; requires?: { key: keyof Settings; because: string } }
+  | { kind: "segmented"; key: keyof Settings; label: string; options: Option[]; hint?: string; onlyWhen?: { key: keyof Settings; value: string }; requires?: Requirement }
+  | { kind: "toggle"; key: keyof Settings; label: string; hint?: string; requires?: Requirement }
+  | { kind: "heading"; label: string }
+  | { kind: "pane-demo" }
   | { kind: "color"; key: keyof Settings; label: string; hint?: string }
   | { kind: "hotkey" }
   | { kind: "autostart" }
@@ -58,14 +63,15 @@ const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>(["paneBlur", "refraction", 
 export const isRecordingHotkey = (): boolean => recording;
 
 function sections(): Section[] {
-  const available: Section[] = [
+  return [
     {
       id: "appearance",
       title: "Appearance",
-      description: "Materials, colour, icon presentation and type. Every change is shown in the live screen preview.",
+      description: "Materials, colour, icons and type. Every change is shown in the live screen preview.",
       controls: [
         { kind: "appearance-presets" },
         { kind: "background" },
+        { kind: "heading", label: "Material" },
         { kind: "range", key: "backdropBlur", label: "Acrylic blur intensity", min: 0, max: 40, step: 1, format: pixels, hint: "Controls both the captured backdrop and the floating acrylic surfaces." },
         { kind: "range", key: "customSurfaceOpacity", label: "Panel opacity", min: 0.2, max: 1, step: 0.01, format: percent, hint: "Fine-tuning this switches the material to a custom surface." },
         { kind: "range", key: "refraction", label: "Light bending", min: 0, max: 1, step: 0.05, format: percent, hint: "Bends the desktop behind panel edges like thick glass instead of only frosting it. Heavier on the GPU; 0% turns it off." },
@@ -75,16 +81,18 @@ function sections(): Section[] {
         { kind: "range", key: "backdropBrightness", label: "Backdrop brightness", min: 0.6, max: 1.3, step: 0.05, format: value => `${Math.round(value * 100)}%` },
         { kind: "range", key: "tintStrength", label: "Acrylic tint", min: 0.06, max: 0.5, step: 0.01, format: percent },
         { kind: "color", key: "tintColor", label: "Tint colour" },
+        { kind: "heading", label: "Icons and type" },
         { kind: "segmented", key: "iconSize", label: "Home icon size", options: [["small", "Small"], ["medium", "Medium"], ["large", "Large"]] },
         { kind: "toggle", key: "showLabels", label: "Show app and pane names" },
         { kind: "range", key: "scrollbarWidth", label: "Scrollbar width", min: 6, max: 14, step: 1, format: pixels },
       ],
     },
     {
-      id: "home-layout",
-      title: "Home layout",
-      description: "The size and ordering of the main Home canvas. Appearance and navigation live in their own sections.",
+      id: "home",
+      title: "Home",
+      description: "The Home canvas, its panes and the screens you swipe through.",
       controls: [
+        { kind: "heading", label: "Layout" },
         { kind: "range", key: "surfaceWidth", label: "App area width", min: 640, max: 1280, step: 40, format: pixels },
         { kind: "toggle", key: "groupsFirst", label: "Panes first", hint: "Show panes before loose items." },
         { kind: "segmented", key: "sortBy", label: "Automatic loose-item order", options: [["name", "Name"], ["frequent", "Most used"]], hint: "Used for new items and before a manual grid order is saved." },
@@ -108,55 +116,9 @@ function sections(): Section[] {
             note("Grid order reset.");
           },
         },
-      ],
-    },
-    {
-      id: "navigation",
-      title: "Navigation",
-      description: "Choose where Opaline’s main destinations live and which ones stay visible.",
-      controls: [
-        { kind: "navigation-style" },
-        { kind: "segmented", key: "navigationSide", label: "Sidebar edge", options: [["left", "Left"], ["right", "Right"]], hint: "Which side of the screen the sidebar sits on.", onlyWhen: { key: "navigationMode", value: "sidebar" } },
-        { kind: "segmented", key: "defaultPage", label: "Default opening page", options: [["home", "Home"], ["all-apps", "All apps"]], hint: "Choose what a normal Opaline open shows first. Explicit page shortcuts keep their usual destinations." },
-        { kind: "toggle", key: "compactBar", label: "Compact navigation", hint: "Minimise page controls while keeping keyboard shortcuts available. Ctrl+B toggles this quickly.", requires: { key: "rail", because: "Turn on the taskbar mirror first" } },
-        { kind: "toggle", key: "shortcutAllApps", label: "Show All apps", hint: "Hidden destinations remain available from the navigation tray and keyboard." },
-        { kind: "toggle", key: "shortcutScreenTime", label: "Show Screen time" },
-        { kind: "toggle", key: "shortcutFocus", label: "Show Focus" },
-        { kind: "toggle", key: "shortcutSettings", label: "Show Settings", hint: "Alt+5 and the tray always provide a recovery path." },
-      ],
-    },
-    {
-      id: "rail",
-      title: "Taskbar",
-      description: "Controls for the Windows app mirror only. Opaline page navigation is configured separately.",
-      controls: [
-        { kind: "toggle", key: "rail", label: "Show taskbar mirror", hint: "Pinned and running Windows apps at the bottom. Click to open or focus." },
-        { kind: "range", key: "taskbarIconSize", label: "Taskbar icon size", min: 24, max: 36, step: 2, format: pixels },
-        { kind: "toggle", key: "railMagnify", label: "Magnify on hover" },
-        { kind: "toggle", key: "railPreviews", label: "Window previews", hint: "Thumbnails when you hover an app." },
-      ],
-    },
-    {
-      id: "behaviour",
-      title: "Behaviour",
-      description: "How Opaline opens, closes and responds. Visual choices are kept in Appearance.",
-      controls: [
-        { kind: "hotkey" },
-        { kind: "start-menu" },
-        { kind: "autostart" },
-        { kind: "toggle", key: "closeOnClickOff", label: "Close when clicking empty space" },
-        { kind: "toggle", key: "closeOnBlur", label: "Close when you switch away" },
-        { kind: "toggle", key: "animations", label: "Animations" },
-      ],
-    },
-    { id: "workspaces", title: "Home screens", description: "Create and name the spaces you swipe through from Home.", controls: [{ kind: "workspaces" }] },
-    { id: "screen-time", title: "Screen time", description: "Local activity history and retention controls.", controls: [{ kind: "screen-time" }] },
-    {
-      id: "panes",
-      title: "Panes",
-      description: "Pane organisation and the way pane windows open. Home ordering remains under Home layout.",
-      controls: [
+        { kind: "heading", label: "Panes" },
         { kind: "range", key: "paneMotionMs", label: "Opening duration", min: 160, max: 500, step: 10, format: (value) => `${value} ms`, hint: "Pane popups expand from their tile and return to it when closed." },
+        { kind: "pane-demo" },
         {
           kind: "action",
           label: "Organise for me",
@@ -177,6 +139,47 @@ function sections(): Section[] {
             note("All panes dissolved.");
           },
         },
+        { kind: "heading", label: "Home screens" },
+        { kind: "workspaces" },
+      ],
+    },
+    {
+      id: "navigation",
+      title: "Navigation & taskbar",
+      description: "Where Opaline's destinations live, and the Windows app taskbar.",
+      controls: [
+        { kind: "heading", label: "Navigation" },
+        { kind: "navigation-style" },
+        { kind: "segmented", key: "navigationSide", label: "Sidebar edge", options: [["left", "Left"], ["right", "Right"]], hint: "Which side of the screen the sidebar sits on.", onlyWhen: { key: "navigationMode", value: "sidebar" } },
+        { kind: "segmented", key: "defaultPage", label: "Default opening page", options: [["home", "Home"], ["all-apps", "All apps"]], hint: "Choose what a normal Opaline open shows first. Explicit page shortcuts keep their usual destinations." },
+        { kind: "toggle", key: "compactBar", label: "Compact navigation", hint: "Minimise page controls while keeping keyboard shortcuts available. Ctrl+B toggles this quickly.", requires: { key: "rail", because: "Turn on the taskbar first" } },
+        { kind: "toggle", key: "shortcutAllApps", label: "Show All apps", hint: "Hidden destinations remain available from the navigation tray and keyboard." },
+        { kind: "toggle", key: "shortcutScreenTime", label: "Show Screen time" },
+        { kind: "toggle", key: "shortcutFocus", label: "Show Focus" },
+        { kind: "toggle", key: "shortcutSettings", label: "Show Settings", hint: "Alt+5 and the tray always provide a recovery path." },
+        { kind: "heading", label: "Taskbar" },
+        { kind: "toggle", key: "rail", label: "Show taskbar", hint: "Pinned and running Windows apps along a screen edge. Click to open or focus." },
+        { kind: "segmented", key: "railEdge", label: "Taskbar edge", options: [["bottom", "Bottom"], ["top", "Top"], ["left", "Left"], ["right", "Right"]], hint: "Which edge of the screen the taskbar sits on.", requires: { key: "rail", because: "Turn on the taskbar first" } },
+        { kind: "segmented", key: "railAlign", label: "Taskbar alignment", options: [["start", "Start"], ["center", "Centre"], ["end", "End"]], hint: "Where along that edge the taskbar sits.", requires: { key: "rail", because: "Turn on the taskbar first" } },
+        { kind: "range", key: "taskbarIconSize", label: "Taskbar icon size", min: 24, max: 36, step: 2, format: pixels },
+        { kind: "toggle", key: "railMagnify", label: "Magnify on hover", requires: { key: "rail", because: "Turn on the taskbar first" } },
+        { kind: "toggle", key: "railPreviews", label: "Window previews", hint: "Thumbnails when you hover an app.", requires: { key: "rail", because: "Turn on the taskbar first" } },
+      ],
+    },
+    {
+      id: "behaviour",
+      title: "Behaviour",
+      description: "How Opaline opens, closes and responds. Visual choices are kept in Appearance.",
+      controls: [
+        { kind: "hotkey" },
+        { kind: "start-menu" },
+        { kind: "autostart" },
+        { kind: "toggle", key: "closeOnClickOff", label: "Close when clicking empty space" },
+        { kind: "toggle", key: "closeOnBlur", label: "Close when you switch away" },
+        { kind: "toggle", key: "animations", label: "Animations" },
+        { kind: "toggle", key: "pageFade", label: "Fade between pages", hint: "Pages, Home screens and Settings sections ease in instead of appearing at once.", requires: { key: "animations", because: "Turn on animations first" } },
+        { kind: "heading", label: "Screen time" },
+        { kind: "screen-time" },
       ],
     },
     { id: "help", title: "Shortcuts & help", description: "Every keyboard shortcut and gesture. Press F1 or ? anywhere in Opaline to return here.", controls: [{ kind: "help" }] },
@@ -201,7 +204,6 @@ function sections(): Section[] {
       ],
     },
   ];
-  return available.filter((section) => RAIL_AVAILABLE || section.id !== "rail");
 }
 
 // ---------- rows ----------
@@ -229,7 +231,20 @@ function absorbLiveSettings() {
 function syncCommitBar() {
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(baseline);
   const done = document.getElementById("settings-done") as HTMLButtonElement | null;
+  const cancel = document.getElementById("settings-cancel") as HTMLButtonElement | null;
+  // Nothing staged means nothing to apply and nothing to throw away, so neither button offers to.
   if (done) done.disabled = !dirty;
+  if (cancel) cancel.disabled = !dirty;
+}
+
+function syncExpandButton() {
+  const button = document.getElementById("settings-expand");
+  if (!button) return;
+  const expanded = settings().settingsExpanded;
+  const label = expanded ? "Shrink Settings to a panel" : "Expand Settings to fill the window";
+  button.setAttribute("aria-pressed", String(expanded));
+  button.setAttribute("aria-label", label);
+  button.title = label;
 }
 
 function stageSettings(patch: Partial<Settings>) {
@@ -285,7 +300,9 @@ function segmentedRow(control: Extract<Control, { kind: "segmented" }>): HTMLEle
   };
   syncers.push(show);
   show();
-  const held = row(control.label, control.hint, el("div", "control", [group]));
+  const because = el("span", "note");
+  gate(control.requires, buttons.map(({ button }) => button), because);
+  const held = row(control.label, control.hint, el("div", "control", [because, group]));
   if (control.onlyWhen) {
     const { key, value } = control.onlyWhen;
     const place = () => { held.hidden = String(panelSettings()[key]) !== value; };
@@ -311,16 +328,20 @@ function toggleRow(control: Extract<Control, { kind: "toggle" }>): HTMLElement {
     (value) => patch(control.key, value),
   );
   node.setAttribute("aria-label", control.label);
-  // A setting that only works alongside another one is switched off, with the reason beside it, rather than silently doing nothing.
   const because = el("span", "note");
-  const showRequirement = () => {
-    const blocked = control.requires !== undefined && !panelSettings()[control.requires.key];
-    node.toggleAttribute("disabled", blocked);
-    because.textContent = blocked ? control.requires!.because : "";
-  };
-  syncers.push(show, showRequirement);
-  showRequirement();
+  syncers.push(show);
+  gate(control.requires, [node], because);
   return row(control.label, control.hint, el("div", "control", [because, node]));
+}
+
+function gate(requires: Requirement | undefined, targets: HTMLElement[], note: HTMLElement) {
+  const apply = () => {
+    const blocked = requires !== undefined && !panelSettings()[requires.key];
+    for (const target of targets) target.toggleAttribute("disabled", blocked);
+    note.textContent = blocked ? requires!.because : "";
+  };
+  syncers.push(apply);
+  apply();
 }
 
 function colorRow(control: Extract<Control, { kind: "color" }>): HTMLElement {
@@ -340,7 +361,7 @@ function backgroundControl(): HTMLElement {
   file.accept = "image/jpeg,image/png,image/webp";
   file.hidden = true;
   const definitions = [
-    { id: "desktop", label: "Desktop", hint: "Use the current Windows desktop capture." },
+    { id: "desktop", label: "Current screen", hint: "A frozen capture of what is on your screen when Opaline opens." },
     { id: "aero", label: "Opaline Aero", hint: "Use the bundled bright landscape." },
     { id: "custom", label: "Custom", hint: "Use your own optimised local image." },
   ] as const;
@@ -379,7 +400,7 @@ function backgroundControl(): HTMLElement {
   syncers.push(show);
   show();
   return el("section", "background-control", [
-    el("div", "appearance-preset-heading", [el("div", "row-label", ["Opaline background"]), el("div", "row-hint", ["Independent from your Windows wallpaper. Custom images never leave this device."])]),
+    el("div", "appearance-preset-heading", [el("div", "row-label", ["Background"]), el("div", "row-hint", ["What sits behind Opaline’s panels. It is separate from your Windows wallpaper, and custom images never leave this device."])]),
     el("div", "background-options", buttons.map(({ button }) => button)),
     el("div", "background-actions", [choose, file, note]),
   ]);
@@ -445,9 +466,7 @@ function paneMotionPreview(): HTMLElement {
 }
 
 function sectionPreview(id: string): HTMLElement | null {
-  if (["appearance", "home-layout", "navigation", "rail"].includes(id)) return homePreviewPanel();
-  if (id === "panes") return paneMotionPreview();
-  return null;
+  return ["appearance", "home", "navigation"].includes(id) ? homePreviewPanel() : null;
 }
 
 function navigationStyleControl(): HTMLElement {
@@ -712,7 +731,7 @@ function aboutRow(): HTMLElement {
 function workspaceControls(): HTMLElement {
   const holder = el("div", "workspace-controls");
   const note = el("p", "note");
-  const run = (operation: Promise<void>) => { void operation.then(() => select("workspaces")).catch((error) => { note.textContent = String(error); }); };
+  const run = (operation: Promise<void>) => { void operation.then(() => select("home")).catch((error) => { note.textContent = String(error); }); };
   holder.append(el("p", "row-hint", ["These Home screens are available on every Windows virtual desktop. Press Tab on Home to switch between them. Alt+1 returns to the main Home screen."]));
   workspaces().forEach((space, index) => {
     const name = el("input", "workspace-name");
@@ -772,6 +791,8 @@ function startMenuRow(): HTMLElement {
 
 function build(control: Control | SpecialControl): HTMLElement {
   switch (control.kind) {
+    case "heading": return el("h3", "settings-group", [control.label]);
+    case "pane-demo": return el("div", "pane-demo-inline", [paneMotionPreview()]);
     case "workspaces": return workspaceControls();
     case "screen-time": return screenTimeControls();
     case "range":
@@ -816,6 +837,7 @@ function select(id: string) {
   body.classList.toggle("has-section-preview", Boolean(preview));
   body.replaceChildren(content, ...(preview ? [preview] : []));
   body.scrollTop = 0;
+  fadeIn(content);
 
   byId("settings")
     .querySelectorAll<HTMLElement>(".nav-item")
@@ -826,6 +848,7 @@ function select(id: string) {
 
 export function syncPanel() {
   absorbLiveSettings();
+  syncExpandButton();
   syncers.forEach((sync) => sync());
   // Opening Settings rebuilds the preview from the live DOM, so a hidden panel need not pay for it
   // every time a setting changes elsewhere (Focus presets, Ctrl+B).
@@ -847,6 +870,7 @@ export function initPanel(panelHooks: PanelHooks) {
   }
 
   const cancel = el("button", "chip subtle", ["Cancel"]);
+  cancel.id = "settings-cancel";
   cancel.type = "button";
   cancel.addEventListener("click", () => {
     resetDraftToSaved();
@@ -862,6 +886,8 @@ export function initPanel(panelHooks: PanelHooks) {
     absorbLiveSettings();
     syncCommitBar();
   });
+  byId("settings-expand").addEventListener("click", () => updateSettings({ settingsExpanded: !settings().settingsExpanded }));
+  syncExpandButton();
   const commitBar = el("footer", "settings-commit", [cancel, done]);
   byId("settings").replaceChildren(nav, el("div", "settings-main", [el("div", "settings-body"), commitBar]));
   select(current);

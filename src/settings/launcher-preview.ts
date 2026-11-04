@@ -155,7 +155,7 @@ function bodyValues(settings: Settings): Record<string, string> {
   const luminance = (custom.r * .2126 + custom.g * .7152 + custom.b * .0722) / 255;
   return {
     style: settings.glassStyle, material: settings.materialProfile, canvas: "frosted", labels: String(settings.showLabels),
-    rail: String(settings.rail), anim: String(settings.animations), compactBar: String(compactNavigation(settings)), navigation: settings.navigationMode, navigationSide: settings.navigationSide,
+    rail: String(settings.rail), railEdge: settings.railEdge, railAlign: settings.railAlign, anim: String(settings.animations), compactBar: String(compactNavigation(settings)), navigation: settings.navigationMode, navigationSide: settings.navigationSide,
     shortcutAllApps: String(settings.shortcutAllApps), shortcutScreenTime: String(settings.shortcutScreenTime), shortcutFocus: String(settings.shortcutFocus),
     shortcutSettings: String(settings.shortcutSettings), navigationOverflow: String(!settings.shortcutAllApps || !settings.shortcutScreenTime || !settings.shortcutFocus || !settings.shortcutSettings),
     surfaceTone: luminance > .62 && settings.customSurfaceOpacity > .55 ? "light" : "dark", page: "desktop", defaultPage: settings.defaultPage,

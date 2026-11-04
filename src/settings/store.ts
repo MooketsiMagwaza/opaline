@@ -4,6 +4,8 @@ export type GlassStyle = "solid" | "liquid" | "frost" | "clear" | "custom";
 export type MaterialProfile = "opaline" | "mica" | "one-ui" | "apple-glass" | "aero" | "night" | "custom";
 export type NavigationMode = "split" | "taskbar" | "tray" | "ends" | "sidebar";
 export type NavigationSide = "left" | "right";
+export type RailEdge = "bottom" | "top" | "left" | "right";
+export type RailAlign = "start" | "center" | "end";
 export const NAVIGATION_LABELS: Record<NavigationMode, string> = {
   split: "Split header", taskbar: "Navigation taskbar", tray: "Dropdown tray", ends: "Taskbar ends", sidebar: "Sidebar",
 };
@@ -33,9 +35,13 @@ export type Settings = {
   rail: boolean;
   railMagnify: boolean;
   railPreviews: boolean;
+  railEdge: RailEdge;
+  railAlign: RailAlign;
   closeOnClickOff: boolean;
   closeOnBlur: boolean;
   animations: boolean;
+  pageFade: boolean;
+  settingsExpanded: boolean;
   compactBar: boolean;
   paneMotionMs: number;
   surfaceWidth: number;
@@ -80,9 +86,13 @@ export const DEFAULTS: Settings = {
   rail: true,
   railMagnify: false,
   railPreviews: true,
+  railEdge: "bottom",
+  railAlign: "center",
   closeOnClickOff: true,
   closeOnBlur: true,
   animations: true,
+  pageFade: true,
+  settingsExpanded: false,
   compactBar: false,
   paneMotionMs: 320,
   surfaceWidth: 960,
@@ -156,7 +166,7 @@ export function normalizeSettings(value: unknown): Settings {
       const [min, max] = ranges[key];
       merged[key] = Number.isFinite(merged[key]) ? Math.min(max, Math.max(min, merged[key])) : DEFAULTS[key];
     }
-    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], navigationMode: ["split", "taskbar", "tray", "ends", "sidebar"], navigationSide: ["left", "right"], defaultPage: ["home", "all-apps"], backgroundMode: ["desktop", "aero", "custom"], materialProfile: ["opaline", "mica", "one-ui", "apple-glass", "aero", "night", "custom"] })) {
+    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], navigationMode: ["split", "taskbar", "tray", "ends", "sidebar"], navigationSide: ["left", "right"], railEdge: ["bottom", "top", "left", "right"], railAlign: ["start", "center", "end"], defaultPage: ["home", "all-apps"], backgroundMode: ["desktop", "aero", "custom"], materialProfile: ["opaline", "mica", "one-ui", "apple-glass", "aero", "night", "custom"] })) {
       if (!values.includes(String(merged[key as keyof Settings]))) (merged as Record<string, unknown>)[key] = DEFAULTS[key as keyof Settings];
     }
     return merged;
@@ -254,6 +264,10 @@ export function applySettings() {
   body.labels = String(s.showLabels);
   body.rail = String(RAIL_AVAILABLE && s.rail);
   body.anim = String(s.animations);
+  body.pageFade = String(s.pageFade);
+  body.settingsExpanded = String(s.settingsExpanded);
+  body.railEdge = s.railEdge;
+  body.railAlign = s.railAlign;
   body.compactBar = String(compactNavigation(s));
   body.navigation = s.navigationMode;
   body.navigationSide = s.navigationSide;

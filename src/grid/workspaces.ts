@@ -26,10 +26,15 @@ export function onWorkspacesChange(listener: () => void) { listeners.add(listene
 
 export async function loadWorkspaces() {
   const text = await api.loadStore(FILE);
-  spaces = text ? normalizeWorkspaces(JSON.parse(text)) : [];
-  for (let number = spaces.length + 2; number <= 3; number++) {
-    spaces.push({ id: `screen-${number}`, name: `Screen ${number}`, items: [] });
-  }
+  spaces = text ? withoutSeededScreens(normalizeWorkspaces(JSON.parse(text))) : [];
+}
+
+/**
+ * Earlier versions gave every profile two empty screens, "Screen 2" and "Screen 3". Home now starts with one screen and a plus page that
+ * adds the next, so those untouched placeholders are dropped. A screen the user named, or put anything in, is always kept.
+ */
+export function withoutSeededScreens(list: Workspace[]): Workspace[] {
+  return list.filter((space) => !(/^screen-[23]$/.test(space.id) && /^Screen [23]$/.test(space.name) && space.items.length === 0));
 }
 
 function change(edit: (next: Workspace[]) => void): Promise<void> {

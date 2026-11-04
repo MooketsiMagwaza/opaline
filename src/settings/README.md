@@ -45,19 +45,23 @@ sequenceDiagram
 
 ## Information architecture
 
-- **Appearance:** backgrounds, materials, colour, blur, icons, labels and scrollbar visuals.
-- **Home layout:** main panel size and Home ordering.
-- **Navigation:** default opening page, destination arrangement (and the sidebar edge when Sidebar is chosen), compact mode and visible shortcuts.
-  The previews, including each arrangement card, show the staged opening page (All apps is built from the installed-app list) and
-  compact state. A control that needs another setting (compact navigation needs the taskbar mirror) is disabled with the reason beside it;
-  a control that only applies to one choice (`onlyWhen`) is hidden otherwise.
-- **Taskbar:** Windows app mirror, icon sizing, magnification and window previews.
-- **Behaviour, Home screens and Screen time:** feature-specific controls without an unrelated Home preview.
-- **Panes:** organisation actions plus a looping pane-origin motion preview.
-- **Shortcuts & help:** every keyboard shortcut and gesture, grouped.
+Six sections, with headings inside them rather than more pages (`{ kind: "heading" }`):
 
-Focus timing and quiet-clock preferences intentionally live on the Focus page beside the feature they affect. Settings uses nearly the
-entire window and keeps only compact Cancel/Done actions at the bottom. Built-in backgrounds ship as bounded raster assets; imported images
+- **Appearance:** backgrounds (Current screen, Opaline Aero, a custom image), materials, colour, blur, light bending, icons, labels and scrollbar visuals.
+- **Home:** Layout (panel size, ordering, quick sort), Panes (opening motion with its looping demo, organise, ungroup) and Home screens.
+- **Navigation & taskbar:** the destination arrangement (and the sidebar edge when Sidebar is chosen), default opening page, compact mode and visible
+  shortcuts; then the taskbar: show it, its edge and alignment, icon size, magnification and window previews.
+  The previews, including each arrangement card, show the staged opening page (All apps is built from the installed-app list) and
+  compact state. A control that needs another setting (compact navigation and the taskbar options need the taskbar) is disabled with the
+  reason beside it (`requires`); a control that only applies to one choice (`onlyWhen`) is hidden otherwise.
+- **Behaviour:** hotkey, Windows key, launch at login, closing, animations and Fade between pages, then Screen time retention.
+- **Shortcuts & help:** every keyboard shortcut and gesture, grouped.
+- **About:** version, links and reset.
+
+Settings opens as a panel like any other page. The corner button (`settingsExpanded`, applied at once and not staged) expands it to fill the window,
+hiding the header and taskbar. Cancel and Done are both disabled while nothing is staged. Switching sections eases the content in (`core/motion.ts`).
+
+Focus timing and quiet-clock preferences intentionally live on the Focus page beside the feature they affect. Settings keeps only compact Cancel/Done actions at the bottom. Built-in backgrounds ship as bounded raster assets; imported images
 are downsampled to at most 1920×1080, JPEG-compressed locally and capped before persistence.
 
 OS hotkey capture, Start replacement and launch-at-login are deliberate immediate operations because they cannot be meaningfully previewed.

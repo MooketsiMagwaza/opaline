@@ -131,7 +131,7 @@
           </div>
         </main>
 
-        <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><span class="page-count">Automatic apply · Off</span></header><div id="settings" class="settings-layout"></div></main>
+        <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><div class="page-actions"><span class="page-count">Automatic apply · Off</span><button id="settings-expand" type="button" class="chip icon-chip" aria-pressed="false"><svg class="expand-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button></div></header><div id="settings" class="settings-layout"></div></main>
 
         <p id="navigation-note" role="status"></p>
           <span id="gesture-cue" class="glass" aria-hidden="true" hidden></span>
@@ -149,6 +149,10 @@
 
         <div id="bottom-bar">
           <button id="focus-capsule" type="button" class="glass" hidden><span id="focus-capsule-phase">Focus</span><strong id="focus-capsule-clock">25:00</strong></button>
+          <nav id="navigation-ends-start" class="navigation-ends header-nav glass" aria-label="Apps and screen time">
+            <button type="button" class="orb" data-page="all-apps" data-nav-shortcut="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
+            <button type="button" class="orb" data-page="screen-time" data-nav-shortcut="screen-time" title="Screen time" aria-label="Screen time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"/><rect x="5" y="11" width="3.5" height="6" rx=".8"/><rect x="10.25" y="7" width="3.5" height="10" rx=".8"/><rect x="15.5" y="4" width="3.5" height="13" rx=".8"/></svg></button>
+          </nav>
           <button id="home-dock" type="button" class="glass" title="Home · Alt+1" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.7 10 8.3-6.8 8.3 6.8v9.1c0 1-.8 1.8-1.8 1.8h-13c-1 0-1.8-.8-1.8-1.8z"/><path d="M9.2 20.9v-6.6h5.6v6.6"/></svg></button>
           <nav id="navigation-dock" class="navigation-dock header-nav glass" aria-label="Main destinations">
             <button type="button" class="orb" data-page="all-apps" data-nav-shortcut="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
@@ -166,6 +170,16 @@
             </nav>
           </details>
           <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
+          <nav id="navigation-ends-end" class="navigation-ends header-nav glass" aria-label="Focus and settings">
+            <button type="button" class="orb" data-page="focus" data-nav-shortcut="focus" title="Focus" aria-label="Focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            <button type="button" class="orb" data-page="settings" data-nav-shortcut="settings" title="Settings" aria-label="Settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+                <circle cx="16" cy="7" r="2" />
+                <circle cx="8" cy="17" r="2" />
+              </svg>
+            </button>
+          </nav>
         </div>
         <div id="preview" class="glass" hidden></div>
         <div id="tile-peek" class="glass" role="status" hidden></div>

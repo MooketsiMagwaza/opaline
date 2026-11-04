@@ -33,7 +33,7 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 |---|---|---|
 | **Overlay** | The full-screen launcher window | `main` window |
 | **Pane** | A named group of items (Start-menu / iPad folder) | `Group` in `groups.ts` |
-| **Rail** | The horizontal taskbar mirror along the bottom | `rail.ts`, `taskbar.rs` |
+| **Rail** | The taskbar mirror of running and pinned Windows apps, docked to a screen edge | `taskbar/`, `taskbar.rs` |
 | **Home screen** | A page within Home; the first reads Desktop files, later screens contain saved app/folder shortcuts | `pages.ts`, `workspaces.ts`, `home.ts` |
 | **Lens** | The refraction applied to a glass pane's backdrop | `glass.ts` |
 | **Glass** | The material settings: style, blur, tint, saturation | `Settings` |

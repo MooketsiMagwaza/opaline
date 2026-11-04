@@ -8,6 +8,8 @@ Core contains the smallest reusable layer beneath features.
 - `menu.ts` owns the shared contextual menu and nested menu interaction.
 - `hover-intent.ts` holds the shared hover rules: `PathGuard` (point-in-triangle corridor plus a distance turn-back test), `Closer` (a grace
   timer re-evaluated on every pointer move) and `HoverGroup` (a cold delay for the first popup, none once one is open or just closed).
+- `motion.ts` decides whether motion may play (Animations on, no reduced-motion preference) and provides `fadeIn`, the shared ease-in used by pages and
+  Settings sections.
 - `refraction.ts` is the pure physics of a glass edge: a convex squircle surface, Snell's law (glass index 1.5) and the sideways shift it
   gives a ray, sampled across the bezel. Unit-tested.
 - `glass.ts` is the lens. When a material asks for refraction (Apple Glass, or the Light bending setting) it gives each large panel and

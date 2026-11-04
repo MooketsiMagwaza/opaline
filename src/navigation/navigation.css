@@ -15,26 +15,28 @@ body[data-navigation="tray"] #header-left,
 body[data-navigation="tray"] #header-right { display: none; }
 body[data-navigation="taskbar"] #search-wrap,
 body[data-navigation="tray"] #search-wrap { grid-column: 2; }
-/* Destination icons are drawn a touch lighter than their markup (1.8 to 2) so they read as part of the glass, in every arrangement. */
-.header-nav .orb svg { stroke-width: 1.55; }
-/* Taskbar ends lifts the two header groups to the bottom corners. The sidebar is the taskbar turned on its side: one compact
-   glass pill of every destination, centred on a chosen edge. The header groups give way to it and the page panel keeps clear. */
+/* Destination icons share one size and a light stroke with the Home icon, so the whole bar reads as one set in every arrangement. */
+.header-nav .orb svg { width: 22px; height: 22px; stroke-width: 1.7; }
+/* Taskbar ends: the destination groups flank the taskbar in its own bar, one beside Home and one after the app mirror. The sidebar is
+   one tall bar of every destination on a chosen edge; the header groups give way to either, and the page keeps clear of the sidebar. */
 body[data-navigation="ends"] #search-wrap, body[data-navigation="sidebar"] #search-wrap { grid-column: 2; }
-body[data-navigation="ends"] #header-left, body[data-navigation="ends"] #header-right { position: fixed; z-index: 4; bottom: 12px; }
-body[data-navigation="ends"] #header-left { left: 20px; }
-body[data-navigation="ends"] #header-right { right: 20px; }
-body[data-navigation="ends"] #rail { max-width: calc(100vw - 380px); } /* leave the two end clusters clear */
+body[data-navigation="ends"] #header-left, body[data-navigation="ends"] #header-right { display: none; }
+body:not([data-navigation="ends"]) .navigation-ends { display: none; }
+body[data-navigation="ends"] #rail { max-width: calc(100vw - 330px); } /* the two groups share the bar with the mirror */
 body[data-navigation="sidebar"] #header-left, body[data-navigation="sidebar"] #header-right { display: none; }
 body:not([data-navigation="sidebar"]) .navigation-sidebar { display: none; }
-body[data-navigation="sidebar"] .navigation-sidebar { position: fixed; z-index: 4; top: 50%; display: flex; width: 52px; height: auto; flex-direction: column; align-items: center; gap: 3px; padding: 4px 3px; border-color: rgba(255,255,255,.32); transform: translateY(-50%); }
-.navigation-sidebar::after { content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; background: rgba(255,255,255,.12); pointer-events: none; }
+body[data-navigation="sidebar"] .navigation-sidebar { position: fixed; z-index: 4; top: 50%; display: flex; width: 52px; height: auto; flex-direction: column; align-items: center; gap: 3px; padding: 4px 3px; transform: translateY(-50%); }
 body[data-navigation-side="left"] .navigation-sidebar { left: 12px; }
 body[data-navigation-side="right"] .navigation-sidebar { right: 12px; }
+body[data-rail="true"][data-navigation-side="left"][data-rail-edge="left"] .navigation-sidebar { left: 72px; }
+body[data-rail="true"][data-navigation-side="right"][data-rail-edge="right"] .navigation-sidebar { right: 72px; }
 body[data-navigation="sidebar"] .page-surface { width: min(var(--surface-width, 960px), calc(100% - 176px)); }
 /* A header pill whose destinations are all hidden would render as an empty glass capsule: remove it and
    keep the remaining items in their own columns (a hidden grid item lets the others auto-flow). */
 body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-left,
-body[data-shortcut-focus="false"][data-shortcut-settings="false"] #header-right { display: none; }
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #navigation-ends-start,
+body[data-shortcut-focus="false"][data-shortcut-settings="false"] #header-right,
+body[data-shortcut-focus="false"][data-shortcut-settings="false"] #navigation-ends-end { display: none; }
 body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #search-wrap { grid-column: 2; }
 body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-right { grid-column: 3; }
 body[data-navigation="taskbar"] #navigation-dock { display: flex; }
@@ -44,22 +46,26 @@ body:not([data-navigation="tray"])[data-navigation-overflow="true"] #navigation-
 body[data-shortcut-all-apps="false"] #header-left [data-nav-shortcut="all-apps"],
 body[data-shortcut-all-apps="false"] #navigation-dock [data-nav-shortcut="all-apps"],
 body[data-shortcut-all-apps="false"] #navigation-sidebar [data-nav-shortcut="all-apps"],
+body[data-shortcut-all-apps="false"] .navigation-ends [data-nav-shortcut="all-apps"],
 body[data-shortcut-screen-time="false"] #header-left [data-nav-shortcut="screen-time"],
 body[data-shortcut-screen-time="false"] #navigation-dock [data-nav-shortcut="screen-time"],
 body[data-shortcut-screen-time="false"] #navigation-sidebar [data-nav-shortcut="screen-time"],
+body[data-shortcut-screen-time="false"] .navigation-ends [data-nav-shortcut="screen-time"],
 body[data-shortcut-focus="false"] #header-right [data-nav-shortcut="focus"],
 body[data-shortcut-focus="false"] #navigation-dock [data-nav-shortcut="focus"],
 body[data-shortcut-focus="false"] #navigation-sidebar [data-nav-shortcut="focus"],
+body[data-shortcut-focus="false"] .navigation-ends [data-nav-shortcut="focus"],
 body[data-shortcut-settings="false"] #header-right [data-nav-shortcut="settings"],
 body[data-shortcut-settings="false"] #navigation-dock [data-nav-shortcut="settings"],
-body[data-shortcut-settings="false"] #navigation-sidebar [data-nav-shortcut="settings"] { display: none; }
+body[data-shortcut-settings="false"] #navigation-sidebar [data-nav-shortcut="settings"],
+body[data-shortcut-settings="false"] .navigation-ends [data-nav-shortcut="settings"] { display: none; }
 
 body:not([data-navigation="tray"])[data-shortcut-all-apps="true"] .navigation-tray [data-nav-shortcut="all-apps"],
 body:not([data-navigation="tray"])[data-shortcut-screen-time="true"] .navigation-tray [data-nav-shortcut="screen-time"],
 body:not([data-navigation="tray"])[data-shortcut-focus="true"] .navigation-tray [data-nav-shortcut="focus"],
 body:not([data-navigation="tray"])[data-shortcut-settings="true"] .navigation-tray [data-nav-shortcut="settings"] { display: none; }
 
-.navigation-dock { flex: none; height: 52px; padding: 4px; }
+.navigation-dock, .navigation-ends { flex: none; height: 52px; padding: 4px; }
 .navigation-overflow { position: relative; flex: none; }
 .navigation-overflow[open] { z-index: 12; }
 .navigation-overflow > summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 17px; color: var(--text); cursor: pointer; list-style: none; letter-spacing: 2px; }

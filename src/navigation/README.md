@@ -58,12 +58,15 @@ it stays on the compositor and cannot clip or relayout.
 - Pinch routes through the five top-level destinations.
 - Alt+1–5 is always available regardless of visual arrangement or pin state.
 - Split Header places destinations around search; Navigation Taskbar moves them beside Home; Dropdown Tray keeps them behind one trigger;
-  Taskbar Ends docks the two header groups at the bottom corners either side of the taskbar; Sidebar is the taskbar turned on its side: one
+  Taskbar Ends puts the two destination groups in the taskbar's own bar, one beside Home and one after the app mirror; Sidebar is the taskbar turned on its side: one
   compact glass pill of every destination, centred on the left or right edge (`navigationSide`), with the page panel kept clear of it.
 - Compact navigation (Ctrl+B) minimises the controls only while the taskbar mirror is on, because its expand button is what brings them
   back; without the mirror the setting is disabled and Ctrl+B says why.
 - Pages steered with the keyboard show small key hints (arrows, Enter, Tab) in the panel's bottom corner; compact mode hides them.
 - F1, or ? when nothing is being typed, opens Settings on Shortcuts & help.
+- Every page change eases the incoming page in (`core/motion.ts` `fadeIn`) unless a gesture commit is already animating it, the overlay is opening, or
+  the Fade between pages setting, Animations or the system's reduced-motion preference turns it off. The animation paints only its starting frame, so
+  it never leaves a transform behind for the gesture preview to fight.
 - Unpinned destinations remain in overflow, and Settings always has a keyboard recovery path.
 
 `pages.ts` depends on feature public APIs because it coordinates their top-level surfaces. No feature may import the application launcher.

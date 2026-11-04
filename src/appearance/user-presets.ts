@@ -6,7 +6,7 @@ const LEGACY_KEY = "opaline.appearance.personal";
 const PROFILE_KEYS = [
   "glassStyle", "materialProfile", "backdropBlur", "backdropSaturation", "backdropBrightness", "tintColor", "tintStrength",
   "paneBlur", "cornerRadius", "tileGlass", "customSurfaceColor", "customSurfaceOpacity", "iconSize",
-  "showLabels", "groupsFirst", "rail", "railMagnify", "railPreviews", "animations",
+  "showLabels", "groupsFirst", "rail", "railMagnify", "railPreviews", "railEdge", "railAlign", "animations",
   "compactBar", "paneMotionMs", "surfaceWidth", "taskbarIconSize", "navigationMode", "navigationSide", "defaultPage",
   "backgroundMode", "refraction",
   "shortcutAllApps", "shortcutScreenTime", "shortcutFocus", "shortcutSettings", "scrollbarWidth",

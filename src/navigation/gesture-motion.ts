@@ -1,4 +1,7 @@
 import { byId } from "../core/dom";
+import { motionAllowed } from "../core/motion";
+
+export { motionAllowed };
 
 export type GestureMode = "pinch" | "swipe";
 
@@ -32,7 +35,8 @@ const easeOut = (value: number): number => 1 - (1 - value) * (1 - value);
 const fadeOf = (progress: number): number => progress ** 1.4;
 const cue = (): HTMLElement => byId("gesture-cue");
 
-export const motionAllowed = (): boolean => document.body.dataset.anim !== "false" && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** True while a committed gesture is navigating: its own cross-animation is the transition, so no extra fade is wanted. */
+export const isCommitting = (): boolean => run?.navigating === true;
 
 /** Paints the live preview of a gesture in progress. */
 export function showPreview(source: GestureSource, direction: number, progress: number, mode: GestureMode) {

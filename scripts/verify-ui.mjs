@@ -51,7 +51,7 @@ await page.addInitScript((manifest) => {
       { id: "archive", name: "Archive", items: items.slice(27,30).map(item=>item.path) },
       { id: "reference", name: "Reference", items: [items[31],items[32],items[34]].map(item=>item.path) },
     ], launches: {}, layout: {} },
-    "workspaces.json": [{ id: "dev-tools", name: "Dev tools", items: items.slice(0, 4) }, { id: "screen-3", name: "Screen 3", items: [] }],
+    "workspaces.json": [{ id: "dev-tools", name: "Dev tools", items: items.slice(0, 4) }, { id: "extra-screen", name: "Screen 3", items: [] }],
   };
   for (const [key, value] of Object.entries(initial)) if (localStorage.getItem(`demo:${key}`) === null) localStorage.setItem(`demo:${key}`, JSON.stringify(value));
   window.__demoCalls = [];
@@ -59,7 +59,7 @@ await page.addInitScript((manifest) => {
   window.__demoInvoke = async (command, args) => {
     window.__demoCalls.push(command);
     switch (command) {
-      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.2.2", codename: "Borosilicate", pinned: true };
+      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.3.0", codename: "Crown", pinned: true };
       case "load_store": return localStorage.getItem(`demo:${args.name}`);
       case "save_store": if (window.__demoFailSave) throw new Error("Demo disk full"); localStorage.setItem(`demo:${args.name}`, args.json); return;
       case "list_items": return items;
@@ -129,6 +129,7 @@ async function wheelPreview(selector, options) {
     }
   }
 }
+const boxOf = (id) => page.evaluate((target) => { const box = document.getElementById(target).getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height }; }, id);
 const homeNamed = (name) => page.waitForFunction(expected => {
   const surface = document.getElementById("workspace-surface");
   return !surface.hidden && document.getElementById("workspace-title").textContent === expected;
@@ -472,6 +473,24 @@ try {
   await page.locator("#settings-button").click();
   assert(await visible("#settings-surface"));
   await page.locator('.nav-item[data-id="behaviour"]').click();
+  // Settings opens as a panel like any other page; nothing is staged, so neither Cancel nor Done offers to do anything.
+  assert.equal(await page.locator("body").getAttribute("data-settings-expanded"), "false");
+  assert(await visible("#top") && await visible("#bottom-bar"), "the header and taskbar stay around a panel-sized Settings");
+  assert((await boxOf("settings-surface")).width <= 962);
+  assert(await page.locator("#settings-cancel").isDisabled() && await page.locator("#settings-done").isDisabled());
+  await page.getByRole("switch", { name: "Close when you switch away" }).click();
+  assert(await page.locator("#settings-cancel").isEnabled() && await page.locator("#settings-done").isEnabled());
+  await page.locator("#settings-cancel").click();
+  assert(await page.locator("#settings-cancel").isDisabled(), "Cancel greys out again once it has cancelled");
+  assert.equal(await page.getByRole("switch", { name: "Close when you switch away" }).getAttribute("aria-checked"), "true");
+  // The corner button opens Settings out to fill the window and back again.
+  await page.locator("#settings-expand").click();
+  assert.equal(await page.locator("body").getAttribute("data-settings-expanded"), "true");
+  assert(!(await visible("#top")) && !(await visible("#bottom-bar")));
+  assert((await boxOf("settings-surface")).width > 1200);
+  await page.locator("#settings-expand").click();
+  assert.equal(await page.locator("body").getAttribute("data-settings-expanded"), "false");
+  assert(await visible("#top"));
   await shot("settings.png");
   // A failed save must be reported rather than silently lost, and the message clears once saving works again.
   await page.evaluate(() => {
@@ -488,13 +507,15 @@ try {
   await page.getByRole("switch", { name: "Close when you switch away" }).click();
   await page.getByRole("button", { name: "Done", exact: true }).click();
   assert.equal(await page.locator("#navigation-note").textContent(), "");
-  for (const section of ["appearance", "home-layout", "navigation", "rail", "screen-time", "panes", "about"]) {
+  for (const section of ["appearance", "home", "navigation", "behaviour", "help", "about"]) {
     await page.locator(`.nav-item[data-id="${section}"]`).click();
     await shot(`settings-${section}.png`);
-    const expectsHomePreview = ["appearance", "home-layout", "navigation", "rail"].includes(section);
+    const expectsHomePreview = ["appearance", "home", "navigation"].includes(section);
     assert.equal(await page.locator(".settings-live-simulation").count(), expectsHomePreview ? 1 : 0);
-    if (section === "panes") assert.equal(await page.locator("#pane-motion-preview").count(), 1);
+    if (section === "home") assert.equal(await page.locator(".pane-demo-inline #pane-motion-preview").count(), 1);
   }
+  // Settings is six sections, not ten, grouped by headings rather than split into ever smaller pages.
+  assert.deepEqual(await page.locator(".settings-nav .nav-item").allTextContents(), ["Appearance", "Home", "Navigation & taskbar", "Behaviour", "Shortcuts & help", "About"]);
   await page.locator('.nav-item[data-id="appearance"]').click();
   assert.equal(await page.locator(".appearance-preset-grid").first().locator(".appearance-preset").count(), 6);
   await page.waitForFunction(() => [...document.querySelectorAll(".appearance-preview iframe")].every(frame => frame.contentDocument?.querySelector("#grid .tile")));
@@ -671,10 +692,10 @@ try {
   await page.getByRole("button", { name: "Done", exact: true }).click();
   assert.equal(await page.locator("body").getAttribute("data-shortcut-all-apps"), "true");
   assert.equal(await page.locator("body").getAttribute("data-shortcut-settings"), "true");
-  await page.locator('.nav-item[data-id="home-layout"]').click();
+  await page.locator('.nav-item[data-id="home"]').click();
   await page.getByRole("button", { name: "A–Z" }).click(); await wait(380);
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("demo:groups.json"))).layout["group:agents"].x, 0);
-  await page.locator('.nav-item[data-id="workspaces"]').click();
+  await page.getByRole("textbox", { name: "New workspace name" }).scrollIntoViewIfNeeded(); // Home screens live in the Home section now
   await shot("settings-workspaces.png");
   await page.getByRole("textbox", { name: "New workspace name" }).fill("Projects");
   await page.getByRole("button", { name: "Add screen", exact: true }).click();
@@ -760,15 +781,20 @@ try {
     await page.waitForSelector("#apps-surface:visible");
     await wait(600);
   };
-  const boxOf = (id) => page.evaluate((target) => { const box = document.getElementById(target).getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height }; }, id);
   await applyNavigation({ navigationMode: "ends", compactBar: false, rail: true });
   {
-    const [left, right, search, rail] = await Promise.all(["header-left", "header-right", "search-wrap", "rail"].map(boxOf));
-    assert(left.x < 40 && left.y > 700, JSON.stringify(left));
-    assert(right.x + right.width > 1240 && right.y > 700, JSON.stringify(right));
+    // One group beside Home on its left and one after the app mirror on its right: together they are the taskbar, nowhere near the corners.
+    const [first, last, home, search, rail] = await Promise.all(["navigation-ends-start", "navigation-ends-end", "home-dock", "search-wrap", "rail"].map(boxOf));
+    assert(first.x + first.width <= home.x && home.x - (first.x + first.width) < 24, JSON.stringify({ first, home }));
+    assert(last.x >= rail.x + rail.width && last.x - (rail.x + rail.width) < 24, JSON.stringify({ rail, last }));
+    assert(first.x > 300 && last.x + last.width < 980, "the groups sit with the taskbar, not at the screen's extremes");
+    assert(Math.abs(first.y - home.y) < 2 && Math.abs(last.y - rail.y) < 2, "one row");
     assert(Math.abs(search.x + search.width / 2 - 640) < 2 && search.y < 60, JSON.stringify(search));
-    assert(rail.x > left.x + left.width && rail.x + rail.width < right.x, "the taskbar must stay clear of both end groups");
-    assert(!(await visible("#navigation-sidebar")));
+    assert(!(await visible("#header-left")) && !(await visible("#header-right")) && !(await visible("#navigation-sidebar")));
+    assert.equal(await page.locator("#navigation-ends-start .orb").count() + await page.locator("#navigation-ends-end .orb").count(), 4);
+    // The destination icons are drawn at Home's size and stroke, so the bar reads as one set.
+    const glyphs = await page.evaluate(() => ["#home-dock svg", "#navigation-ends-start .orb svg"].map(selector => { const style = getComputedStyle(document.querySelector(selector)); return [style.width, style.strokeWidth]; }));
+    assert.deepEqual(glyphs[0], glyphs[1]);
     await shot("navigation-taskbar-ends.png");
   }
   await applyNavigation({ navigationMode: "sidebar", navigationSide: "left" });
@@ -798,7 +824,39 @@ try {
   await page.getByRole("button", { name: /Split header/ }).click();
   assert(!(await page.getByRole("group", { name: "Sidebar edge" }).isVisible()));
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await applyNavigation({ navigationMode: "split", compactBar: true, rail: false });
+  // The taskbar docks to any edge, at the start, centre or end of it; its preview opens toward the screen and the page keeps clear.
+  for (const [edge, check] of [
+    ["top", (bar, card, anchor) => bar.y < 20 && card.y >= anchor.y + anchor.height],
+    ["left", (bar, card, anchor) => bar.x < 20 && bar.height > bar.width && card.x >= anchor.x + anchor.width],
+    ["right", (bar, card, anchor) => bar.x + bar.width > 1260 && bar.height > bar.width && card.x + card.width <= anchor.x],
+  ]) {
+    await applyNavigation({ navigationMode: "split", compactBar: false, rail: true, railEdge: edge, railAlign: "center" });
+    const dock = page.locator("#rail .dock-item").nth(1);
+    const anchor = await dock.boundingBox();
+    await page.mouse.move(anchor.x + anchor.width / 2, anchor.y + anchor.height / 2, { steps: 4 });
+    await page.waitForSelector("#preview:not([hidden])");
+    const [bar, card, panel] = await Promise.all(["bottom-bar", "preview", "apps-surface"].map(boxOf));
+    assert(check(bar, card, anchor), JSON.stringify({ edge, bar, card, anchor }));
+    assert(card.x >= 0 && card.y >= 0 && card.x + card.width <= 1280 && card.y + card.height <= 800, "the preview stays on screen");
+    const barBox = edge === "top" ? { left: bar.x, right: bar.x + bar.width, top: bar.y, bottom: bar.y + bar.height } : null;
+    if (barBox) assert(panel.y >= barBox.bottom, "the page moves down out of the top taskbar's way");
+    if (edge === "left") assert(panel.x >= bar.x + bar.width, "the page keeps clear of a left taskbar");
+    if (edge === "right") assert(panel.x + panel.width <= bar.x, "the page keeps clear of a right taskbar");
+    if (edge !== "top") assert(Math.abs(bar.y + bar.height / 2 - 400) < 4, "a side taskbar is centred on its edge");
+    await shot(`taskbar-${edge}.png`);
+    await page.mouse.move(640, 400, { steps: 4 });
+  }
+  for (const [align, test] of [["start", bar => bar.x < 40], ["end", bar => bar.x + bar.width > 1240]]) {
+    await applyNavigation({ navigationMode: "split", compactBar: false, rail: true, railEdge: "bottom", railAlign: align });
+    assert(test(await boxOf("bottom-bar")), `${align} alignment`);
+  }
+  // A sidebar on the taskbar's own side steps inward instead of landing on it.
+  await applyNavigation({ navigationMode: "sidebar", navigationSide: "left", railEdge: "left", railAlign: "center" });
+  {
+    const [bar, sidebar] = await Promise.all(["bottom-bar", "navigation-sidebar"].map(boxOf));
+    assert(sidebar.x >= bar.x + bar.width, JSON.stringify({ bar, sidebar }));
+  }
+  await applyNavigation({ navigationMode: "split", compactBar: true, rail: false, railEdge: "bottom", railAlign: "center" });
   assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "false", "no taskbar, nothing to bring the controls back: they stay");
   assert(await visible("#header-left"));
   await page.keyboard.press("Alt+5");
@@ -1021,7 +1079,7 @@ try {
   assert.equal(await dots(), screensBefore - 1);
   // Every custom screen can go; the plus page is always still there to start again.
   await page.keyboard.press("Alt+5");
-  await page.locator('.nav-item[data-id="workspaces"]').click();
+  await page.locator('.nav-item[data-id="home"]').click();
   while (await page.getByRole("button", { name: "Remove", exact: true }).count()) {
     const rows = await page.locator(".workspace-controls .row").count();
     await page.getByRole("button", { name: "Remove", exact: true }).first().click();
@@ -1036,6 +1094,39 @@ try {
   await wait(700);
   assert.equal(await page.locator("#workspace-title").textContent(), "New screen");
   assert.equal(await page.locator("[data-gesture-ghost]").count(), 0);
+  // Pages ease in instead of flicking over, and a Settings toggle turns that off.
+  await page.keyboard.press("Alt+1");
+  await page.waitForSelector("#apps-surface:visible");
+  await wait(500);
+  const faded = async () => { await page.keyboard.press("Alt+2"); return page.evaluate(() => document.getElementById("app-list-surface").classList.contains("fade-in")); };
+  assert(await faded(), "switching pages fades the incoming page in");
+  await wait(500);
+  assert(!(await page.evaluate(() => document.getElementById("app-list-surface").classList.contains("fade-in"))), "the fade leaves nothing behind");
+  await page.keyboard.press("Alt+5");
+  await page.locator('.nav-item[data-id="behaviour"]').click();
+  await page.getByRole("switch", { name: "Fade between pages" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-page-fade"), "false");
+  await page.keyboard.press("Alt+1");
+  assert(!(await faded()), "with the toggle off pages simply appear");
+  await page.keyboard.press("Alt+5");
+  await page.locator('.nav-item[data-id="behaviour"]').click();
+  await page.getByRole("switch", { name: "Fade between pages" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-page-fade"), "true");
+  // Home starts with one screen and a plus page; the two empty placeholders older versions made are dropped, a real screen is kept.
+  const startWith = async (screens) => {
+    await page.evaluate((value) => localStorage.setItem("demo:workspaces.json", JSON.stringify(value)), screens);
+    await page.reload();
+    await page.waitForSelector("#grid .tile", { state: "attached" });
+    await page.keyboard.press("Alt+1");
+    await page.waitForSelector("#apps-surface:visible");
+    await wait(400);
+    return page.locator(".home-footer .home-page-button").count();
+  };
+  assert.equal(await startWith([]), 2, "a fresh profile is Desktop and the plus that adds the next screen");
+  assert.equal(await startWith([{ id: "screen-2", name: "Screen 2", items: [] }, { id: "screen-3", name: "Screen 3", items: [] }]), 2, "the empty placeholders are gone");
+  assert.equal(await startWith([{ id: "screen-2", name: "Reading", items: [] }]), 3, "a screen the user named is kept");
   assert.deepEqual(errors, []);
   const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: screenshotCount, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));

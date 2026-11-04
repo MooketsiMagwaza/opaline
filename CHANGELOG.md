@@ -6,7 +6,11 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-11-04 "Crown"
+
 ### Added
+- Added taskbar placement: the taskbar (Home, the app mirror and the navigation group) docks to the bottom, top, left or right edge and sits at the start, centre or end of it. Window previews, magnification, scrolling, the Taskbar ends and Sidebar arrangements and the page layout follow the edge.
+- Added a Fade between pages setting: pages, Home screens and Settings sections ease in instead of appearing at once. It follows Animations and the system's reduced-motion preference.
 - Rebuilt the Focus workflow around a clear intention, explicit ready/running/paused states, 25/50/custom durations, finish-versus-skip semantics, keyboard control, session summaries and a compact running-timer capsule.
 - Added six Opaline-native visual starting points—Opaline Original, Windows Mica, One UI Glass, Apple Glass, Frutiger Aero and Deep Night—plus named user visual/layout presets. User presets capture appearance, panel and icon sizing, rail/bar choices and motion settings, and support validated local JSON import/export.
 - Added Split Header, Navigation Taskbar and Dropdown Tray arrangements with live previews. Individual destinations can stay pinned or move into the overflow tray.
@@ -14,22 +18,28 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Added task-specific Settings previews: Home simulations only where Home is being changed, plus a looping pane-origin motion preview for Panes.
 - Added a dependency-free build-size report and frontend size budget.
 - Added a Navigation setting that lets a normal Opaline open start on Home or All apps; choosing All apps focuses Search on open.
-- Added Desktop, Opaline Aero and locally optimised custom Opaline backgrounds. Frutiger Aero includes its own original landscape.
+- Added Current screen (a capture of what is on screen), Opaline Aero and locally optimised custom Opaline backgrounds. Frutiger Aero includes its own original landscape.
 - Added hover-intent behaviour shared by submenus, the taskbar preview, the pane peek and the navigation tray: popups stay open while the pointer travels toward them along a diagonal path (a safe-triangle and distance test), and once one popup is open its neighbours open immediately instead of each waiting out the hover delay.
 - Made Apple Glass bend light instead of only frosting it. Its panels and controls now refract the desktop at their edges with a physically-based model (a convex glass edge and Snell's law), disperse the colours slightly like real glass, and carry a lit rim, over a thinner fill and lighter blur so the bending shows. A new Light bending setting (Appearance) sets the amount for any material; 0% removes the effect. It needs the Chromium-based WebView2 and costs GPU time. The previously unused in-repo lens was rebuilt rather than adding a third-party package: the npm "liquid glass" packages wrap this same SVG technique and are new and unvetted, and Opaline keeps its runtime dependencies minimal.
 - Added Android-style Home screens: Home ends with an empty page showing a large plus that creates the next screen (Enter works too), the pager's last dot is a plus, an empty screen has a plus that opens the app picker, and every custom screen has a Remove screen button that asks first when it holds items.
 - Added a Shortcuts & help section to Settings listing every keyboard shortcut and gesture; F1, or ? when nothing is being typed, opens it. Pages steered with the keyboard also show small arrow, Enter and Tab hints in the panel corner.
 - Added value axes, faint rules and dated, weekday-labelled days to the Screen time and Focus charts, and marked today.
-- Added two navigation arrangements: Taskbar ends (the destination groups at the bottom corners either side of the taskbar) and Sidebar (the taskbar turned on its side: every destination in one compact pill on the left or right edge, chosen in Settings).
+- Added two navigation arrangements: Taskbar ends (the destination groups either side of Home and the app mirror) and Sidebar (the taskbar turned on its side: every destination in one compact pill on the left or right edge, chosen in Settings).
 - Made the Dropdown Tray behave as a dropdown: it opens when the pointer rests on it, closes when the pointer leaves for elsewhere, stays open after a click until dismissed, and closes on an outside press or Escape (the first Escape no longer also closes the launcher).
 
 ### Changed
+- Settings is a panel like every other page, with a corner button that expands it to fill the window and back. Cancel and Done grey out when nothing is staged. Its ten sections are folded into six (Appearance, Home, Navigation & taskbar, Behaviour, Shortcuts & help, About), grouped by headings; Home screens and Panes moved into Home and Screen time into Behaviour. The navigation sits a 15 px gutter from the panel's edge.
+- The background that captures the screen was called Desktop, which read like the wallpaper. It is now Current screen, with a description of what it is.
+- A fresh profile starts with Desktop alone and the plus page that adds the next screen, instead of two empty extra screens. The two empty placeholder screens older versions created are dropped on load; a screen with a name of your own or anything in it is kept.
+- Taskbar ends now puts the destination groups either side of Home and the app mirror, in the taskbar's own bar, instead of in the screen corners.
+- The destination icons and groups now match the taskbar: the same glyph size and stroke as Home, and plain glass without a lighter overlay.
+- Removed the white-to-colour sheen gradients from glass panels, pane plates and the Focus cards: surfaces are a flat fill with a hairline border and a lit rim.
 - Restyled the swipe and pinch cue in the panel glass so it follows the theme, with a direction arrow and a "Next page" or "Previous screen" label, and removed the single-screen rubber band: Home always has a trailing new-screen page to swipe to.
 - Drew the destination icons slightly thinner in every navigation arrangement.
 - Compact navigation now minimises the controls only while the taskbar mirror is on (its expand button brings them back); otherwise the setting is disabled and Ctrl+B explains why.
 - The Settings previews now show the staged default opening page (All apps lists the installed apps) and each navigation card reflects the other staged settings. The default-page choice no longer wraps or towers over the other controls.
 - Reworked swipe and pinch motion. A swipe now slides only the Home content over stationary glass, with nothing clipping at the edges; a pinch zooms the page and cross-zooms into the destination. Both show the destination while held, commit with an overlapped out/in animation, no longer block the next gesture while they play, and honour reduced motion. Single-screen swipes rubber-band back instead of previewing a page that does not exist.
-- Raised the raw frontend code budget from 180 to 210 KiB for the gesture-motion, hover-intent, help, Home-screen, chart, navigation and refraction work; the 60 KiB gzip budget is unchanged (currently about 58 KiB).
+- Raised the frontend code budget from 180 to 220 KiB raw and from 60 to 62 KiB gzip for the gesture, hover, help, Home-screen, chart, navigation, refraction, taskbar-placement and Settings work (currently about 214 KiB raw and 60 KiB gzip).
 - Completed the TypeScript feature-folder migration: the source root now contains documentation only, while app composition, shared core, Activity, Appearance, Focus, Grid/Home, Navigation, Settings and Taskbar own their runtime modules. Activity and Taskbar styling moved out of the shell stylesheet.
 - Expanded feature documentation with public functions, state ownership, dependencies, invariants, extension points and Mermaid UML/flow/state/sequence diagrams.
 - Reorganised Settings into Appearance, Home layout, Navigation and Taskbar sections so visual presentation, Home ordering, Opaline destinations and the Windows app mirror no longer overlap.
@@ -56,10 +66,6 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Presets in an imported file that reuse an id now get their own, so removing one no longer removes the others.
 - A failed save (full or blocked browser storage) is now reported: Settings show that changes will be lost on restart and preset actions show the error, instead of appearing to succeed.
 - Removed the empty glass capsule left in the header when every destination in a split-navigation group is hidden.
-
-### Planning
-- Settled the 0.3.0 scope: the Focus redesign, presets, rearrangeable navigation, staged Settings, gesture motion and hover intent. Completion feedback and session history follow in 0.3.x; 0.4.0 is live wallpapers (GIF, video and sandboxed HTML/JavaScript backgrounds that read Lively packages, see `docs/V0_4_WORKORDER.md`); four-edge taskbar placement, the live layout customiser and restart caching move to 0.5.0, and the Activity Center (notifications, agenda, news) to 0.6.0. See `docs/V0_3_WORKORDER.md` §0.
-- Backdrop captures and live window thumbnails stay memory-only; pane-internal ordering remains manual; there is still no Opaline backend or telemetry.
 
 ## [0.2.2] — 2026-11-01 "Borosilicate"
 
