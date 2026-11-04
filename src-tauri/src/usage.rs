@@ -1,5 +1,8 @@
 //! Local foreground/maximised time. The native sampler keeps working while the webview is hidden.
-use crate::{store, taskbar};
+use crate::{
+    identity::{self, Identity},
+    store, taskbar,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -18,6 +21,28 @@ struct Entry {
     today_ms: u64,
     #[serde(default)]
     days: BTreeMap<String, u64>,
+}
+
+impl Entry {
+    /// Adds another record of the same app, keeping the most recent name and icon.
+    fn absorb(&mut self, other: Entry) {
+        self.total_ms = self.total_ms.saturating_add(other.total_ms);
+        for (day, milliseconds) in other.days {
+            let total = self.days.entry(day).or_default();
+            *total = total.saturating_add(milliseconds);
+        }
+        while self.days.len() > 90 {
+            self.days.pop_first();
+        }
+        if other.day == self.day {
+            self.today_ms = self.today_ms.saturating_add(other.today_ms);
+        } else if other.day > self.day {
+            self.day = other.day;
+            self.today_ms = other.today_ms;
+            self.name = other.name;
+            self.path = other.path;
+        }
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -62,22 +87,24 @@ pub struct Report {
 }
 
 impl Tracker {
-    fn sample(&mut self, active: Option<(String, String)>, day: &str, elapsed: Duration) {
+    fn sample(&mut self, active: Option<Identity>, day: &str, elapsed: Duration) {
         if !self.history.enabled {
             self.previous = None;
             return;
         }
         // Require both interval endpoints to agree; never charge suspension or workspace transitions.
         if elapsed <= Duration::from_secs(2)
-            && let Some((path, name)) = &active
+            && let Some(active) = &active
             && self
                 .previous
                 .as_ref()
-                .is_some_and(|(previous, previous_day)| previous == path && previous_day == day)
+                .is_some_and(|(previous, previous_day)| {
+                    *previous == active.key && previous_day == day
+                })
         {
-            let entry = self.history.entries.entry(path.clone()).or_default();
-            entry.name = name.clone();
-            entry.path = path.clone();
+            let entry = self.history.entries.entry(active.key.clone()).or_default();
+            entry.name = active.name.clone();
+            entry.path = active.icon_path.clone();
             if entry.day != day {
                 entry.day = day.into();
                 entry.today_ms = 0;
@@ -91,7 +118,33 @@ impl Tracker {
                 entry.days.pop_first();
             }
         }
-        self.previous = active.map(|(path, _)| (path, day.into()));
+        self.previous = active.map(|active| (active.key, day.into()));
+    }
+
+    /// Brings history recorded before apps had an identity up to date: one entry per app across package updates,
+    /// the name people know it by, and an icon that can actually be read. `resolve` returns None for time that was
+    /// charged to a Store frame host, which belongs to no nameable app.
+    fn adopt_identities(&mut self, resolve: impl Fn(&str) -> Option<Identity>) {
+        let recorded = std::mem::take(&mut self.history.entries);
+        for (id, mut entry) in recorded {
+            let key = if id.starts_with("package:") {
+                id
+            } else {
+                let Some(identity) = resolve(&entry.path) else {
+                    continue;
+                };
+                entry.name = identity.name;
+                entry.path = identity.icon_path;
+                identity.key
+            };
+            match self.history.entries.get_mut(&key) {
+                Some(existing) => existing.absorb(entry),
+                None => {
+                    self.history.entries.insert(key, entry);
+                }
+            }
+        }
+        self.previous = None;
     }
 
     fn save(&mut self, app: &AppHandle) -> Result<(), String> {
@@ -126,6 +179,32 @@ pub fn start(app: &AppHandle) {
     app.manage(Mutex::new(tracker));
     let app = app.clone();
     std::thread::spawn(move || {
+        // Looking apps up reads the Start-menu catalogue, so it happens here rather than before the first frame.
+        let recorded: Vec<String> = app
+            .state::<Mutex<Tracker>>()
+            .lock()
+            .map(|tracker| {
+                tracker
+                    .history
+                    .entries
+                    .iter()
+                    .filter(|(id, _)| !id.starts_with("package:"))
+                    .map(|(_, entry)| entry.path.clone())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let known: BTreeMap<String, Option<Identity>> = recorded
+            .into_iter()
+            .map(|path| {
+                let identity = (!identity::is_frame_host(&path)).then(|| identity::resolve(&path));
+                (path, identity)
+            })
+            .collect();
+        if let Ok(mut tracker) = app.state::<Mutex<Tracker>>().lock()
+            && !tracker.unreadable
+        {
+            tracker.adopt_identities(|path| known.get(path).cloned().flatten());
+        }
         let mut last = Instant::now();
         let mut ticks = 0;
         loop {
@@ -235,8 +314,12 @@ fn local_day() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn active() -> Option<(String, String)> {
-        Some(("editor.exe".into(), "Editor".into()))
+    fn active() -> Option<Identity> {
+        Some(Identity {
+            key: "editor.exe".into(),
+            name: "Editor".into(),
+            icon_path: "editor.exe".into(),
+        })
     }
     #[test]
     fn counts_only_matching_foreground_endpoints_and_never_sleep() {
@@ -250,6 +333,79 @@ mod tests {
         tracker.history.enabled = false;
         tracker.sample(active(), "2026-10-28", Duration::from_secs(1));
         assert!(tracker.previous.is_none());
+    }
+    fn recorded(path: &str, name: &str, day: &str, days: &[(&str, u64)]) -> Entry {
+        Entry {
+            name: name.into(),
+            path: path.into(),
+            total_ms: days.iter().map(|(_, ms)| ms).sum(),
+            day: day.into(),
+            today_ms: days
+                .iter()
+                .find(|(d, _)| *d == day)
+                .map_or(0, |(_, ms)| *ms),
+            days: days.iter().map(|(d, ms)| (d.to_string(), *ms)).collect(),
+        }
+    }
+    #[test]
+    fn history_from_before_identities_becomes_one_named_entry_per_app() {
+        let key = "package:5319275a.whatsappdesktop_cv1g1gvanyjgm";
+        let (old, new, host) = (
+            r"a\v2640\whatsapp.root.exe",
+            r"a\v2641\whatsapp.root.exe",
+            r"c:\windows\applicationframehost.exe",
+        );
+        let mut tracker = Tracker::default();
+        for (path, name, day, days) in [
+            (
+                old,
+                "WhatsApp.Root",
+                "2026-11-02",
+                vec![("2026-11-02", 4000)],
+            ),
+            (
+                new,
+                "WhatsApp.Root",
+                "2026-11-04",
+                vec![("2026-11-02", 1000), ("2026-11-04", 122000)],
+            ),
+            (
+                host,
+                "ApplicationFrameHost",
+                "2026-11-04",
+                vec![("2026-11-04", 9000)],
+            ),
+        ] {
+            tracker
+                .history
+                .entries
+                .insert(path.into(), recorded(path, name, day, &days));
+        }
+        tracker.adopt_identities(|path| {
+            path.contains("whatsapp").then(|| Identity {
+                key: key.into(),
+                name: "WhatsApp".into(),
+                icon_path: r"shell:AppsFolder\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App".into(),
+            })
+        });
+        assert_eq!(
+            tracker.history.entries.len(),
+            1,
+            "duplicates merge and the frame host is dropped"
+        );
+        let merged = &tracker.history.entries[key];
+        assert_eq!(merged.name, "WhatsApp");
+        assert!(merged.path.starts_with("shell:AppsFolder"));
+        assert_eq!(merged.total_ms, 127000);
+        assert_eq!(merged.days["2026-11-02"], 5000);
+        assert_eq!(merged.days["2026-11-04"], 122000);
+        assert_eq!(
+            (merged.day.as_str(), merged.today_ms),
+            ("2026-11-04", 122000)
+        );
+        // Running it again changes nothing.
+        tracker.adopt_identities(|_| None);
+        assert_eq!(tracker.history.entries[key].total_ms, 127000);
     }
     #[test]
     fn rolls_today_over_without_losing_total_or_charging_midnight_gap() {

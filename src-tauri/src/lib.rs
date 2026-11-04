@@ -2,6 +2,7 @@ mod apps;
 mod capture;
 mod desktop;
 mod icons;
+mod identity;
 mod idle;
 mod picker;
 mod start_menu;
