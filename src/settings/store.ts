@@ -165,11 +165,22 @@ function load(): Settings {
   }
 }
 
+const SAVE_FAILURE_PREFIX = "Settings could not be saved";
+
+/** The launcher's one status line for problems the user should see (it is announced as a status). */
+function showNote(text: string) {
+  const note = document.getElementById("navigation-note");
+  if (note) note.textContent = text;
+}
+
+/** Settings keep working in memory when storage fails, but the user must know they will not survive a restart. */
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
-  } catch {
-    // storage disabled: settings just won't persist
+    const note = document.getElementById("navigation-note");
+    if (note?.textContent?.startsWith(SAVE_FAILURE_PREFIX)) note.textContent = "";
+  } catch (error) {
+    showNote(`${SAVE_FAILURE_PREFIX}, so changes will be lost when Opaline restarts. ${String(error)}`);
   }
 }
 
@@ -246,7 +257,7 @@ export function applySettings() {
     appliedScreenSaver = screenSaverSignature;
     void api.setScreenSaver(s.screenSaverEnabled, s.screenSaverIdleMinutes).catch(error => {
       appliedScreenSaver = undefined;
-      const note = document.getElementById("navigation-note"); if (note) note.textContent = `Screen saver could not be configured: ${String(error)}`;
+      showNote(`Screen saver could not be configured: ${String(error)}`);
     });
   }
 

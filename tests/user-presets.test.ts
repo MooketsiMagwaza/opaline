@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { importUserPresets, loadUserPresets, removeUserPreset, withUniqueIds, type UserVisualPreset } from "../src/appearance/user-presets";
+import { importUserPresets, loadUserPresets, removeUserPreset, saveUserPreset, withUniqueIds, type UserVisualPreset } from "../src/appearance/user-presets";
+import { DEFAULTS } from "../src/settings/store";
 
 const STORAGE_KEY = "opaline.appearance.profiles";
 
@@ -35,6 +36,15 @@ describe("user presets", () => {
     expect(new Set(merged.map(preset => preset.id)).size).toBe(3);
     const remaining = removeUserPreset(merged.find(preset => preset.name === "A")!.id);
     expect(remaining.map(preset => preset.name).sort()).toEqual(["B", "C"]);
+  });
+
+  it("reports a full or blocked store instead of pretending a preset was saved", () => {
+    const full = { ...memoryStorage(), setItem: () => { throw new DOMException("quota exceeded", "QuotaExceededError"); } };
+    vi.stubGlobal("localStorage", full);
+
+    expect(() => saveUserPreset("Focus layout", DEFAULTS)).toThrow(/could not be saved/);
+    expect(() => importUserPresets(bundle([{ id: "x", name: "A" }]))).toThrow(/could not be saved/);
+    expect(() => removeUserPreset("x")).toThrow(/could not be saved/);
   });
 
   it("repairs duplicate ids that were already stored", () => {

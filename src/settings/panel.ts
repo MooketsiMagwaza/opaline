@@ -482,7 +482,10 @@ function appearancePresetControl(): HTMLElement {
     const remove = el("button", "preset-remove", ["Remove"]);
     remove.type = "button";
     remove.setAttribute("aria-label", `Remove ${preset.name}`);
-    remove.addEventListener("click", () => { removeUserPreset(preset.id); select("appearance"); });
+    remove.addEventListener("click", () => {
+      try { removeUserPreset(preset.id); select("appearance"); }
+      catch (error) { note.textContent = error instanceof Error ? error.message : String(error); }
+    });
     return el("div", "user-preset-wrap", [apply, remove]);
   });
 

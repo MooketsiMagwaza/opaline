@@ -58,9 +58,10 @@ export function withUniqueIds(presets: UserVisualPreset[], newId: () => string =
   });
 }
 
+/** Throws when the presets cannot be persisted, so callers report it instead of showing a save that never happened. */
 function store(presets: UserVisualPreset[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(presets.slice(0, 24))); }
-  catch { /* Main settings remain usable when browser storage is unavailable. */ }
+  catch (error) { throw new Error(`Presets could not be saved because browser storage is full or unavailable. ${String(error)}`); }
 }
 
 export function loadUserPresets(fallback?: Settings): UserVisualPreset[] {
@@ -75,7 +76,10 @@ export function loadUserPresets(fallback?: Settings): UserVisualPreset[] {
       const legacy: unknown = JSON.parse(localStorage.getItem(LEGACY_KEY) || "null");
       if (legacy && typeof legacy === "object") {
         const migrated = readPreset({ id: "my-opaline", name: "My Opaline", settings: { ...fallback, ...appearanceValues(legacy as Settings) } });
-        if (migrated) { store([migrated]); return [migrated]; }
+        if (migrated) {
+          try { store([migrated]); } catch { /* The legacy value stays in place and migrates again on the next load. */ }
+          return [migrated];
+        }
       }
     } catch { /* A malformed legacy value is skipped. */ }
   }
