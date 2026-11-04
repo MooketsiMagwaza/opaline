@@ -48,6 +48,16 @@ function readPreset(value: unknown): UserVisualPreset | null {
   };
 }
 
+/** Keeps the first preset using an id and gives later ones a fresh id, so each can be removed on its own. */
+export function withUniqueIds(presets: UserVisualPreset[], newId: () => string = () => crypto.randomUUID()): UserVisualPreset[] {
+  const seen = new Set<string>();
+  return presets.map(preset => {
+    const id = seen.has(preset.id) ? newId() : preset.id;
+    seen.add(id);
+    return id === preset.id ? preset : { ...preset, id };
+  });
+}
+
 function store(presets: UserVisualPreset[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(presets.slice(0, 24))); }
   catch { /* Main settings remain usable when browser storage is unavailable. */ }
@@ -56,7 +66,7 @@ function store(presets: UserVisualPreset[]) {
 export function loadUserPresets(fallback?: Settings): UserVisualPreset[] {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (Array.isArray(parsed)) return parsed.map(readPreset).filter((preset): preset is UserVisualPreset => Boolean(preset)).slice(0, 24);
+    if (Array.isArray(parsed)) return withUniqueIds(parsed.map(readPreset).filter((preset): preset is UserVisualPreset => Boolean(preset))).slice(0, 24);
   } catch { /* Invalid local data is ignored. */ }
 
   // Migrate the original single "My Opaline" appearance once.
@@ -106,7 +116,7 @@ export function importUserPresets(text: string): UserVisualPreset[] {
   if (bundle.schema !== "opaline-visual-presets" || bundle.version !== 1 || !Array.isArray(bundle.presets)) {
     throw new Error("This is not a supported Opaline preset file.");
   }
-  const imported = bundle.presets.map(readPreset).filter((preset): preset is UserVisualPreset => Boolean(preset));
+  const imported = withUniqueIds(bundle.presets.map(readPreset).filter((preset): preset is UserVisualPreset => Boolean(preset)));
   if (!imported.length) throw new Error("No valid presets were found.");
   const merged = [...imported, ...loadUserPresets().filter(saved => !imported.some(preset => preset.id === saved.id || preset.name.toLocaleLowerCase() === saved.name.toLocaleLowerCase()))].slice(0, 24);
   store(merged);
