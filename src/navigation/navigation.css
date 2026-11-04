@@ -25,7 +25,7 @@ body[data-navigation="ends"] #header-left { left: 20px; }
 body[data-navigation="ends"] #header-right { right: 20px; }
 body[data-navigation="ends"] #rail { max-width: calc(100vw - 380px); } /* leave the two end clusters clear */
 body[data-navigation="sidebar"] #header-left, body[data-navigation="sidebar"] #header-right { display: none; }
-.navigation-sidebar { display: none; }
+body:not([data-navigation="sidebar"]) .navigation-sidebar { display: none; }
 body[data-navigation="sidebar"] .navigation-sidebar { position: fixed; z-index: 4; top: 50%; display: flex; width: 52px; height: auto; flex-direction: column; align-items: center; gap: 3px; padding: 4px 3px; border-color: rgba(255,255,255,.32); transform: translateY(-50%); }
 .navigation-sidebar::after { content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; background: rgba(255,255,255,.12); pointer-events: none; }
 body[data-navigation-side="left"] .navigation-sidebar { left: 12px; }
@@ -89,17 +89,13 @@ body[data-compact-bar="true"] #navigation-overflow { display: none; }
   transform: scale(calc(1 + var(--gesture-dir) * var(--gesture-p) * .075));
   opacity: calc(1 - var(--gesture-fade) * .5);
 }
-/* The cue is a ghost of what is coming, made of the same glass as the panels it leads to. For a pinch it is the destination
+/* The cue is a ghost of what is coming, a .glass element like the panels it leads to, so every theme styles it the same way. For a pinch it is the destination
    page, the size of the panel, growing into place; for a swipe it is a small pill at the edge the next screen comes from. */
 #gesture-cue {
   position: absolute; z-index: 5; left: var(--cue-x, 50%); top: var(--cue-y, 50%); width: var(--cue-w, auto); height: var(--cue-h, auto);
   display: flex; align-items: center; justify-content: center; box-sizing: border-box; pointer-events: none; color: var(--text);
-  border: 1px solid var(--acrylic-border);
-  background: linear-gradient(145deg, var(--acrylic-highlight), transparent 42%), var(--acrylic-fill);
-  -webkit-backdrop-filter: blur(var(--pane-blur)) saturate(1.28); backdrop-filter: blur(var(--pane-blur)) saturate(1.28);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 16px 40px rgba(4,8,18,.3), 0 2px 8px rgba(4,8,18,.18);
 }
-#gesture-cue .cue-arrow { display: grid; flex: none; place-items: center; border: 1px solid rgba(255,255,255,.26); border-radius: 50%; background: rgba(255,255,255,.1); }
+#gesture-cue .cue-arrow { display: grid; flex: none; place-items: center; border: 1px solid color-mix(in srgb, var(--text) 26%, transparent); border-radius: 50%; background: color-mix(in srgb, var(--text) 10%, transparent); }
 #gesture-cue .cue-arrow svg { width: 55%; height: 55%; }
 #gesture-cue .cue-label { font-weight: 620; letter-spacing: -.01em; }
 #gesture-cue[data-mode="pinch"] {
@@ -123,6 +119,7 @@ body[data-compact-bar="true"] #navigation-overflow { display: none; }
 .page-surface > .key-hints { position: absolute; right: 18px; bottom: 8px; z-index: 3; display: flex; gap: 14px; margin: 0; color: var(--dim); font-size: 10.5px; pointer-events: none; }
 .key-hints span { display: inline-flex; align-items: center; gap: 4px; }
 .key-hints kbd { min-width: 17px; padding: 0 4px; font-size: 10px; line-height: 1.5; border-bottom-width: 1px; }
+.key-hints kbd { border-color: color-mix(in srgb, var(--text) 28%, transparent); background: color-mix(in srgb, var(--text) 8%, transparent); }
 body[data-compact-bar="true"] .key-hints { display: none; }
 @media (max-width: 860px) { .key-hints { display: none; } }
 #gesture-cue[data-leaving="true"] { opacity: 0 !important; transition: opacity .16s linear; }

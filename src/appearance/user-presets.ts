@@ -8,7 +8,7 @@ const PROFILE_KEYS = [
   "paneBlur", "cornerRadius", "tileGlass", "customSurfaceColor", "customSurfaceOpacity", "iconSize",
   "showLabels", "groupsFirst", "rail", "railMagnify", "railPreviews", "animations",
   "compactBar", "paneMotionMs", "surfaceWidth", "taskbarIconSize", "navigationMode", "navigationSide", "defaultPage",
-  "backgroundMode",
+  "backgroundMode", "refraction",
   "shortcutAllApps", "shortcutScreenTime", "shortcutFocus", "shortcutSettings", "scrollbarWidth",
 ] as const;
 

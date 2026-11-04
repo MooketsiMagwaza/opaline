@@ -73,6 +73,11 @@ function homeStage(settings: Settings): HTMLElement {
   if (!source) return document.createElement("div");
   const stage = source.cloneNode(true) as HTMLElement;
   stage.classList.remove("pre", "overlay-enter", "overlay-leave");
+  stage.querySelector("#lens-defs")?.remove();
+  for (const node of stage.querySelectorAll<HTMLElement>("[style*='backdrop-filter']")) {
+    node.style.removeProperty("backdrop-filter");
+    node.style.removeProperty("-webkit-backdrop-filter");
+  }
   stage.querySelectorAll("#workspace-surface,#screen-time-surface,#focus-surface,#settings-surface,#item-picker,#ambient,#popup-layer,#menu,#preview,#tile-peek,#gesture-cue,#page-edges,#navigation-note").forEach(node => node.remove());
   const home = stage.querySelector<HTMLElement>("#apps-surface");
   if (home) home.hidden = false;

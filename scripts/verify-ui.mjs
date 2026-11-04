@@ -177,6 +177,9 @@ try {
   assert(await visible("#apps-surface .key-hints"));
   assert.equal(await page.locator("#apps-surface .key-hints kbd").count(), 6);
   // Desktop, the two custom screens and the trailing plus that adds another.
+  // Only the Sidebar arrangement shows the sidebar; in every other it must neither show nor take layout space.
+  assert(!(await visible("#navigation-sidebar")));
+  assert.equal(await page.locator("#navigation-sidebar").evaluate(node => getComputedStyle(node).display), "none");
   assert.equal(await page.locator(".home-footer .home-page-button").count(), 4);
   assert.equal(await page.locator(".home-footer .home-page-button.add").count(), 1);
   assert.equal(await page.locator("#home-add-trigger").count(), 0);
@@ -547,9 +550,63 @@ try {
   assert.equal(await page.locator("html").evaluate(node => node.style.getPropertyValue("--radius")), "12px");
   assert.equal(await page.locator("html").evaluate(node => node.style.getPropertyValue("--custom-opacity")), "0.9");
   await shot("settings-windows-mica.png");
+  // A light preset must not leave light-on-light controls: the pager dots follow the text colour and the gesture cue is made of
+  // the same glass as the panels, so both read on Apple Glass.
+  await page.getByRole("button", { name: /^Apple Glass/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-surface-tone"), "light");
+  const ink = await page.evaluate(() => {
+    const luminance = (colour) => { const [r, g, b] = (colour.match(/-?[\d.]+/g) || []).slice(0, 3).map(Number); const scale = colour.startsWith("color(") ? 1 : 255; return (0.2126 * r + 0.7152 * g + 0.0722 * b) / scale; };
+    const dot = getComputedStyle(document.querySelector(".home-page-button:not([aria-current='page'])")).backgroundColor;
+    const cue = getComputedStyle(document.getElementById("gesture-cue")).backgroundColor;
+    return { dot, dotLuminance: luminance(dot), cue, cueLuminance: luminance(cue) };
+  });
+  assert(ink.dotLuminance < 0.55, JSON.stringify(ink));
+  assert(ink.cueLuminance > 0.6, JSON.stringify(ink));
+  // Apple Glass bends light rather than only frosting it: the panels run a displacement filter (one per colour channel), and behind
+  // a sharp grid that filter visibly moves the pixels in the panel's edge band. The other presets run no filter at all.
+  await page.keyboard.press("Alt+1");
+  await page.waitForSelector("#apps-surface:visible");
+  await wait(900);
+  assert(await page.locator("#lens-defs filter").count() >= 3);
+  assert.equal(await page.locator("#lens-defs filter").evaluateAll(nodes => Math.max(...nodes.map(node => node.querySelectorAll("feDisplacementMap").length))), 3);
+  assert.match(await page.locator("#apps-surface").evaluate(node => node.style.backdropFilter), /url\(/);
+  const original = await page.evaluate(() => {
+    const image = document.getElementById("backdrop");
+    const saved = { source: image.getAttribute("src"), blur: document.documentElement.style.getPropertyValue("--bd-blur") };
+    let squares = "";
+    for (let row = 0; row < 20; row++) for (let column = 0; column < 32; column++) if ((row + column) % 2 === 0) squares += `<rect x="${column * 40}" y="${row * 40}" width="40" height="40" fill="#0b1f4d"/>`;
+    image.src = "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800"><rect width="1280" height="800" fill="#f2c94c"/>${squares}</svg>`);
+    document.documentElement.style.setProperty("--bd-blur", "0px");
+    return saved;
+  });
+  await wait(700);
+  const corner = { x: 160, y: 106, width: 330, height: 200 };
+  const bent = await page.screenshot({ clip: corner });
+  const lensFilter = await page.locator("#apps-surface").evaluate(node => node.style.backdropFilter);
+  await page.locator("#apps-surface").evaluate(node => node.style.setProperty("backdrop-filter", node.style.backdropFilter.replace(/url\([^)]*\)/, "")));
+  await wait(500);
+  const flat = await page.screenshot({ clip: corner });
+  await page.locator("#apps-surface").evaluate((node, value) => node.style.setProperty("backdrop-filter", value), lensFilter);
+  const moved = await page.evaluate(async ([first, second]) => {
+    const load = async (data) => { const bitmap = await createImageBitmap(await (await fetch("data:image/png;base64," + data)).blob()); const canvas = new OffscreenCanvas(bitmap.width, bitmap.height); const context = canvas.getContext("2d"); context.drawImage(bitmap, 0, 0); return context.getImageData(0, 0, bitmap.width, bitmap.height).data; };
+    const [a, b] = await Promise.all([load(first), load(second)]);
+    let changed = 0;
+    for (let index = 0; index < a.length; index += 4) if (Math.abs(a[index] - b[index]) + Math.abs(a[index + 1] - b[index + 1]) + Math.abs(a[index + 2] - b[index + 2]) > 24) changed++;
+    return changed;
+  }, [bent.toString("base64"), flat.toString("base64")]);
+  assert(moved > 2500, `the lens moved only ${moved} pixels of the edge band`);
+  await page.evaluate(({ source, blur }) => {
+    const image = document.getElementById("backdrop");
+    if (source) image.setAttribute("src", source); else image.removeAttribute("src");
+    if (blur) document.documentElement.style.setProperty("--bd-blur", blur); else document.documentElement.style.removeProperty("--bd-blur");
+  }, original);
+  await page.keyboard.press("Alt+5");
+  await page.locator('.nav-item[data-id="appearance"]').click();
   await page.getByRole("button", { name: /^Opaline Original/ }).click();
   await page.getByRole("button", { name: "Done", exact: true }).click();
   assert.equal(await page.locator("body").getAttribute("data-style"), "frost");
+  assert.equal(await page.locator("#lens-defs filter").count(), 0, "a material that does not bend light runs no lens");
   await page.locator('.nav-item[data-id="navigation"]').click();
   assert.equal(await page.locator(".navigation-preview svg").count(), 0);
   assert(await page.locator(".navigation-preview iframe").first().evaluate(frame => frame.contentDocument.querySelectorAll("#grid .tile").length >= 8));
@@ -711,6 +768,7 @@ try {
     assert(right.x + right.width > 1240 && right.y > 700, JSON.stringify(right));
     assert(Math.abs(search.x + search.width / 2 - 640) < 2 && search.y < 60, JSON.stringify(search));
     assert(rail.x > left.x + left.width && rail.x + rail.width < right.x, "the taskbar must stay clear of both end groups");
+    assert(!(await visible("#navigation-sidebar")));
     await shot("navigation-taskbar-ends.png");
   }
   await applyNavigation({ navigationMode: "sidebar", navigationSide: "left" });

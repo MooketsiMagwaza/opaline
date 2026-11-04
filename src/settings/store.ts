@@ -147,7 +147,6 @@ export function normalizeSettings(value: unknown): Settings {
     }
     merged.glassStyle = normalizeGlassStyle(saved.glassStyle);
     merged.clearCanvas = false;
-    merged.refraction = 0;
     for (const key of ["tintColor", "customSurfaceColor"] as const) {
       if (!/^#[0-9a-f]{6}$/i.test(merged[key])) merged[key] = DEFAULTS[key];
     }

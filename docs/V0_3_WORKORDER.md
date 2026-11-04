@@ -23,10 +23,12 @@ specification for those releases; only the release each requirement targets chan
 | R-72 Shortcuts & help, with key hints on pages steered by keyboard | **0.3.0** | `[~]` built; covered by the UI suite |
 | R-73 Chart axes on Screen time and Focus | **0.3.0** | `[~]` built; axis maths unit-tested, rendering covered by the UI suite |
 | R-74 More navigation arrangements (Taskbar ends, Sidebar) and compact navigation only with the taskbar mirror | **0.3.0** | `[~]` built; covered by the UI suite |
+| R-75 Apple Glass that bends light: physically-based refraction, dispersion and a lit rim, with a Light bending setting | **0.3.0** | `[~]` built; physics unit-tested, and the UI suite proves the filter moves pixels at the panel edge and that other materials run none; needs the owner's eyes and GPU on the native build |
 | R-55 Completion feedback and local session history | 0.3.x | `[ ]` not started; ships as a follow-up once 0.3.0 is accepted |
-| R-56 Four-edge taskbar placement, R-57 live layout customiser | 0.4.0 | `[ ]` not started; needs rail geometry for every edge and a physical-resize pass |
-| R-58 Cached restart without icon churn, R-59 measured startup budgets | 0.4.0 | `[ ]` not started; needs the Rust cache and the on-device baseline in §8 |
-| R-61 Activity Center, R-62 agenda and calendar, R-63 news feed, R-64 Activity Center layout | 0.5.0 | `[ ]` not started; the feasibility prototypes (§6, M5) come first |
+| R-76–R-83 Live wallpapers: GIF, video and sandboxed HTML/JS backgrounds, reading Lively packages | 0.4.0 | `[ ]` scoped in [V0_4_WORKORDER.md](V0_4_WORKORDER.md); decided 4 Nov 2026 |
+| R-56 Four-edge taskbar placement, R-57 live layout customiser | 0.5.0 | `[ ]` not started; needs rail geometry for every edge and a physical-resize pass |
+| R-58 Cached restart without icon churn, R-59 measured startup budgets | 0.5.0 | `[ ]` not started; needs the Rust cache and the on-device baseline in §8 |
+| R-61 Activity Center, R-62 agenda and calendar, R-63 news feed, R-64 Activity Center layout | 0.6.0 | `[ ]` not started; the feasibility prototypes (§6, M5) come first |
 
 **0.3.0 release gates:** `npm test`, `npm run build`, `npm run size`, `tsc --noEmit`, `cargo fmt --check`, Clippy with warnings denied,
 `cargo test --locked`, a clean UI suite, then the owner's acceptance of Focus, the gestures (W-51), hover behaviour and the native
@@ -34,8 +36,8 @@ checklist. Only after that are the synced manifests bumped from 0.2.2 to 0.3.0, 
 published, and only when the owner says so.
 
 **What changes for the plan below:** M0, M1 and the Settings/navigation parts of M3 are the 0.3.0 work. M2 splits (the capsule is in,
-notifications and history are 0.3.x); the placement and customiser parts of M3 and all of M4 are 0.4.0; M5 is 0.5.0; M6 applies to
-each release. The exclusions in §12 are unchanged.
+notifications and history are 0.3.x); 0.4.0 is live wallpapers (its own work order); the placement and customiser parts of M3 and all of M4
+are 0.5.0; M5 is 0.6.0; M6 applies to each release. The exclusions in §12 are unchanged.
 
 ## 1. Outcome
 
@@ -91,6 +93,7 @@ continues to read Desktop files without moving them. Pane contents remain manual
 | R-72 | Make every shortcut and gesture discoverable | P0 | Settings has a Shortcuts & help section opened by F1 or ?; keyboard-steered pages show arrow, Enter and Tab hints |
 | R-73 | Make the charts readable | P0 | A labelled value axis with round steps, faint rules, dated and weekday-labelled days, today marked |
 | R-74 | Offer taskbar-like and sidebar navigation without stranding the controls | P0 | Taskbar ends and Sidebar (left or right) arrangements with live previews; compact navigation applies only while the taskbar mirror is on |
+| R-75 | Make Apple Glass bend light | P0 | The Apple Glass preset refracts the desktop at panel edges (not only blurs it), with a lit rim; Light bending sets the amount for any material and 0% runs no filter; unsupported engines fall back to frost |
 | R-69 | Follow standard hover-intent rules for popups | P0 | A popup stays open while the pointer travels toward it on a diagonal path; once one popup is open its neighbours open at once; the tray opens on rest, closes on leaving, pins on click and dismisses on an outside press or Escape |
 
 ## 4. Focus experience

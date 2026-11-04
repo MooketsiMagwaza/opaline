@@ -284,8 +284,9 @@ body[data-material="one-ui"] .glass {
 
 body[data-material="apple-glass"] .glass {
   border-color: rgba(255,255,255,.62);
-  background: linear-gradient(145deg, rgba(255,255,255,.42), rgba(255,255,255,.08)), rgba(var(--custom-rgb), var(--custom-opacity));
-  box-shadow: inset 0 1px rgba(255,255,255,.82), 0 18px 42px rgba(30,42,58,.2);
+  /* The fill is kept thin so the refracted desktop shows through it; the preset’s opacity still decides the text tone. */
+  background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(255,255,255,.04)), rgba(var(--custom-rgb), calc(var(--custom-opacity) * .7));
+  box-shadow: inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.92), inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.22), 0 18px 42px rgba(30,42,58,.2);
 }
 body[data-material="apple-glass"] .glass::before { background: linear-gradient(145deg, rgba(255,255,255,.22), transparent 48%); }
 
@@ -543,15 +544,15 @@ body.popup-open #apps-surface {
 .home-footer { display: flex; align-items: center; justify-content: center; min-height: 24px; }
 #status { display: none; }
 .home-pages { display: flex; justify-content: center; align-items: center; gap: 11px; min-height: 24px; padding: 4px; }
-.home-page-button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: rgba(225,235,251,.38); cursor: pointer; }
-.home-page-button:hover { background: rgba(255,255,255,.75); transform: scale(1.2); }
-.home-page-button[aria-current="page"] { background: #e4f1ff; box-shadow: 0 0 0 3px rgba(200,224,255,.12); }
+.home-page-button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--text) 38%, transparent); cursor: pointer; }
+.home-page-button:hover { background: color-mix(in srgb, var(--text) 75%, transparent); transform: scale(1.2); }
+.home-page-button[aria-current="page"] { background: var(--text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 14%, transparent); }
 /* The trailing dot that adds a screen is a plus, not a dot. */
 .home-page-button.add { position: relative; width: 14px; height: 14px; background: transparent; }
-.home-page-button.add::before, .home-page-button.add::after { content: ""; position: absolute; top: 50%; left: 50%; border-radius: 1px; background: rgba(225,235,251,.6); transform: translate(-50%, -50%); }
+.home-page-button.add::before, .home-page-button.add::after { content: ""; position: absolute; top: 50%; left: 50%; border-radius: 1px; background: color-mix(in srgb, var(--text) 60%, transparent); transform: translate(-50%, -50%); }
 .home-page-button.add::before { width: 10px; height: 1.6px; }
 .home-page-button.add::after { width: 1.6px; height: 10px; }
-.home-page-button.add:hover::before, .home-page-button.add:hover::after, .home-page-button.add[aria-current="page"]::before, .home-page-button.add[aria-current="page"]::after { background: #fff; }
+.home-page-button.add:hover::before, .home-page-button.add:hover::after, .home-page-button.add[aria-current="page"]::before, .home-page-button.add[aria-current="page"]::after { background: var(--text); }
 .home-page-button.add[aria-current="page"] { box-shadow: none; }
 #workspace-pages { margin-top: auto; }
 #bottom-bar { position: absolute; bottom: 12px; left: 50%; z-index: 4; display: flex; align-items: center; gap: 9px; height: 52px; transform: translateX(-50%); }

@@ -53,7 +53,7 @@ let draft: Settings | null = null;
 let baseline: Settings = { ...DEFAULTS };
 let recording = false;
 let hotkeyEvents: AbortController | undefined;
-const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>(["paneBlur", "cornerRadius", "tileGlass", "customSurfaceColor", "customSurfaceOpacity"]);
+const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>(["paneBlur", "refraction", "cornerRadius", "tileGlass", "customSurfaceColor", "customSurfaceOpacity"]);
 
 export const isRecordingHotkey = (): boolean => recording;
 
@@ -68,6 +68,7 @@ function sections(): Section[] {
         { kind: "background" },
         { kind: "range", key: "backdropBlur", label: "Acrylic blur intensity", min: 0, max: 40, step: 1, format: pixels, hint: "Controls both the captured backdrop and the floating acrylic surfaces." },
         { kind: "range", key: "customSurfaceOpacity", label: "Panel opacity", min: 0.2, max: 1, step: 0.01, format: percent, hint: "Fine-tuning this switches the material to a custom surface." },
+        { kind: "range", key: "refraction", label: "Light bending", min: 0, max: 1, step: 0.05, format: percent, hint: "Bends the desktop behind panel edges like thick glass instead of only frosting it. Heavier on the GPU; 0% turns it off." },
         { kind: "range", key: "cornerRadius", label: "Panel corner radius", min: 8, max: 40, step: 1, format: pixels },
         { kind: "color", key: "customSurfaceColor", label: "Panel surface colour" },
         { kind: "range", key: "backdropSaturation", label: "Backdrop colour", min: 0.5, max: 2, step: 0.05, format: value => `${Math.round(value * 100)}%` },

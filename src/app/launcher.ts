@@ -8,6 +8,7 @@ import { closeMenu, isMenuOpen } from "../core/menu";
 import { organize } from "../grid/organize";
 import * as pages from "../navigation/pages";
 import { initPanel, isRecordingHotkey, openSection, syncPanel } from "../settings/panel";
+import { syncLenses } from "../core/glass";
 import { hidePreview, initRail, refreshRail, startRail, stopRail, syncRailCompact } from "../taskbar";
 import { RAIL_AVAILABLE, applySettings, onSettingsChange, settings } from "../settings/store";
 import { loadWorkspaces } from "../grid/workspaces";
@@ -288,6 +289,7 @@ function watchSettings() {
     if (RAIL_AVAILABLE && !next.rail) stopRail();
     if (RAIL_AVAILABLE && next.rail && !previous.rail) startRail();
     syncPanel();
+    syncLenses();
     if (next.compactBar !== previous.compactBar) syncRailCompact();
     if (next.backgroundMode !== previous.backgroundMode || next.customBackground !== previous.customBackground) void setBackdrop(desktopBackdropUrl);
   });
@@ -332,6 +334,7 @@ async function registerNativeEvents() {
 
 async function init() {
   applySettings();
+  syncLenses();
   const statusRequest = api.status().catch(() => null);
   await Promise.all([
     groups.loadGroups(),

@@ -6,12 +6,12 @@ they touch.
 
 **Latest release:** [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md)). Pinch input and gesture routing changed in this patch; the owner still experiences lag and occasional missed swipes, tracked as W-51.
 **Current candidate:** `v0.2.2` **Borosilicate** — pane reordering, stable themed insertion feedback and Home quick sorting accepted in the native preview; not tagged or published yet.
-**Next development target:** `v0.3.0` — scope settled on 2026-11-04: the Focus redesign, named importable visual/layout presets, three rearrangeable navigation modes, staged Done/Cancel Settings, representative in-memory previews, reworked swipe/pinch motion, hover-intent popups, size budgets and feature-owned modules/CSS/READMEs. Completion feedback and session history move to 0.3.x; movable app-taskbar placement, direct panel resizing and restart caching to 0.4.0; the Activity Center to 0.5.0. See §0 of [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
+**Next development target:** `v0.3.0` — scope settled on 2026-11-04: the Focus redesign, named importable visual/layout presets, three rearrangeable navigation modes, staged Done/Cancel Settings, representative in-memory previews, reworked swipe/pinch motion, hover-intent popups, size budgets and feature-owned modules/CSS/READMEs. Completion feedback and session history move to 0.3.x; 0.4.0 is live wallpapers (GIF, video and sandboxed HTML/JavaScript backgrounds that read Lively packages, scoped in [V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md)); movable app-taskbar placement, direct panel resizing and restart caching move to 0.5.0; the Activity Center to 0.6.0. See §0 of [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
 **Last updated:** 2026-11-04 — v0.3.0 scope settled and gesture/hover work built; v0.2.2 remains the local manifest version until the owner accepts the 0.3.0 build.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
-The superseding 0.3.0 experience scope and new requirements R-52–R-74 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
+The superseding 0.3.0 experience scope and new requirements R-52–R-75 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.

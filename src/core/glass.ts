@@ -1,20 +1,32 @@
 import { materialSettings, settings } from "../settings/store";
+import { refractionProfile } from "./refraction";
 
 /**
- * The lens: what makes a pane bend the backdrop behind its edges like a slab of glass.
+ * The lens: what makes a panel bend the desktop behind its edges like a slab of thick glass, rather than only frosting it.
  *
- * Each lensed element gets its own SVG filter. A displacement map is drawn from the signed
- * distance field of the element's rounded rectangle: inside a bezel band along the edge, pixels
- * are pushed along the outward normal, strongest at the very edge. `feDisplacementMap` applies
- * it, and `backdrop-filter: url(#…)` runs the filter on whatever is behind the element.
- * Chromium (WebView2) supports this; other engines ignore it and fall back to Frost.
+ * Each lensed element gets its own SVG filter. A displacement map is drawn from the signed distance field of the element's
+ * rounded rectangle: inside a bezel band along the edge, every pixel is told where to sample the backdrop from, using the
+ * physically-based shift in `refraction.ts` (Snell's law over a convex squircle edge), strongest at the edge and fading to
+ * nothing across the flat top. `feDisplacementMap` applies it, once per colour channel with a slightly different strength so
+ * the edge disperses light like real glass, and `backdrop-filter: url(#…)` runs the whole filter on whatever is behind the
+ * element. Chromium (WebView2) supports this; other engines ignore it and fall back to frosting.
+ *
+ * It costs GPU time on every frame the backdrop changes, so it is off unless the material asks for refraction.
  */
 const SVG_NS = "http://www.w3.org/2000/svg";
-const MAX_DISPLACEMENT = 30;
+const MAX_MAP_DIMENSION = 256;
+const PROFILE_SAMPLES = 128;
+/** The glass is this thick relative to its bezel, which sets how far the strongest ray is thrown. */
+const THICKNESS_PER_BEZEL = 0.9;
+/** Blue bends more than red; these are the per-channel scales, as a fraction of the base displacement. */
+const DISPERSION = { r: 0.94, g: 1, b: 1.06 } as const;
+/** The elements that wear the lens: the large panels and the controls docked around them. */
+const LENSED = ".page-surface, #search-wrap, .header-nav, #home-dock, #rail";
 
 type Lens = {
   element: HTMLElement;
   filter: SVGFilterElement;
+  observer: ResizeObserver;
   id: string;
   signature: string;
 };
@@ -24,13 +36,12 @@ const pending = new Set<Lens>();
 const mapCache = new Map<string, string>();
 let counter = 0;
 let frame = 0;
-const MAX_MAP_DIMENSION = 256;
 
 function defs(): SVGDefsElement {
   return document.querySelector<SVGDefsElement>("#lens-defs defs")!;
 }
 
-export function attachLens(element: HTMLElement) {
+function attachLens(element: HTMLElement) {
   if (lenses.has(element)) return;
 
   const id = `lens-${++counter}`;
@@ -41,17 +52,30 @@ export function attachLens(element: HTMLElement) {
   filter.setAttribute("color-interpolation-filters", "sRGB");
   defs().append(filter);
 
-  const lens: Lens = { element, filter, id, signature: "" };
+  const observer = new ResizeObserver(() => schedule(lens));
+  const lens: Lens = { element, filter, observer, id, signature: "" };
   lenses.set(element, lens);
-
-  new ResizeObserver(() => schedule(lens)).observe(element);
+  observer.observe(element);
   schedule(lens);
 }
 
-export function refreshLenses() {
-  // The signature already includes every setting that changes lens output.
-  // Scheduling without invalidating it makes unrelated settings effectively free.
-  for (const lens of lenses.values()) schedule(lens);
+function detachLens(lens: Lens) {
+  lens.observer.disconnect();
+  lens.filter.remove();
+  setBackdrop(lens.element, null);
+  lenses.delete(lens.element);
+  pending.delete(lens);
+}
+
+/** Puts the lens on the panels when the material bends light, takes it off when it does not, and brings it up to date. */
+export function syncLenses() {
+  if (materialSettings(settings()).refraction > 0) {
+    for (const element of document.querySelectorAll<HTMLElement>(LENSED)) attachLens(element);
+    // The signature already includes every setting that changes lens output, so unrelated changes cost nothing.
+    for (const lens of lenses.values()) schedule(lens);
+  } else {
+    for (const lens of [...lenses.values()]) detachLens(lens);
+  }
 }
 
 function schedule(lens: Lens) {
@@ -73,21 +97,31 @@ function setBackdrop(element: HTMLElement, value: string | null) {
   }
 }
 
+/** Each matrix keeps one colour channel and the alpha, so the three shifted copies can be added back together. */
+const KEEP_CHANNEL = {
+  r: "1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0",
+  g: "0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0",
+  b: "0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0",
+} as const;
+
+/** The backdrop displaced by `scale` pixels, reduced to one colour channel. */
+function channel(name: keyof typeof KEEP_CHANNEL, scale: number, base: SVGFEDisplacementMapElement): SVGElement[] {
+  const displace = base.cloneNode() as SVGFEDisplacementMapElement;
+  displace.setAttribute("scale", scale.toFixed(2));
+  displace.setAttribute("result", `shifted-${name}`);
+  const isolate = document.createElementNS(SVG_NS, "feColorMatrix");
+  isolate.setAttribute("in", `shifted-${name}`);
+  isolate.setAttribute("type", "matrix");
+  isolate.setAttribute("values", KEEP_CHANNEL[name]);
+  isolate.setAttribute("result", `channel-${name}`);
+  return [displace, isolate];
+}
+
 function rebuild(lens: Lens) {
   const { element, filter, id } = lens;
-  const s = settings();
-  const material = materialSettings(s);
+  const material = materialSettings(settings());
 
-  // Solid, Frosted and Clear are pure CSS; drop inline overrides so the stylesheet decides.
-  if (s.glassStyle !== "liquid" && s.glassStyle !== "custom") {
-    setBackdrop(element, null);
-    lens.signature = "";
-    return;
-  }
-
-  // A Custom material with no refraction is ordinary CSS glass. Avoid allocating
-  // an SVG displacement texture when it would have a zero-pixel effect.
-  if (s.glassStyle === "custom" && material.refraction <= 0) {
+  if (material.refraction <= 0) {
     setBackdrop(element, null);
     lens.signature = "";
     return;
@@ -98,24 +132,26 @@ function rebuild(lens: Lens) {
   if (width < 12 || height < 12) return; // hidden for now; the observer fires again when shown
 
   const radius = Math.min(parseFloat(getComputedStyle(element).borderTopLeftRadius) || 24, width / 2, height / 2);
-  const bezel = Math.min(Math.max(radius * 0.85, 14), Math.min(width, height) / 2 - 2);
+  const bezel = Math.min(Math.max(radius, 16), Math.min(width, height) / 2 - 2);
   const signature = `${width}x${height}:${radius}:${bezel}:${material.refraction}:${material.paneBlur}`;
 
   if (signature !== lens.signature) {
     lens.signature = signature;
 
-    // The displacement texture is smoothly scaled by feImage, so generating it
-    // at a bounded resolution preserves the edge shape without blocking a frame
-    // on a settings-sized, full-resolution canvas.
+    const thickness = bezel * THICKNESS_PER_BEZEL;
+    const profile = refractionProfile(PROFILE_SAMPLES, bezel, thickness);
+
+    // The displacement texture is smoothly scaled by feImage, so generating it at a bounded resolution preserves the edge shape
+    // without blocking a frame on a settings-sized, full-resolution canvas.
     const scale = Math.min(1, MAX_MAP_DIMENSION / Math.max(width, height));
     const mapWidth = Math.max(12, Math.round(width * scale));
     const mapHeight = Math.max(12, Math.round(height * scale));
     const mapRadius = radius * scale;
     const mapBezel = bezel * scale;
-    const mapKey = `${mapWidth}x${mapHeight}:${mapRadius.toFixed(2)}:${mapBezel.toFixed(2)}`;
+    const mapKey = `${mapWidth}x${mapHeight}:${mapRadius.toFixed(2)}:${mapBezel.toFixed(2)}:${thickness.toFixed(2)}`;
     let mapUrl = mapCache.get(mapKey);
     if (!mapUrl) {
-      mapUrl = displacementMap(mapWidth, mapHeight, mapRadius, mapBezel);
+      mapUrl = displacementMap(mapWidth, mapHeight, mapRadius, mapBezel, profile.shift);
       if (mapCache.size >= 32) mapCache.delete(mapCache.keys().next().value!);
       mapCache.set(mapKey, mapUrl);
     }
@@ -129,25 +165,43 @@ function rebuild(lens: Lens) {
     map.setAttribute("preserveAspectRatio", "none");
     map.setAttribute("result", "map");
 
-    const displace = document.createElementNS(SVG_NS, "feDisplacementMap");
-    displace.setAttribute("in", "SourceGraphic");
-    displace.setAttribute("in2", "map");
-    displace.setAttribute("scale", String(MAX_DISPLACEMENT * material.refraction));
-    displace.setAttribute("xChannelSelector", "R");
-    displace.setAttribute("yChannelSelector", "G");
+    // feDisplacementMap moves a pixel by scale * (value - 0.5), so a full-strength map value moves it by half the scale: double the
+    // strongest shift to get it exactly. The refraction setting scales how much of that is applied.
+    const strength = 2 * profile.maxShift * material.refraction;
+    const base = document.createElementNS(SVG_NS, "feDisplacementMap");
+    base.setAttribute("in", "SourceGraphic");
+    base.setAttribute("in2", "map");
+    base.setAttribute("xChannelSelector", "R");
+    base.setAttribute("yChannelSelector", "G");
+
+    const [shiftedR, keepR] = channel("r", strength * DISPERSION.r, base);
+    const [shiftedG, keepG] = channel("g", strength * DISPERSION.g, base);
+    const [shiftedB, keepB] = channel("b", strength * DISPERSION.b, base);
+    const addRG = document.createElementNS(SVG_NS, "feBlend");
+    addRG.setAttribute("in", "channel-r");
+    addRG.setAttribute("in2", "channel-g");
+    addRG.setAttribute("mode", "screen");
+    addRG.setAttribute("result", "channels-rg");
+    const addB = document.createElementNS(SVG_NS, "feBlend");
+    addB.setAttribute("in", "channels-rg");
+    addB.setAttribute("in2", "channel-b");
+    addB.setAttribute("mode", "screen");
 
     filter.setAttribute("x", "0");
     filter.setAttribute("y", "0");
     filter.setAttribute("width", String(width));
     filter.setAttribute("height", String(height));
-    filter.replaceChildren(map, displace);
+    filter.replaceChildren(map, shiftedR, keepR, shiftedG, keepG, shiftedB, keepB, addRG, addB);
   }
 
   setBackdrop(element, `blur(${material.paneBlur}px) url(#${id}) saturate(1.7) brightness(1.08)`);
 }
 
-/** R and G encode the displacement along x and y (128 = none); B and A are constant. */
-function displacementMap(width: number, height: number, radius: number, bezel: number): string {
+/**
+ * R and G encode where each pixel samples the backdrop from, as a fraction of the strongest shift (128 = none). The shift points
+ * inward: seen through a convex edge, the backdrop at the rim is drawn from further in, which is what magnifies it.
+ */
+function displacementMap(width: number, height: number, radius: number, bezel: number, shift: Float32Array): string {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -159,6 +213,7 @@ function displacementMap(width: number, height: number, radius: number, bezel: n
   const halfHeight = height / 2;
   const insetX = halfWidth - radius;
   const insetY = halfHeight - radius;
+  const last = shift.length - 1;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -176,9 +231,11 @@ function displacementMap(width: number, height: number, radius: number, bezel: n
       let dx = 0;
       let dy = 0;
       if (depth > 0 && depth < bezel) {
-        // 1 at the edge, easing to 0 where the bezel ends
-        const strength = Math.pow(1 - depth / bezel, 2.2);
+        const position = (depth / bezel) * last;
+        const lower = Math.floor(position);
+        const amount = shift[lower] + (shift[Math.min(last, lower + 1)] - shift[lower]) * (position - lower);
 
+        // the outward normal at this point of the outline, turned around to point inward
         let nx: number;
         let ny: number;
         if (qx > 0 && qy > 0) {
@@ -192,8 +249,8 @@ function displacementMap(width: number, height: number, radius: number, bezel: n
           ny = Math.sign(py);
         }
 
-        dx = nx * strength;
-        dy = ny * strength;
+        dx = -nx * amount;
+        dy = -ny * amount;
       }
 
       const index = (y * width + x) * 4;

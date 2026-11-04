@@ -16,6 +16,8 @@ Owns settings validation, persistence, the staged editor and previews shown only
   data URLs are shared through an in-memory blob URL (never persisted).
 - `help.ts` renders the Shortcuts & help section from `data/shortcuts.ts`, the single list of keys and gestures. Change it with
   `app/launcher.ts`'s key handling.
+- Previews are static copies and cannot run the lens, so `launcher-preview.ts` strips the lens filters from the clone; they show the material
+  frosted. The real launcher bends the light.
 - `settings.css` and `launcher-preview.css` own editor and simulation styling.
 
 ## Draft transaction

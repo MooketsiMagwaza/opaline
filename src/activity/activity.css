@@ -10,13 +10,16 @@
 .chart-axis { display: flex; flex-direction: column; justify-content: space-between; height: var(--track); margin-top: -6px; padding-bottom: 0; color: var(--dim); font-size: 10px; font-variant-numeric: tabular-nums; line-height: 12px; text-align: right; }
 .chart-area { position: relative; }
 .chart-rules { position: absolute; inset: 0 0 auto 0; height: var(--track); pointer-events: none; }
-.chart-rules span { position: absolute; left: 0; right: 0; height: 1px; background: rgba(255,255,255,.1); }
-.chart-rules span:first-child { background: rgba(255,255,255,.28); }
+.chart-rules span { position: absolute; left: 0; right: 0; height: 1px; background: color-mix(in srgb, var(--text) 12%, transparent); }
+.chart-rules span:first-child { background: color-mix(in srgb, var(--text) 30%, transparent); }
 .chart-bars { position: relative; display: grid; grid-template-columns: repeat(var(--chart-days), minmax(0, 1fr)); align-items: start; gap: 3px; }
 .chart-day { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .chart-track { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: var(--track); }
-.chart-bar { display: block; width: min(28px, 70%); height: var(--bar-height); min-height: 0; border-radius: 5px 5px 2px 2px; background: linear-gradient(#b3d4fd, #668bbf); }
-.chart-day[data-today="true"] .chart-bar { background: linear-gradient(#e3f0ff, #8db4e6); }
+.chart-bar { display: block; width: min(28px, 70%); height: var(--bar-height); min-height: 0; border-radius: 5px 5px 2px 2px; background: linear-gradient(var(--bar-top, #b3d4fd), var(--bar-bottom, #668bbf)); }
+.chart-day[data-today="true"] { --bar-top: #e3f0ff; --bar-bottom: #8db4e6; }
+body[data-surface-tone="light"] .chart-day { --bar-top: #6f9fdc; --bar-bottom: #3f6fae; }
+body[data-surface-tone="light"] .chart-day[data-today="true"] { --bar-top: #4f86d1; --bar-bottom: #2d5a9c; }
+body[data-surface-tone="light"] .usage-fill::before { background: #4f86d1; }
 .chart-day:hover .chart-bar, .chart-day:focus-visible .chart-bar { background: #cee3ff; }
 .chart-day-label { display: flex; flex-direction: column; align-items: center; min-height: 26px; color: var(--dim); font-size: 10px; line-height: 13px; }
 .chart-day-label small { font-size: 9px; opacity: .8; }

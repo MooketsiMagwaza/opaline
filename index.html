@@ -10,6 +10,8 @@
 
   <body data-style="frost" data-canvas="frosted" data-labels="true" data-rail="false" data-anim="true">
     <div class="stage pre" id="stage">
+      <!-- Home of the per-panel refraction filters that core/glass.ts builds when the material bends light. -->
+      <svg id="lens-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><defs></defs></svg>
       <img id="backdrop" alt="" hidden />
       <div id="tint"></div>
 
@@ -132,7 +134,7 @@
         <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><span class="page-count">Automatic apply · Off</span></header><div id="settings" class="settings-layout"></div></main>
 
         <p id="navigation-note" role="status"></p>
-          <span id="gesture-cue" aria-hidden="true" hidden></span>
+          <span id="gesture-cue" class="glass" aria-hidden="true" hidden></span>
           <nav id="page-edges" aria-label="Home screen navigation">
           <button type="button" id="page-prev" class="edge-arrow" aria-label="Previous Home screen" title="Previous Home screen · Shift+Tab">‹</button>
           <button type="button" id="page-next" class="edge-arrow" aria-label="Next Home screen" title="Next Home screen · Tab">›</button>

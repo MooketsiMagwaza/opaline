@@ -73,7 +73,7 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 - Desktop and AppsFolder refreshes happen after presentation. Taskbar enumeration and bounded thumbnail warming run after presentation and stop when hidden.
 - The UI keeps up to 32 decoded thumbnails in memory, shares concurrent requests per window and shows stale pixels while refreshing. A cached hover avoids capture entirely; cold PrintWindow can take longer than 50 ms.
 - Native usage sampling runs once a second while the app is alive, excluding idle periods and sleep gaps. It saves every 30 seconds and on normal exit; an abrupt process kill can lose the most recent interval.
-- `npm run size` fails when the production frontend exceeds 200 KiB raw or 60 KiB gzip (raw was 180 KiB until the gesture motion and hover-intent systems and 190 KiB until the help, Home-screen, chart and navigation work; see `scripts/measure-build.mjs`). New UI data remains static TypeScript unless runtime editing actually requires a file or service.
+- `npm run size` fails when the production frontend exceeds 210 KiB raw or 60 KiB gzip (raw was 180 KiB until the gesture motion and hover-intent systems, 190 KiB until the help, Home-screen, chart and navigation work and 200 KiB until the refraction lens; see `scripts/measure-build.mjs`). New UI data remains static TypeScript unless runtime editing actually requires a file or service.
 
 ## Frontend module boundaries
 
