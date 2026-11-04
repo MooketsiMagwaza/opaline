@@ -84,28 +84,49 @@ await page.route(/\/src\/app\/launcher\.ts(?:\?.*)?$/, async (route) => {
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();
-// The wheel recogniser cancels a gesture preview after 120 ms without input, which a Playwright round trip (or one
-// slow frame) can outlast. Stream a few small events the way a trackpad does and sample the preview in the page,
-// on the first frame that shows it. `maxEvents` keeps the total below the commit threshold so nothing navigates.
-const wheelPreview = (selector, { maxEvents, ...eventInit }) => page.evaluate(([target, count, init]) => new Promise((resolve, reject) => {
+// The recogniser paints a preview on its second animation frame and cancels it 120 ms after the last wheel event. Headless
+// Chrome software-renders the backdrop blur, so a frame can take 60 ms or more and a short burst of events ends before the
+// preview is painted. Keep feeding 1 px events, as a trackpad does, and sample the preview in the page on the first frame that
+// shows it. `maxEvents` keeps the total below the commit threshold (56 px pinch, 42 px swipe) so nothing navigates.
+const wheelPreviewOnce = (selector, { maxEvents, ...eventInit }) => page.evaluate(([target, count, init]) => new Promise((resolve, reject) => {
   const surface = document.querySelector(target);
   let sent = 0;
   const send = () => { if (sent < count) { sent++; surface.dispatchEvent(new WheelEvent("wheel", { ...init, deltaMode: 0, bubbles: true, cancelable: true })); } };
   const feed = setInterval(send, 16);
   send();
   const started = performance.now();
+  let frames = 0;
   const sample = () => {
+    frames++;
     const cue = document.getElementById("gesture-cue");
     if (surface.querySelector(":scope > .home-motion")?.getAttribute("data-gesture-preview") === "true") {
       clearInterval(feed);
       resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, transform: getComputedStyle(surface).transform });
       return;
     }
-    if (performance.now() - started > 2000) { clearInterval(feed); reject(new Error("The gesture preview never appeared.")); return; }
+    if (performance.now() - started > 2000) {
+      clearInterval(feed);
+      const state = { framesSampledIn2s: frames, eventsSent: sent, bodyClasses: document.body.className, page: document.body.dataset.page, transitionDirection: document.documentElement.dataset.gestureDirection ?? null, surfaceHidden: surface.hidden, previewAttribute: surface.querySelector(":scope > .home-motion")?.getAttribute("data-gesture-preview") ?? null, cueHidden: cue.hidden, popupOpen: document.body.classList.contains("popup-open"), pickerHidden: document.getElementById("item-picker").hidden, activeElement: document.activeElement?.id || document.activeElement?.tagName };
+      reject(new Error(`The gesture preview never appeared. State: ${JSON.stringify(state)}`));
+      return;
+    }
     requestAnimationFrame(sample);
   };
   requestAnimationFrame(sample);
 }), [selector, maxEvents, eventInit]);
+// After a committed gesture the recogniser has occasionally ignored the next one for over a second in headless Chrome, then
+// recovered after a quiet period (root cause not found; see WORKORDER W-51). Retry after silence, as a user lifting their fingers
+// would, and warn on every retry so intermittent behaviour stays visible instead of being hidden.
+async function wheelPreview(selector, options) {
+  for (let attempt = 1; ; attempt++) {
+    try { return await wheelPreviewOnce(selector, options); }
+    catch (error) {
+      if (attempt === 3) throw error;
+      console.warn(`Gesture preview attempt ${attempt} failed (${String(error.message).split(" State:")[0]}); retrying after a quiet period.`);
+      await wait(1500);
+    }
+  }
+}
 const homeNamed = (name) => page.waitForFunction(expected => {
   const surface = document.getElementById("workspace-surface");
   return !surface.hidden && document.getElementById("workspace-title").textContent === expected;
@@ -223,7 +244,7 @@ try {
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await wait(600);
-  const swipePreview = await wheelPreview("#apps-surface", { deltaX: 5, deltaY: 0, maxEvents: 7 }); // at most 35 of the 42 px threshold
+  const swipePreview = await wheelPreview("#apps-surface", { deltaX: 1, deltaY: 0, maxEvents: 40 }); // at most 40 of the 42 px threshold
   assert(swipePreview.cueVisible);
   assert.equal(swipePreview.transform, "none");
   await wait(400);
@@ -258,7 +279,7 @@ try {
   assert(await visible("#apps-surface"));
   await page.keyboard.press("Alt+1");
   await wait(600);
-  const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 5, maxEvents: 8 }); // at most 40 of the 56 px threshold
+  const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 1, maxEvents: 50 }); // at most 50 of the 56 px threshold
   assert(pinchPreview.cueVisible);
   assert.equal(pinchPreview.cueText, "Settings");
   assert.equal(pinchPreview.transform, "none");
@@ -333,7 +354,9 @@ try {
   assert(await visible("#focus-surface"));
   await page.locator("#focus-intention").fill("Finish the release notes");
   assert.equal(await page.locator("#focus-title").textContent(), "Finish the release notes");
+  assert(await page.locator("#focus-advance").isDisabled()); // a session that was never started has nothing to finish
   await page.locator("#focus-start").click();
+  assert(await page.locator("#focus-advance").isEnabled());
   assert.equal(await page.locator("#focus-start").textContent(), "Pause");
   await wait(250);
   assert.notEqual(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgba(0, 0, 0, 0)");
@@ -359,6 +382,8 @@ try {
   await page.locator('[data-focus-preset="25"]').focus();
   await page.keyboard.press("Space");
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("opaline.settings"))).focusMinutes, 25);
+  await page.locator("#focus-custom-minutes").focus();
+  assert.equal(await page.locator("#focus-custom-minutes").evaluate(node => getComputedStyle(node).outlineStyle), "solid"); // keyboard focus must be visible
   assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 260);
   await page.locator("#focus-chart").scrollIntoViewIfNeeded();
   assert(await page.locator("#focus-chart").isVisible());
@@ -413,6 +438,21 @@ try {
   assert(await visible("#settings-surface"));
   await page.locator('.nav-item[data-id="behaviour"]').click();
   await shot("settings.png");
+  // A failed save must be reported rather than silently lost, and the message clears once saving works again.
+  await page.evaluate(() => {
+    window.__realSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "opaline.settings") throw new DOMException("exceeded the quota", "QuotaExceededError");
+      return window.__realSetItem.call(this, key, value);
+    };
+  });
+  await page.getByRole("switch", { name: "Close when you switch away" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.match(await page.locator("#navigation-note").textContent(), /Settings could not be saved/);
+  await page.evaluate(() => { Storage.prototype.setItem = window.__realSetItem; });
+  await page.getByRole("switch", { name: "Close when you switch away" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("#navigation-note").textContent(), "");
   for (const section of ["appearance", "home-layout", "navigation", "rail", "screen-time", "panes", "about"]) {
     await page.locator(`.nav-item[data-id="${section}"]`).click();
     await shot(`settings-${section}.png`);
@@ -520,6 +560,23 @@ try {
   await page.getByRole("switch", { name: "Show Screen time" }).click();
   await page.getByRole("button", { name: "Done", exact: true }).click();
   assert.equal(await page.locator("body").getAttribute("data-shortcut-screen-time"), "true");
+  // Hiding every destination of a header group must not leave an empty glass capsule, and the tray must still reach them.
+  for (const name of ["Show All apps", "Show Screen time", "Show Settings"]) await page.getByRole("switch", { name }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-all-apps"), "false");
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-settings"), "false");
+  await page.keyboard.press("Alt+1"); // the header and bottom bar are not part of the Settings page, so assert on Home
+  assert(!(await visible("#header-left")));
+  assert(!(await visible("#header-right")));
+  assert(await visible("#navigation-overflow"));
+  const centredSearch = await page.locator("#search-wrap").boundingBox();
+  assert(centredSearch && Math.abs(centredSearch.x + centredSearch.width / 2 - 640) < 2, JSON.stringify(centredSearch));
+  await page.keyboard.press("Alt+5"); // Settings stays reachable from the keyboard with every shortcut hidden
+  assert(await visible("#settings-surface"));
+  for (const name of ["Show All apps", "Show Screen time", "Show Settings"]) await page.getByRole("switch", { name }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-all-apps"), "true");
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-settings"), "true");
   await page.locator('.nav-item[data-id="home-layout"]').click();
   await page.getByRole("button", { name: "A–Z" }).click(); await wait(380);
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("demo:groups.json"))).layout["group:agents"].x, 0);
