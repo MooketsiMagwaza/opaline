@@ -9,6 +9,7 @@ import { createLauncherPreview } from "./launcher-preview";
 import { DEFAULTS, RAIL_AVAILABLE, normalizeSettings, type Settings, settings, updateSettings } from "./store";
 import { createWorkspace, removeWorkspace, renameWorkspace, workspaces } from "../grid/workspaces";
 import { refreshUsage } from "../activity";
+import { absorbLiveChanges, stagedChanges } from "./draft";
 
 export type PanelHooks = {
   status: () => Status;
@@ -46,7 +47,8 @@ let hooks: PanelHooks;
 let current = "appearance";
 let syncers: (() => void)[] = [];
 let draft: Settings | null = null;
-let savedDraft = "";
+/** The live settings the draft was staged from; the draft is "dirty" when it differs from this. */
+let baseline: Settings = { ...DEFAULTS };
 let recording = false;
 let hotkeyEvents: AbortController | undefined;
 const CUSTOM_MATERIAL_KEYS = new Set<keyof Settings>(["paneBlur", "cornerRadius", "tileGlass", "customSurfaceColor", "customSurfaceOpacity"]);
@@ -208,8 +210,19 @@ function row(label: string, hint: string | undefined, control: HTMLElement): HTM
 
 const panelSettings = (): Settings => draft ?? settings();
 
+function resetDraftToSaved() {
+  baseline = normalizeSettings(settings());
+  draft = { ...baseline };
+}
+
+/** Folds changes made outside the panel (such as Ctrl+B) into the draft without losing staged edits. */
+function absorbLiveSettings() {
+  if (!draft) return;
+  ({ baseline, draft } = absorbLiveChanges(baseline, draft, settings()));
+}
+
 function syncCommitBar() {
-  const dirty = draft !== null && JSON.stringify(draft) !== savedDraft;
+  const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(baseline);
   const done = document.getElementById("settings-done") as HTMLButtonElement | null;
   if (done) done.disabled = !dirty;
 }
@@ -768,14 +781,15 @@ function select(id: string) {
 }
 
 export function syncPanel() {
+  absorbLiveSettings();
   syncers.forEach((sync) => sync());
   syncLivePreview();
+  syncCommitBar();
 }
 
 export function initPanel(panelHooks: PanelHooks) {
   hooks = panelHooks;
-  draft = normalizeSettings(settings());
-  savedDraft = JSON.stringify(draft);
+  resetDraftToSaved();
 
   const nav = el("nav", "settings-nav");
   for (const section of sections()) {
@@ -789,8 +803,7 @@ export function initPanel(panelHooks: PanelHooks) {
   const cancel = el("button", "chip subtle", ["Cancel"]);
   cancel.type = "button";
   cancel.addEventListener("click", () => {
-    draft = normalizeSettings(settings());
-    savedDraft = JSON.stringify(draft);
+    resetDraftToSaved();
     select(current);
   });
   const done = el("button", "chip primary", ["Done"]);
@@ -798,8 +811,9 @@ export function initPanel(panelHooks: PanelHooks) {
   done.type = "button";
   done.addEventListener("click", () => {
     if (!draft) return;
-    updateSettings(draft);
-    savedDraft = JSON.stringify(draft);
+    // Apply only what was staged here, so a change made elsewhere while Settings was open survives.
+    updateSettings(stagedChanges(baseline, draft));
+    absorbLiveSettings();
     syncCommitBar();
   });
   const commitBar = el("footer", "settings-commit", [cancel, done]);
@@ -809,7 +823,6 @@ export function initPanel(panelHooks: PanelHooks) {
 
 export function refreshPanel() {
   if (!hooks) return;
-  draft = normalizeSettings(settings());
-  savedDraft = JSON.stringify(draft);
+  resetDraftToSaved();
   select(current);
 }
