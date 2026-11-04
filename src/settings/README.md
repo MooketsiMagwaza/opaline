@@ -7,9 +7,13 @@ Owns settings validation, persistence, the staged editor and previews shown only
 - `store.ts` defines `Settings`, defaults, normalisation, persistence and `applySettings`. It is the sole writer of applied CSS variables and
   body data attributes.
 - `panel.ts` defines the information architecture and control builders. It owns draft state, section navigation and Done/Cancel.
+- `draft.ts` holds the pure draft rules: which keys the user staged (`stagedChanges`) and how a change made elsewhere, such as Ctrl+B, is
+  folded into an open draft (`absorbLiveChanges`). Done applies only the staged keys, so it can never revert a live change.
 - `launcher-preview.ts` creates an isolated 1280×800 frame from the real Home DOM and the already-loaded app stylesheet, then applies the
   draft settings inside that frame. Reusing in-memory CSS avoids a network request per simulation. It is real launcher composition rather
-  than substitute preview artwork.
+  than substitute preview artwork. A loaded preview is updated in place (`updateLauncherPreview` changes only the root variables and body
+  attributes), so a slider tick never reloads a document; the panel rebuilds previews only when Settings opens or after a live change. Backdrop
+  data URLs are shared through an in-memory blob URL (never persisted).
 - `settings.css` and `launcher-preview.css` own editor and simulation styling.
 
 ## Draft transaction
@@ -27,8 +31,9 @@ sequenceDiagram
   Panel->>Preview: render draft immediately
   Note over Store: applied app remains unchanged
   alt Done
-    Panel->>Store: updateSettings(draft)
+    Panel->>Store: updateSettings(staged keys only)
     Store->>Store: normalise, save, apply
+    Note over Store: a failed save keeps the settings in memory and shows a status line
   else Cancel
     Panel->>Store: reload persisted values
   end

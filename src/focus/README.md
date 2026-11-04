@@ -25,7 +25,8 @@ stateDiagram-v2
   BreakReady --> FocusReady: Skip
 ```
 
-Every fourth completed focus session selects a long break; other completions select a short break. `endsAt` is authoritative while running,
+Finish is available once a session has started (`hasStarted`: running, or paused with time used); a work session that was never started cannot be
+recorded as completed. Breaks can always be skipped, and a skipped or finished break never counts. Every fourth completed focus session selects a long break; other completions select a short break. `endsAt` is authoritative while running,
 so hiding or suspending the WebView does not pause elapsed time. Daily completion keys come from `activity/charts.ts` to keep local-date
 handling consistent with Screen time.
 

@@ -6,7 +6,7 @@ type OrganizeRule = OrganizeRuleDefinition & { match: RegExp };
 const rules: readonly OrganizeRule[] = ORGANIZE_RULES.map(rule => ({ ...rule, match: new RegExp(rule.pattern, "i") }));
 
 /**
- * Sorts loose items into panes from the ordered definitions in data/organize-rules.ts.
+ * Sorts loose items into panes from the ordered definitions in organize-rules.ts.
  * It never touches an existing pane member, and a new pane needs at least two matches.
  */
 export function organize(items: Item[]): number {

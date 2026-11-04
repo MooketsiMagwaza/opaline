@@ -10,7 +10,12 @@ ZIP containing `opaline.exe`. A `SHA256SUMS.txt` file is published beside them.
 1. Complete the manual acceptance checklist in [WORKORDER.md](../WORKORDER.md#9-acceptance-checklist-run-before-every-release).
 2. Run `npm ci`, `npm test`, `npm run build`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
    `cargo test --locked` and `cargo check --locked`.
-3. Update `CHANGELOG.md`; set the same version in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
+3. Update `CHANGELOG.md` (move `[Unreleased]` under the new version and remove any "Planning" notes for work that did not ship), then set
+   the same version in `package.json`, `package-lock.json` (root `version` and `packages[""].version`), `src-tauri/Cargo.toml`,
+   `src-tauri/Cargo.lock` (the `opaline` package; CI uses `--locked`, so a stale lock fails the build) and `src-tauri/tauri.conf.json`.
+   Also update the release codename (`CODENAME` in `src-tauri/src/lib.rs`), the "Latest release" line in `README.md` and the version in
+   the `status` fixture of `scripts/verify-ui.mjs`. The release workflow only cross-checks `package.json`, `Cargo.toml` and
+   `tauri.conf.json`.
 4. Confirm the installer creates **Start Menu → Opaline**, creates no Desktop shortcut, and that uninstall removes the Start entry.
 5. Commit, then tag `vX.Y.Z` and push the commit and tag.
 

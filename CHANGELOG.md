@@ -34,6 +34,11 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Fixed Space on a focused Focus button (Reset, Finish, duration presets, phase tabs) toggling the timer instead of activating that button.
 - Fixed Settings Done reverting a change made while Settings was open, such as Ctrl+B; Done now applies only the edits staged in Settings.
 - Settings previews now update in place instead of reloading on every slider tick, share one backdrop image rather than embedding a copy each, and are no longer rebuilt while Settings is hidden.
+- A Focus session that was never started can no longer be finished and recorded as completed; Finish is disabled until it begins, and breaks can still be skipped.
+- Fixed the custom duration field showing no keyboard focus ring, and gave the Focus progress ring a valid accessible role.
+- Presets in an imported file that reuse an id now get their own, so removing one no longer removes the others.
+- A failed save (full or blocked browser storage) is now reported: Settings show that changes will be lost on restart and preset actions show the error, instead of appearing to succeed.
+- Removed the empty glass capsule left in the header when every destination in a split-navigation group is hidden.
 
 ### Planning
 - Scoped the planned 0.3.0 experience update: a Focus-first UI redesign, optional intention and completion feedback, a compact running timer, four-edge Opaline taskbar placement, a live panel customiser, and versioned restart caches with measured performance budgets.

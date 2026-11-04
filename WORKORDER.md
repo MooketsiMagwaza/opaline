@@ -326,7 +326,7 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 6. Search finds items inside panes; Enter launches; Esc clears, then closes.
 7. Empty-space click, Esc, focus loss and the hotkey all close it; clicking a tile or the rail does not.
 8. Rail lists the real taskbar apps; hover shows previews; click focuses; minimised windows restore.
-9. Every setting applies live and survives a restart; reset restores defaults.
+9. Visual and layout settings stage in Settings and apply on Done (Cancel restores the saved values); every applied setting survives a restart; Reset stages the defaults until Done.
 10. Second monitor: opens on the cursor's monitor.
 11. Tray icon: toggle and quit work; no process left after quitting.
 12. `npm test`, `npm run build`, `cargo fmt --check`, `cargo clippy`, `cargo test` and `cargo check` are clean; CI is green.

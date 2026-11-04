@@ -60,7 +60,7 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 - **`backdrop-filter` rule:** glass panes must not sit inside an element with `filter`, `mask`, `opacity < 1`, `clip-path` or its own
   `backdrop-filter`, or they will blur nothing (see WORKORDER §3).
 - Keep glass cheap: large panes only, never one `backdrop-filter` per tile. Frost and Clear must still look right.
-- New visual parameters become **settings** (default in `settings.ts`, a control in `panel.ts`), not magic numbers.
+- New visual parameters become **settings** (default in `src/settings/store.ts`, a control in `src/settings/panel.ts`), not magic numbers.
 - Match the surrounding code: naming, comment density, idiom. Comments say *why*.
 - **Statuses are honest.** Mark a work-order item `[x]` only after you have seen it work, and say how in the Notes column. Update
   `CHANGELOG.md` (Unreleased) and `WORKORDER.md` in the same change.
@@ -70,9 +70,11 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 ## Layout
 
 ```
-src/            UI entry/coordinators; focus/, grid/, appearance/, navigation/ and settings/ co-locate feature logic, CSS and README; data/ holds typed product data
+src/            app/ (entry and shell styles) · core/ (shared helpers) · feature folders activity/ appearance/ focus/ grid/ navigation/ settings/ taskbar/,
+                each co-locating its logic, CSS and README (see src/README.md)
 src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs taskbar.rs store.rs
-scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol)
+scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol) · verify-ui.mjs (browser UI suite on demo data)
+                · verify-native.mjs (checks against the running app) · measure-build.mjs (npm run size)
 assets/         logo.svg (+ generated PNG)
 archive/        winui3-beta — the failed first attempt, kept for reference only; do not build or extend it
 docs/           architecture · testing · releasing · spatial and platform work orders
