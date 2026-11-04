@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-11-04 · Review pass, gesture motion, hover intent and the settled 0.3.0 scope
+
+The unreleased 0.3 work was reviewed end to end on branch `feat/v0.3-experience`: five confirmed bugs (Focus Space handling, a never-started session being recordable as finished, Done reverting live edits, preset id collisions, silent save failures) and several smaller ones were fixed and are covered by the UI suite and unit tests.
+
+Swipe and pinch were reworked. The preview is now driven by three custom properties and only transform/opacity; a swipe moves just the Home content over stationary glass (nothing clips), a pinch zooms the page and cross-zooms into the destination, and a commit navigates at once while a ghost clone animates out. View Transitions were dropped: they morph geometry, clip differently and can stall in WebView2 until the pointer moves. Motion in flight no longer blocks the next gesture.
+
+Popups gained shared hover-intent rules (`core/hover-intent.ts`): a safe-triangle plus distance test keeps a popup open while the pointer travels to it along a diagonal path, and once one popup is open its neighbours open at once. The navigation tray became a real dropdown. While testing, the launcher stage turned out to be scrollable because of its oversize blurred backdrop, so a focus could shift the whole UI by about 10 px; it now clips. The raw code budget is 190 KiB (gzip unchanged at 60 KiB; 52.2 KiB used).
+
+The 0.3.0 scope is settled in `docs/V0_3_WORKORDER.md` §0: what is built ships; completion feedback goes to 0.3.x, taskbar placement, the customiser and the restart cache to 0.4.0, and the Activity Center to 0.5.0. Everything above was verified in headless Chrome only; the physical trackpad, WebView2 and the native checklist remain the owner's acceptance steps.
+
 ## 2026-11-02 · Settings and input quality pass
 
 The owner asked for the 0.3 bootstrap to stop treating one full Home simulation as the answer to every Settings task. Settings now takes

@@ -46,10 +46,8 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Removed the empty glass capsule left in the header when every destination in a split-navigation group is hidden.
 
 ### Planning
-- Scoped the planned 0.3.0 experience update: a Focus-first UI redesign, optional intention and completion feedback, a compact running timer, four-edge Opaline taskbar placement, a live panel customiser, and versioned restart caches with measured performance budgets.
-- Kept backdrop captures and live window thumbnails memory-only; pane-internal ordering remains manual.
-- Added an Activity Center feasibility track: Opaline alert history, opt-in Windows notification mirroring with bounded encrypted retention, an offline `.ics` agenda, and a possible direct read-only Google Calendar connector with no Opaline backend.
-- Planned a toggleable pane-like Activity Center with Notifications, Agenda and News modules, four-edge visual placement previews, alignment/size controls, and direct RSS/Atom feeds with no Opaline news backend.
+- Settled the 0.3.0 scope: the Focus redesign, presets, rearrangeable navigation, staged Settings, gesture motion and hover intent. Completion feedback and session history follow in 0.3.x, four-edge taskbar placement, the live layout customiser and restart caching in 0.4.0, and the Activity Center (notifications, agenda, news) in 0.5.0. See `docs/V0_3_WORKORDER.md` §0.
+- Backdrop captures and live window thumbnails stay memory-only; pane-internal ordering remains manual; there is still no Opaline backend or telemetry.
 
 ## [0.2.2] — 2026-11-01 "Borosilicate"
 

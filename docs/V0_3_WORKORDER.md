@@ -1,8 +1,36 @@
 # Opaline 0.3.0 experience work order
 
-**Status:** implementation started on 2 November 2026; partial slices are listed in §10.  
-**Release intent:** supersede the unpublished 0.2.2 candidate with a broader 0.3.0 update after every acceptance gate below passes.  
-**Priority order:** Focus experience → layout customisation and taskbar placement → restart/startup performance → optional Activity Center integrations → integrated polish.
+**Status:** scope settled on 4 November 2026 (§0); partial slices are listed in §10.  
+**Release intent:** supersede the unpublished 0.2.2 candidate with a 0.3.0 that ships the scope in §0 after every acceptance gate there passes. Nothing is version-bumped, tagged or published until the owner has accepted it.  
+**Priority order:** Focus experience → navigation, presets and interaction polish → (later releases) layout customisation and taskbar placement → restart/startup performance → optional Activity Center integrations.
+
+## 0. Scope decision (settled 4 November 2026)
+
+The original plan below is too large for one release, and its later milestones depend on native work (four-edge taskbar geometry, a
+native icon cache, Windows notification access) that cannot be accepted from a browser. 0.3.0 therefore ships the part that is built,
+tested and already coherent, and the rest moves to named later releases. The full requirement text stays in this document as the
+specification for those releases; only the release each requirement targets changes.
+
+| Requirement | Release | State on 4 Nov 2026 |
+|---|---|---|
+| R-52 Focus redesign, R-53 intention and session controls, R-54 running-timer capsule | **0.3.0** | `[~]` built and unit-tested; owner/native acceptance open |
+| R-60 Settings/data migration, accessibility | **0.3.0** | `[~]` normalisation and tests in place; reduced-motion and keyboard paths covered by the UI suite |
+| R-65 Rearrangeable navigation, R-66 feature-first frontend, R-67 staged Settings and representative previews | **0.3.0** | `[~]` built; UI suite green; owner visual acceptance open |
+| R-68 Gesture motion: a swipe or pinch previews, commits and settles smoothly, without clipping | **0.3.0** | `[~]` built; the browser suite checks the preview, commit, rubber-band and reduced-motion paths; needs the owner's physical trackpad (W-51) |
+| R-69 Hover intent: popups follow the pointer's path, neighbours warm up together, the tray behaves as a dropdown | **0.3.0** | `[~]` built; real-mouse paths are in the UI suite; needs native WebView2 confirmation |
+| R-55 Completion feedback and local session history | 0.3.x | `[ ]` not started; ships as a follow-up once 0.3.0 is accepted |
+| R-56 Four-edge taskbar placement, R-57 live layout customiser | 0.4.0 | `[ ]` not started; needs rail geometry for every edge and a physical-resize pass |
+| R-58 Cached restart without icon churn, R-59 measured startup budgets | 0.4.0 | `[ ]` not started; needs the Rust cache and the on-device baseline in §8 |
+| R-61 Activity Center, R-62 agenda and calendar, R-63 news feed, R-64 Activity Center layout | 0.5.0 | `[ ]` not started; the feasibility prototypes (§6, M5) come first |
+
+**0.3.0 release gates:** `npm test`, `npm run build`, `npm run size`, `tsc --noEmit`, `cargo fmt --check`, Clippy with warnings denied,
+`cargo test --locked`, a clean UI suite, then the owner's acceptance of Focus, the gestures (W-51), hover behaviour and the native
+checklist. Only after that are the synced manifests bumped from 0.2.2 to 0.3.0, the codename chosen, and the release tagged and
+published, and only when the owner says so.
+
+**What changes for the plan below:** M0, M1 and the Settings/navigation parts of M3 are the 0.3.0 work. M2 splits (the capsule is in,
+notifications and history are 0.3.x); the placement and customiser parts of M3 and all of M4 are 0.4.0; M5 is 0.5.0; M6 applies to
+each release. The exclusions in §12 are unchanged.
 
 ## 1. Outcome
 
@@ -52,6 +80,8 @@ continues to read Desktop files without moving them. Pane contents remain manual
 | R-65 | Make primary navigation rearrangeable and minimisable | P0 | Split, taskbar and tray previews apply live; destinations can be pinned or moved to overflow without losing keyboard recovery |
 | R-66 | Complete a feature-first frontend migration | P1 | Feature logic, CSS, data and README ownership are clear; `launcher.css` retains only shared shell/material rules |
 | R-67 | Make Settings changes explicit and previews representative | P0 | Visual/layout edits stage until Done, Cancel restores saved state, and previews simulate the current backdrop/layout without persisting imagery |
+| R-68 | Make swipe and pinch feel smooth and legible | P0 | A held swipe slides only Home content with nothing clipping; a held pinch zooms and cross-zooms into the destination; the destination is named while held; commit never blocks the next gesture; reduced motion keeps the cue and drops the movement |
+| R-69 | Follow standard hover-intent rules for popups | P0 | A popup stays open while the pointer travels toward it on a diagonal path; once one popup is open its neighbours open at once; the tray opens on rest, closes on leaving, pins on click and dismisses on an outside press or Escape |
 
 ## 4. Focus experience
 
@@ -282,7 +312,14 @@ set the tightest honest budget. Do not delay the first frame to create a cosmeti
 
 ## 10. Delivery sequence
 
-### Current implementation evidence — 2026-11-02
+### Current implementation evidence — 2026-11-04
+
+- `[~]` R-68: `navigation/gesture-motion.ts` drives the preview through three custom properties (transform and opacity only) and commits by navigating at once while a ghost clone cross-animates with the Web Animations API; View Transitions are no longer used. Browser frame captures show no clipping leak and no blank frame. Physical-trackpad feel is still the owner's call.
+- `[~]` R-69: `core/hover-intent.ts` (`PathGuard`, `Closer`, `HoverGroup`) is used by context-menu submenus, the taskbar preview, the pane peek and `navigation/tray.ts`. Unit tests cover the geometry; the UI suite drives real mouse paths, and the new checks fail on the preceding commit.
+- Fixed in passing: the launcher stage was scrollable because of its oversize blurred backdrop, so a focus could shift the whole UI by a few pixels; it now clips.
+- Budget: the raw code budget is 190 KiB (was 180) and gzip stays at 60 KiB; the build measures 182.8 KiB raw / 52.2 KiB gzip.
+
+### Earlier implementation evidence — 2026-11-02
 
 - `[~]` M0: added dependency-free `npm run size` budgets; measured 162.0 KiB raw / 46.3 KiB gzip frontend, a 4.91 MiB release executable, 1.61 MiB NSIS and 2.38 MiB MSI.
 - `[~]` M1: redesigned Focus, corrected finish/skip accounting, added intention/durations/keyboard state and split timer/ambient/controller modules. Unit and production builds pass; final owner/native acceptance remains open.

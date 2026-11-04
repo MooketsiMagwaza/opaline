@@ -6,12 +6,12 @@ they touch.
 
 **Latest release:** [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md)). Pinch input and gesture routing changed in this patch; the owner still experiences lag and occasional missed swipes, tracked as W-51.
 **Current candidate:** `v0.2.2` **Borosilicate** — pane reordering, stable themed insertion feedback and Home quick sorting accepted in the native preview; not tagged or published yet.
-**Next development target:** `v0.3.0` — implementation has started with the Focus redesign, named importable visual/layout presets, three rearrangeable navigation modes, staged Done/Cancel Settings, representative in-memory previews, size budgets and feature-owned modules/CSS/READMEs. Movable app-taskbar placement, direct panel resizing, restart caching and the optional edge-drawer Activity Center remain planned; see [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
+**Next development target:** `v0.3.0` — scope settled on 2026-11-04: the Focus redesign, named importable visual/layout presets, three rearrangeable navigation modes, staged Done/Cancel Settings, representative in-memory previews, reworked swipe/pinch motion, hover-intent popups, size budgets and feature-owned modules/CSS/READMEs. Completion feedback and session history move to 0.3.x; movable app-taskbar placement, direct panel resizing and restart caching to 0.4.0; the Activity Center to 0.5.0. See §0 of [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-11-02 — v0.3.0 implementation started; v0.2.2 remains the local manifest version until full acceptance.
+**Last updated:** 2026-11-04 — v0.3.0 scope settled and gesture/hover work built; v0.2.2 remains the local manifest version until the owner accepts the 0.3.0 build.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
-The superseding 0.3.0 experience scope and new requirements R-52–R-64 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
+The superseding 0.3.0 experience scope and new requirements R-52–R-69 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.
@@ -131,7 +131,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-46 | Brighter theme-matched header capsules | P0 | `[~]` | Browser visual pass; owner theme/scaling pass pending; W-38 |
 | R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |
 | R-48 | Compact grouped charts and Focus/Zen visual pass | P1 | `[~]` | Browser chart geometry and screenshots; owner visual pass pending; W-40/W-41 |
-| R-50 | Make trackpad gestures consistently responsive and smooth | P1 | `[~]` | Owner isolated consecutive-swipe failure: the 350 ms wheel-burst lock was extended by inertial events, while pinch reset its separate mode. Candidate rearms after 120 ms silence/160 ms burst gap; browser test performs consecutive same-direction swipes without mouse movement. Physical owner retest required; W-51. |
+| R-50 | Make trackpad gestures consistently responsive and smooth | P1 | `[~]` | 2026-11-04: swipe and pinch motion reworked (R-68 in the 0.3 work order); headless Chrome still sometimes ignores a pinch for about a second after a committed one, which may be the W-51 symptom. Owner isolated consecutive-swipe failure: the 350 ms wheel-burst lock was extended by inertial events, while pinch reset its separate mode. Candidate rearms after 120 ms silence/160 ms burst gap; browser test performs consecutive same-direction swipes without mouse movement. Physical owner retest required; W-51. |
 | R-51 | Distinguish between-item insertion from grouping, manually reorder pane contents and provide one-shot Home sorting | P0 | `[x]` | Owner accepted the native v0.2.2 pointer preview on 1 November; stable marker, persistence tests, 21 frontend tests, production build and isolated UI suite pass ([grid work order](docs/SPATIAL_WORKORDER.md)) |
 
 ## 3. Architecture
@@ -378,8 +378,10 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
 7. **Release follow-up.** The v0.2.1 NSIS, MSI, portable ZIP and checksums are published and hash-verified. Record installer smoke-test evidence separately; profile the gesture bug in W-51 on the owner's trackpad when that work resumes.
-8. **Build the planned 0.3.0 experience in order.** Follow M0–M6 in `docs/V0_3_WORKORDER.md`, beginning with the measured baseline
-   and Focus redesign. Existing native acceptance gaps remain regression gates; the larger scope does not silently mark them complete.
+8. **Finish and accept the settled 0.3.0 scope.** §0 of `docs/V0_3_WORKORDER.md` lists what ships (Focus, navigation, presets, staged Settings,
+   gesture motion, hover intent) and what moved to 0.3.x, 0.4.0 and 0.5.0. Remaining: owner testing of the built 0.3 preview on the physical
+   trackpad (W-51) and the native checklist, then the version bump, tag and publish when the owner says so. Existing native acceptance gaps
+   remain regression gates; the narrower scope does not silently mark them complete.
 
 ## 13. Known issues
 
