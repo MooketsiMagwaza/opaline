@@ -9,6 +9,7 @@ import { initUsage, refreshUsage, renderUsage, setUsageQuery } from "../activity
 import { refreshFocus } from "../focus";
 import { refreshPanel } from "../settings/panel";
 import { itemPicker } from "../grid/item-picker";
+import { clearPreview, endTransition, motionAllowed, playCommit, showPreview, type GestureMode, type GestureSource } from "./gesture-motion";
 
 let current = "desktop";
 let homeScreen = 0;
@@ -17,9 +18,6 @@ let appsReady = false;
 let appListRendered = false;
 let query = "";
 let usageTimer: number | undefined;
-let gestureSurface: HTMLElement | null = null;
-let gestureDirection = 0;
-let gestureMode: "pinch" | "swipe" | null = null;
 
 const pages = () => [
   { id: "desktop", label: "Home", surface: "apps-surface" },
@@ -98,6 +96,7 @@ function renderNav() {
 }
 
 export function show(id: string) {
+  endTransition();
   clearGesturePreview();
   const next = pages().find((page) => page.id === id) ?? pages()[0];
   closeMenu(); grid.reset();
@@ -134,68 +133,34 @@ export function cycleHome(direction = 1) {
   homeScreen = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
   show("desktop");
 }
-function gestureDestination(direction: number, mode: "pinch" | "swipe"): string {
-  if (isHome() && mode === "swipe") {
-    const index = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
-    return index === 0 ? "Desktop" : workspaces()[index - 1].name;
-  }
-  const list = pages();
-  return list[(list.findIndex(page => page.id === current) + direction + list.length) % list.length].label;
-}
-export function previewGesture(direction: number, progress: number, mode: "pinch" | "swipe") {
+/** A Home swipe with no other Home screen has nowhere to go: it rubber-bands and springs back instead of committing. */
+const isLonelySwipe = (mode: GestureMode): boolean => mode === "swipe" && isHome() && workspaces().length === 0;
+
+const gestureSource: GestureSource = {
+  locate: (mode) => document.querySelector<HTMLElement>(isHome() && mode === "swipe" ? ".page-surface:not([hidden]) > .home-motion" : ".page-surface:not([hidden])"),
+  panel: () => document.querySelector<HTMLElement>(".page-surface:not([hidden])"),
+  destination(direction, mode) {
+    if (isLonelySwipe(mode)) return "";
+    if (isHome() && mode === "swipe") {
+      const index = (homeScreen + direction + workspaces().length + 1) % (workspaces().length + 1);
+      return index === 0 ? "Desktop" : workspaces()[index - 1].name;
+    }
+    const list = pages();
+    return list[(list.findIndex(page => page.id === current) + direction + list.length) % list.length].label;
+  },
+};
+
+export function previewGesture(direction: number, progress: number, mode: GestureMode) {
   if (!direction) return;
-  const homeContent = isHome();
-  if (gestureSurface && gestureMode !== mode) clearGesturePreview();
-  gestureSurface ??= document.querySelector<HTMLElement>(homeContent ? ".page-surface:not([hidden]) > .home-motion" : ".page-surface:not([hidden])");
-  if (!gestureSurface) return;
-  gestureSurface.dataset.gesturePreview = "true";
-  gestureSurface.style.setProperty("--gesture-shift", `${-direction * progress * 68}px`);
-  const scale = mode === "swipe" ? 1 : 1 + progress * (direction < 0 ? -.055 : .025);
-  gestureSurface.style.setProperty("--gesture-scale", String(scale));
-  const cue = byId("gesture-cue");
-  if (gestureDirection !== direction || gestureMode !== mode) {
-    cue.textContent = gestureDestination(direction, mode);
-    gestureDirection = direction;
-    gestureMode = mode;
-  }
-  cue.style.opacity = String(Math.max(.25, progress));
-  if (cue.hidden) cue.hidden = false;
+  showPreview(gestureSource, direction, progress, mode, isLonelySwipe(mode) ? .22 : 1);
 }
-export function clearGesturePreview() {
-  if (gestureSurface) {
-    delete gestureSurface.dataset.gesturePreview;
-    gestureSurface.style.removeProperty("--gesture-shift");
-    gestureSurface.style.removeProperty("--gesture-scale");
-    gestureSurface = null;
-  }
-  gestureDirection = 0;
-  gestureMode = null;
-  byId("gesture-cue").hidden = true;
-}
-export function completeGesture(direction: number, mode: "pinch" | "swipe") {
+export function clearGesturePreview() { clearPreview(); }
+export function completeGesture(direction: number, mode: GestureMode) {
   if (!direction) return;
-  if (mode === "swipe" && !isHome()) { clearGesturePreview(); return; }
-  const homeSwipe = isHome() && mode === "swipe";
-  const navigate = () => { if (homeSwipe) cycleHome(direction); else cycle(direction); };
-  if (document.body.dataset.anim === "false" || matchMedia("(prefers-reduced-motion: reduce)").matches || !document.startViewTransition) {
-    navigate();
-    return;
-  }
-  document.documentElement.dataset.gestureDirection = direction > 0 ? "next" : "previous";
-  document.body.classList.add("gesture-transitioning");
-  document.body.classList.toggle("home-gesture-transitioning", homeSwipe);
-  const transition = document.startViewTransition(navigate);
-  let finished = false;
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    delete document.documentElement.dataset.gestureDirection;
-    document.body.classList.remove("gesture-transitioning", "home-gesture-transitioning");
-  };
-  // WebView2 can leave ViewTransition.finished pending until pointer movement requests another
-  // frame. Never let that browser quirk hold the gesture recognizer hostage.
-  window.setTimeout(finish, 280);
-  void transition.finished.then(finish, finish);
+  if ((mode === "swipe" && !isHome()) || isLonelySwipe(mode)) { clearGesturePreview(); return; }
+  const navigate = () => { if (isHome() && mode === "swipe") cycleHome(direction); else cycle(direction); };
+  if (!motionAllowed()) { navigate(); return; }
+  void playCommit(gestureSource, direction, mode, navigate);
 }
 export function toggleBar() { updateSettings({ compactBar: !settings().compactBar }); }
 export function setApps(next: AppEntry[]) { apps = [...next]; appsReady = true; appListRendered = false; itemPicker.setApps(next); if (current === "all-apps") renderList(); }

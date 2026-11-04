@@ -99,9 +99,11 @@ const wheelPreviewOnce = (selector, { maxEvents, ...eventInit }) => page.evaluat
   const sample = () => {
     frames++;
     const cue = document.getElementById("gesture-cue");
-    if (surface.querySelector(":scope > .home-motion")?.getAttribute("data-gesture-preview") === "true") {
+    // A swipe moves the Home content inside the panel; a pinch (ctrl + wheel) zooms the whole panel.
+    const mover = init.ctrlKey ? surface : surface.querySelector(":scope > .home-motion");
+    if (mover?.getAttribute("data-gesture-preview") === "true") {
       clearInterval(feed);
-      resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, transform: getComputedStyle(surface).transform });
+      resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, transform: getComputedStyle(surface).transform, moverTransform: getComputedStyle(mover).transform });
       return;
     }
     if (performance.now() - started > 2000) {
@@ -214,31 +216,39 @@ try {
   await page.locator("#page-prev").click(); assert(await visible("#apps-surface"));
   await page.locator("#apps-surface").dispatchEvent("wheel", {deltaX: 45, deltaY: 2, deltaMode: 0});
   await homeNamed("Dev tools");
-  assert.equal(await page.locator("html").getAttribute("data-gesture-direction"), "next");
-  assert(await page.evaluate(() => document.body.classList.contains("home-gesture-transitioning")));
-  assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement, "::view-transition-new(launcher-page)").animationTimingFunction), "cubic-bezier(0.16, 1, 0.3, 1)");
   assert(await visible("#workspace-surface"));
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
   await page.waitForFunction(() => !document.body.classList.contains("gesture-transitioning"));
+  // Once the motion ends nothing is left behind: no ghost copy of the old page and no running gesture animation.
+  assert.equal(await page.locator("[data-gesture-ghost]").count(), 0);
+  assert.equal(await page.evaluate(() => document.getAnimations().filter(animation => animation.id.startsWith("gesture-")).length), 0);
   await page.locator("#workspace-items").dispatchEvent("wheel", { deltaX: 45, deltaY: 0, deltaMode: 0 });
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await wait(600);
-  // One forceful physical swipe may emit a long inertial tail across the view transition.
+  // The page changes at once; the old page carries on as a ghost while the new one arrives, both on live elements.
+  const swipeCommit = await page.evaluate(() => {
+    document.querySelector("#apps-surface").dispatchEvent(new WheelEvent("wheel", { deltaX: 120, deltaY: 1, deltaMode: 0, bubbles: true, cancelable: true }));
+    return {
+      title: document.getElementById("workspace-title").textContent,
+      transitioning: document.body.classList.contains("gesture-transitioning"),
+      animations: document.getAnimations().map(animation => animation.id).filter(id => id.startsWith("gesture-")).sort(),
+      ghosts: document.querySelectorAll("[data-gesture-ghost]").length,
+    };
+  });
+  assert.equal(swipeCommit.title, "Dev tools");
+  assert(swipeCommit.transitioning);
+  assert.deepEqual(swipeCommit.animations, ["gesture-in", "gesture-out"]);
+  assert.equal(swipeCommit.ghosts, 1);
+  // One forceful physical swipe emits a long inertial tail that streams continuously across the motion.
   // Every tail event must be consumed without producing a second Home navigation.
-  await page.locator("#apps-surface").dispatchEvent("wheel", { deltaX: 120, deltaY: 1, deltaMode: 0 });
-  await homeNamed("Dev tools");
-  for (const deltaX of [96, 78, 61, 46]) {
-    await wait(20);
-    await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX, deltaY: 1, deltaMode: 0 });
-  }
-  await page.waitForFunction(() => !document.body.classList.contains("gesture-transitioning"));
-  for (const deltaX of [36, 27, 18, 12]) {
-    await wait(24);
+  for (const deltaX of [96, 78, 61, 46, 36, 27, 18, 12]) {
+    await wait(22);
     await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX, deltaY: 1, deltaMode: 0 });
   }
   await wait(240);
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
+  await page.waitForFunction(() => !document.body.classList.contains("gesture-transitioning"));
   await wait(190);
   await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX: 90, deltaY: 0, deltaMode: 0 });
   await homeNamed("Screen 3");
@@ -246,7 +256,8 @@ try {
   await wait(600);
   const swipePreview = await wheelPreview("#apps-surface", { deltaX: 1, deltaY: 0, maxEvents: 40 }); // at most 40 of the 42 px threshold
   assert(swipePreview.cueVisible);
-  assert.equal(swipePreview.transform, "none");
+  assert.equal(swipePreview.transform, "none"); // the glass panel stays put as the clipping frame
+  assert.notEqual(swipePreview.moverTransform, "none"); // while the content inside it follows the swipe
   await wait(400);
   assert(await visible("#apps-surface"));
   await touchSwipe(-60);
@@ -282,7 +293,7 @@ try {
   const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 1, maxEvents: 50 }); // at most 50 of the 56 px threshold
   assert(pinchPreview.cueVisible);
   assert.equal(pinchPreview.cueText, "Settings");
-  assert.equal(pinchPreview.transform, "none");
+  assert.notEqual(pinchPreview.transform, "none"); // a pinch zooms the whole panel
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 60, deltaMode: 0});
   await page.locator("#settings-surface").waitFor({ state: "visible" });
   assert(await visible("#settings-surface"));
@@ -652,6 +663,57 @@ try {
   await page.waitForSelector("#app-list-surface:visible");
   assert.equal(await page.locator("body").getAttribute("data-page"), "all-apps");
   await page.waitForFunction(() => document.activeElement?.id === "search");
+  // Gesture motion, last because it removes the Home screens the earlier checks rely on. Everything here goes through real
+  // wheel events and the real recogniser; calling the page modules directly would create a second copy of their state.
+  const releasedBy = (selector) => page.evaluate((target) => !document.querySelector(`${target}[data-gesture-preview]`), selector);
+  const wheelNow = (selector, init) => page.evaluate(([target, eventInit]) => {
+    document.querySelector(target).dispatchEvent(new WheelEvent("wheel", { ...eventInit, deltaMode: 0, bubbles: true, cancelable: true }));
+    return {
+      page: document.body.dataset.page,
+      animations: document.getAnimations().filter(animation => animation.id.startsWith("gesture-")).length,
+      ghosts: document.querySelectorAll("[data-gesture-ghost]").length,
+    };
+  }, [selector, init]);
+  await page.keyboard.press("Alt+1");
+  await page.waitForSelector("#apps-surface:visible");
+  // Reduced motion keeps the cue but nothing moves, and the page still changes without animating.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const calmPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 1, maxEvents: 50 });
+  assert(calmPreview.cueVisible);
+  assert.equal(calmPreview.transform, "none");
+  await wait(400); // the recogniser releases the preview and its lock
+  const calm = await wheelNow("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: -60 });
+  assert.equal(calm.page, "all-apps");
+  assert.equal(calm.animations, 0);
+  assert.equal(calm.ghosts, 0);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await wait(400);
+  // With no other Home screen a swipe is a rubber band: it eases a little, promises no destination, never navigates,
+  // and springs back on release instead of snapping.
+  // The app always restores two screens on load, so this state exists only after a user removes them in Settings.
+  await page.keyboard.press("Alt+5");
+  await page.locator('.nav-item[data-id="workspaces"]').click();
+  while (await page.getByRole("button", { name: "Remove", exact: true }).count()) {
+    const rows = await page.locator(".workspace-controls .row").count();
+    await page.getByRole("button", { name: "Remove", exact: true }).first().click();
+    await page.getByRole("button", { name: "Confirm removal" }).click();
+    await page.waitForFunction((before) => document.querySelectorAll(".workspace-controls .row").length < before, rows);
+  }
+  await page.keyboard.press("Alt+1");
+  await page.waitForSelector("#apps-surface:visible");
+  const rubber = await wheelPreview("#apps-surface", { deltaX: 1, deltaY: 0, maxEvents: 40 });
+  assert(!rubber.cueVisible);
+  const eased = Number(rubber.moverTransform.match(/matrix(?:3d)?\(([^)]+)\)/)[1].split(",").map(Number)[rubber.moverTransform.startsWith("matrix3d") ? 12 : 4]);
+  assert(eased < 0 && eased > -20, rubber.moverTransform);
+  await wait(400);
+  assert(await releasedBy("#apps-surface > .home-motion"));
+  assert.notEqual(await page.locator("#apps-surface > .home-motion").evaluate(node => getComputedStyle(node).transitionDuration), "0s");
+  const refused = await wheelNow("#apps-surface", { deltaX: 120, deltaY: 1 });
+  assert.equal(refused.page, "desktop");
+  assert.equal(refused.animations, 0);
+  assert.equal(refused.ghosts, 0);
+  await wait(500);
+  assert.equal(await page.locator("body").getAttribute("data-page"), "desktop");
   assert.deepEqual(errors, []);
   const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: screenshotCount, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));

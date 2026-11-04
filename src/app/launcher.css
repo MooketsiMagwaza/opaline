@@ -196,7 +196,7 @@ body[data-rail="true"] .page-surface { margin-bottom: 16px; }
   min-width: 0;
   min-height: 0;
   justify-self: center;
-  transition: transform .2s var(--ease);
+  transition: transform .36s var(--ease), opacity .3s var(--ease);
 }
 
 /* ---------- glass ---------- */

@@ -53,7 +53,8 @@ export class PageGestureController {
   private paintPreview(now: number) {
     const elapsed = Math.min(64, now - (this.previewLastAt || now));
     this.previewLastAt = now;
-    this.previewShown += (this.previewTarget - this.previewShown) * (1 - Math.exp(-elapsed / 12));
+    // A touchpad reports in coarse steps; following the target with a short lag turns those steps into one continuous motion.
+    this.previewShown += (this.previewTarget - this.previewShown) * (1 - Math.exp(-elapsed / 26));
     if (Math.abs(this.previewTarget - this.previewShown) < .006) this.previewShown = this.previewTarget;
     this.handlers.preview(Math.sign(this.previewShown), Math.abs(this.previewShown), this.previewMode);
     this.previewFrame = this.previewShown === this.previewTarget ? undefined : requestAnimationFrame(time => this.paintPreview(time));
@@ -96,8 +97,8 @@ export class PageGestureController {
     const now = performance.now();
     const delta = (pinch ? -event.deltaY : event.deltaX) * (event.deltaMode === 1 ? 16 : 1);
 
-    // This branch intentionally runs before canNavigate. The page transition temporarily
-    // reports itself as unavailable, but the recognizer must still swallow the inertial tail.
+    // This branch intentionally runs before canNavigate: whatever the page is doing, the recognizer
+    // must still swallow the rest of a committed swipe's inertial tail.
     if (this.wheelLocked) {
       event.preventDefault();
       this.wheelLastAt = now;
