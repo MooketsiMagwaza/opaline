@@ -15,6 +15,12 @@ body[data-navigation="tray"] #header-left,
 body[data-navigation="tray"] #header-right { display: none; }
 body[data-navigation="taskbar"] #search-wrap,
 body[data-navigation="tray"] #search-wrap { grid-column: 2; }
+/* A header pill whose destinations are all hidden would render as an empty glass capsule: remove it and
+   keep the remaining items in their own columns (a hidden grid item lets the others auto-flow). */
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-left,
+body[data-shortcut-focus="false"][data-shortcut-settings="false"] #header-right { display: none; }
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #search-wrap { grid-column: 2; }
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-right { grid-column: 3; }
 body[data-navigation="taskbar"] #navigation-dock { display: flex; }
 body[data-navigation="tray"] #navigation-overflow,
 body:not([data-navigation="tray"])[data-navigation-overflow="true"] #navigation-overflow { display: block; }
