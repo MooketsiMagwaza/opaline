@@ -34,8 +34,15 @@ export function settleTimer(state: TimerState, now: number, durations: TimerDura
   return advanceTimer(state, durations, true, state.endsAt);
 }
 
-/** Completes the current phase now. Work is recorded; breaks simply return to Focus. */
+/** True once the phase has begun: it is running now, or paused with time already used. */
+export const hasStarted = (state: TimerState, now: number): boolean => state.endsAt !== null || remainingTime(state, now) < state.durationMs;
+
+/**
+ * Completes the current phase now. Work is recorded; breaks simply return to Focus.
+ * A work session that was never started has nothing to finish, so it cannot be recorded as completed.
+ */
 export function finishTimer(state: TimerState, now: number, durations: TimerDurations): TimerState {
+  if (state.phase === "work" && !hasStarted(state, now)) return state;
   return advanceTimer(state, durations, true, now);
 }
 

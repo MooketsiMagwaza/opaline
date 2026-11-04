@@ -5,6 +5,7 @@ import { onSettingsChange, settings, updateSettings } from "../settings/store";
 import { closeAmbient, handleFocusKey, initAmbient, isAmbientOpen, openAmbient, tickAmbient } from "./ambient";
 import {
   finishTimer,
+  hasStarted,
   newTimer,
   remainingTime,
   resetTimer,
@@ -68,9 +69,10 @@ function defaultNote(started: boolean): string {
 }
 
 function renderTimer() {
-  const remaining = remainingTime(timer, Date.now());
+  const now = Date.now();
+  const remaining = remainingTime(timer, now);
   const running = timer.endsAt !== null;
-  const started = running || remaining < timer.durationMs;
+  const started = hasStarted(timer, now);
   const paused = !running && started;
   const clock = clockText(remaining);
   const today = timer.dailySessions[localDateKey()] || 0;
@@ -92,7 +94,9 @@ function renderTimer() {
   const nextIsLong = (timer.completedSessions + 1) % 4 === 0;
   setText("focus-next", timer.phase === "work" ? nextIsLong ? "Long" : "Short" : "Focus");
   setText("focus-next-kind", timer.phase === "work" ? "break" : "session");
-  setText("focus-advance", Date.now() < advanceConfirmUntil ? "Confirm finish" : timer.phase === "work" ? "Finish session" : "Skip break");
+  setText("focus-advance", now < advanceConfirmUntil ? "Confirm finish" : timer.phase === "work" ? "Finish session" : "Skip break");
+  // A session that was never started has nothing to finish; skipping a break is always available.
+  byId<HTMLButtonElement>("focus-advance").disabled = timer.phase === "work" && !started;
 
   document.querySelectorAll<HTMLButtonElement>("[data-timer-phase]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.timerPhase === timer.phase)));
   document.querySelectorAll<HTMLButtonElement>("[data-focus-preset]").forEach(button => button.setAttribute("aria-pressed", String(Number(button.dataset.focusPreset) === settings().focusMinutes)));
@@ -139,6 +143,7 @@ export function handleFocusPageKey(event: KeyboardEvent): boolean {
 function advancePhase() {
   updateCompletion();
   const now = Date.now();
+  if (timer.phase === "work" && !hasStarted(timer, now)) return;
   if (timer.phase === "work" && now >= advanceConfirmUntil) {
     advanceConfirmUntil = now + 3000;
     message = "Finish this session now and count it as completed?";
@@ -156,11 +161,11 @@ function advancePhase() {
 export function initFocus(showFocus: () => void = () => {}) {
   openFocusPage = showFocus;
   initAmbient(() => {
-    const remaining = remainingTime(timer, Date.now());
-    const started = timer.endsAt !== null || remaining < timer.durationMs;
+    const now = Date.now();
+    const remaining = remainingTime(timer, now);
     return {
       intention,
-      timer: started ? `${PHASE_LABELS[timer.phase]} · ${clockText(remaining)}` : "",
+      timer: hasStarted(timer, now) ? `${PHASE_LABELS[timer.phase]} · ${clockText(remaining)}` : "",
     };
   });
   const intentionInput = byId<HTMLInputElement>("focus-intention");

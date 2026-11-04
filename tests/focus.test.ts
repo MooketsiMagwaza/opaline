@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { localDateKey, recentDays } from "../src/activity/charts";
-import { finishTimer, newTimer, remainingTime, restoreTimer, settleTimer, skipTimer, toggleTimer, type TimerDurations } from "../src/focus/timer";
+import { finishTimer, hasStarted, newTimer, remainingTime, restoreTimer, settleTimer, skipTimer, toggleTimer, type TimerDurations } from "../src/focus/timer";
 
 const durations: TimerDurations = { work: 25 * 60000, "short-break": 5 * 60000, "long-break": 15 * 60000 };
 
@@ -33,11 +33,33 @@ describe("focus timer", () => {
     expect(skipped.completedSessions).toBe(0);
     expect(skipped.dailySessions).toEqual({});
 
-    const finished = finishTimer(initial, now, durations);
+    const finished = finishTimer(toggleTimer(initial, now), now + 1000, durations);
     expect(finished.phase).toBe("short-break");
     expect(finished.completedSessions).toBe(1);
-    expect(finished.dailySessions[localDateKey(new Date(now))]).toBe(1);
+    expect(finished.dailySessions[localDateKey(new Date(now + 1000))]).toBe(1);
     expect(finishTimer(finished, now, durations).phase).toBe("work");
+  });
+
+  it("cannot record a session that was never started, but can once it is running or paused", () => {
+    const now = Date.parse("2026-11-02T09:00:00");
+    const initial = newTimer(durations);
+    expect(hasStarted(initial, now)).toBe(false);
+    expect(finishTimer(initial, now, durations)).toBe(initial);
+
+    const running = toggleTimer(initial, now);
+    expect(hasStarted(running, now)).toBe(true);
+    const paused = toggleTimer(running, now + 5000);
+    expect(hasStarted(paused, now + 60000)).toBe(true);
+    expect(finishTimer(paused, now + 60000, durations).completedSessions).toBe(1);
+  });
+
+  it("lets a break be skipped or finished without starting it, and never counts it", () => {
+    const now = Date.parse("2026-11-02T09:00:00");
+    const rest = newTimer(durations, "short-break");
+    for (const next of [finishTimer(rest, now, durations), skipTimer(rest, now, durations)]) {
+      expect(next.phase).toBe("work");
+      expect(next.completedSessions).toBe(0);
+    }
   });
 
   it("makes calendar days across month boundaries", () => {
