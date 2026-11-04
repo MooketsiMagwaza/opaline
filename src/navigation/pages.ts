@@ -9,6 +9,7 @@ import { initUsage, refreshUsage, renderUsage, setUsageQuery } from "../activity
 import { refreshFocus } from "../focus";
 import { refreshPanel } from "../settings/panel";
 import { itemPicker } from "../grid/item-picker";
+import { initTray } from "./tray";
 import { clearPreview, endTransition, motionAllowed, playCommit, showPreview, type GestureMode, type GestureSource } from "./gesture-motion";
 
 let current = "desktop";
@@ -200,6 +201,7 @@ export function initPages() {
     if (tray) tray.open = false;
   }));
   byId("home-dock").addEventListener("click", () => { homeScreen = 0; show("desktop"); });
+  initTray();
   initUsage();
   onWorkspacesChange(() => {
     if (homeScreen > workspaces().length) { homeScreen = 0; show("desktop"); }

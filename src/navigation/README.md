@@ -7,6 +7,8 @@ Owns page routing, Home-screen routing, keyboard recovery paths, visual destinat
 - `pages.ts` is the page controller. It renders All apps and named Home screens, synchronises search, and exposes `show`, `cycle`,
   `cycleHome`, `selectPage`, `previewGesture` and `completeGesture`.
 - `gestures.ts` contains `PageGestureController`, a single recogniser for precision-touchpad wheel input and two-touch pointer input.
+- `gesture-motion.ts` owns what a gesture looks like: the live preview while it is held, and the commit animation when it lands.
+- `tray.ts` makes the Dropdown Tray behave as a dropdown (hover to open, path-aware close, click to pin, outside press or Escape to dismiss).
 - `navigation.css` owns Split Header, Navigation Taskbar, Dropdown Tray, overflow and applied visibility rules.
 
 ## Gesture state machine
@@ -23,9 +25,27 @@ stateDiagram-v2
   Previewing --> Idle: 120 ms quiet / cancel
 ```
 
-The committed-tail branch runs before page availability checks. This is intentional: view transitions temporarily block navigation, but
-their incoming inertial wheel events still belong to the already-committed swipe and must be consumed. `pages.ts` also clears the transition
-lock after at most 280 ms because WebView2 can otherwise leave `ViewTransition.finished` pending until pointer movement requests a frame.
+The committed-tail branch runs before page availability checks. This is intentional: the incoming inertial wheel events of a swipe that
+already navigated still belong to it and must be consumed rather than start a second page change. Motion in flight never blocks the next
+gesture: a new preview or navigation ends the running transition first (`endTransition()`), and a 1.5 s safety timer clears a stalled one.
+
+## Gesture motion
+
+The preview is driven only by three custom properties on the element being moved — `--gesture-dir` (±1), `--gesture-p` (eased 0..1) and
+`--gesture-fade` — and the CSS in `navigation.css` maps them to `transform` and `opacity`. Nothing else animates while a gesture is held, so
+it stays on the compositor and cannot clip or relayout.
+
+- **Swipe** slides only the Home content (`.home-motion`) over stationary glass, 56 px at full progress. Home with a single screen
+  rubber-bands (resistance 0.22) and springs back instead of previewing a page that does not exist.
+- **Pinch** zooms the whole page surface (±7.5 %) with a fade, then cross-zooms into the destination: the outgoing page scales away while
+  the incoming one scales up from slightly small.
+- A floating cue (`#gesture-cue`) names the destination while the gesture is held.
+- On commit the app navigates **immediately** and `playCommit` cross-animates a ghost clone of the outgoing page with the Web Animations
+  API (named `gesture-out`/`gesture-in`), so the real page is always the live, interactive one. The clone keeps its ids because the
+  stylesheet is id-keyed, is appended last in `#shell` so `getElementById` still finds the real page, and a swipe ghost hides its glass so
+  only the content moves.
+- View Transitions are deliberately not used: they morph geometry, clip differently and can stall in WebView2 until the pointer moves.
+- Reduced motion and `data-anim="false"` remove the movement but keep the destination cue.
 
 ## Routing rules
 

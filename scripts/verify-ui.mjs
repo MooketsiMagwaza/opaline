@@ -481,6 +481,9 @@ try {
   assert(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelectorAll("#grid .tile").length >= 8));
   assert.equal(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelector("#grid .label")?.textContent), await page.locator("#grid .label").first().textContent());
   // Staging runs on every slider tick: the live preview must update in place, never reload its document.
+  // The live preview is its own document: let it finish loading before ticking, or the tick is (correctly) deferred to its load.
+  await page.waitForFunction(() => { const frame = document.querySelector("#settings-live-preview iframe"); return frame?.contentDocument?.readyState === "complete" && !!frame.contentDocument.querySelector("#grid .tile"); });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const sliderTick = await page.evaluate(async () => {
     const live = document.querySelector("#settings-live-preview iframe");
     let rewrites = 0;
@@ -550,6 +553,8 @@ try {
   const trayBox = await page.locator(".navigation-tray").boundingBox();
   const trayTriggerBox = await page.locator("#navigation-overflow summary").boundingBox();
   assert(trayBox && trayTriggerBox && trayBox.y >= 0 && trayBox.y + trayBox.height < trayTriggerBox.y, JSON.stringify({ trayBox, trayTriggerBox }));
+  // Sampled once layout has settled: a single read right after the tray opens once caught the box 10 px off mid-transition.
+  await page.waitForFunction(() => { const box = document.getElementById("search-wrap").getBoundingClientRect(); return Math.abs(box.x + box.width / 2 - 640) < 2; }, null, { timeout: 1500 });
   const searchBox = await page.locator("#search-wrap").boundingBox();
   assert(searchBox && Math.abs(searchBox.x + searchBox.width / 2 - 640) < 2, JSON.stringify(searchBox));
   await shot("settings-navigation-variants.png");
@@ -663,6 +668,140 @@ try {
   await page.waitForSelector("#app-list-surface:visible");
   assert.equal(await page.locator("body").getAttribute("data-page"), "all-apps");
   await page.waitForFunction(() => document.activeElement?.id === "search");
+  // Hover intent: popups follow the pointer's path instead of closing on it, and neighbouring triggers warm up together.
+  // Real mouse paths, because the point is how a hand actually travels; moves are chunked so each pointermove is a real event.
+  {
+    const centre = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    const displayed = (locator) => locator.evaluate(node => getComputedStyle(node).display !== "none");
+    await page.keyboard.press("Alt+1");
+    await page.waitForSelector("#apps-surface:visible");
+    await wait(600); // let the page finish moving in: the paths below are aimed at where things settle
+    // The stage clips its oversize backdrop; it must not be scrollable, or a focus could slide the whole UI sideways.
+    assert.deepEqual(await page.evaluate(() => { const stage = document.getElementById("stage"); stage.scrollLeft = 30; stage.scrollTop = 30; return [stage.scrollLeft, stage.scrollTop]; }), [0, 0]);
+
+    // Context-menu submenus: a diagonal path across a sibling row keeps the submenu, switching is instant, leaving closes it.
+    const firstTile = page.locator("#grid .item-tile").first();
+    await page.mouse.move(centre(await firstTile.boundingBox()).x, centre(await firstTile.boundingBox()).y);
+    await firstTile.click({ button: "right" });
+    const triggers = page.locator("#menu > .menu-list > .has-submenu");
+    assert.equal(await triggers.count(), 2);
+    const rowA = await triggers.nth(0).locator(":scope > .menu-item").boundingBox();
+    const rowB = await triggers.nth(1).locator(":scope > .menu-item").boundingBox();
+    const submenuA = triggers.nth(0).locator(":scope > .submenu");
+    const submenuB = triggers.nth(1).locator(":scope > .submenu");
+    await page.mouse.move(centre(rowA).x, centre(rowA).y, { steps: 4 });
+    await page.waitForFunction(() => [...document.querySelectorAll(".has-submenu > .submenu")].some(node => getComputedStyle(node).display !== "none"));
+    const boxA = await submenuA.boundingBox();
+    const inside = { x: boxA.x + 40, y: boxA.y + boxA.height - 14 };
+    await page.mouse.move(inside.x, inside.y, { steps: 30 }); // down and to the right, across the row below
+    await wait(80);
+    assert(await displayed(submenuA), "the submenu closed while the pointer was on its way to it");
+    assert(await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest(".submenu"), [inside.x, inside.y]));
+    await page.mouse.move(centre(rowB).x, centre(rowA).y, { steps: 3 });
+    await page.mouse.move(centre(rowB).x, centre(rowB).y, { steps: 10 });
+    await page.waitForFunction(() => [...document.querySelectorAll(".has-submenu")][1] && getComputedStyle(document.querySelectorAll(".has-submenu")[1].querySelector(":scope > .submenu")).display !== "none", null, { polling: 16, timeout: 600 });
+    assert(!(await displayed(submenuA)), "only one submenu stays open");
+    await page.mouse.move(1100, 60, { steps: 12 });
+    await wait(450);
+    assert(!(await displayed(submenuB)) && !(await displayed(submenuA)));
+    assert(!(await page.locator("#menu").evaluate(node => node.hidden)), "leaving a submenu must not close the menu");
+    await page.keyboard.press("Escape");
+
+    // Taskbar preview: it stays on the hovered app while the pointer crosses the next icon on the way to it, and still
+    // switches at once when the pointer moves along the dock.
+    const dock = page.locator("#rail .dock-item");
+    const iconOne = await dock.nth(1).boundingBox();
+    await page.mouse.move(centre(iconOne).x, centre(iconOne).y, { steps: 5 });
+    await page.waitForSelector("#preview:not([hidden])");
+    const previewTitle = () => page.evaluate(() => document.querySelector("#preview .preview-title")?.firstChild?.textContent ?? null);
+    const hovered = await previewTitle();
+    const card = await page.locator("#preview").boundingBox();
+    const neighbour = await dock.nth(2).boundingBox();
+    const from = { x: iconOne.x + iconOne.width - 2, y: iconOne.y + iconOne.height - 3 };
+    const to = { x: Math.min(neighbour.x + neighbour.width * 1.4, card.x + card.width - 10), y: card.y + card.height - 6 };
+    const crossesNeighbour = Array.from({ length: 41 }, (_, step) => ({ x: from.x + (to.x - from.x) * step / 40, y: from.y + (to.y - from.y) * step / 40 }))
+      .some(point => point.x >= neighbour.x && point.x <= neighbour.x + neighbour.width && point.y >= neighbour.y && point.y <= neighbour.y + neighbour.height);
+    assert(crossesNeighbour, "the test path must really cross the next icon");
+    await page.mouse.move(from.x, from.y, { steps: 3 });
+    await page.mouse.move(to.x, to.y, { steps: 14 });
+    await wait(500);
+    assert.equal(await previewTitle(), hovered, "the preview was taken over by an icon on the way to it");
+    await page.mouse.move(centre(iconOne).x, centre(iconOne).y, { steps: 6 });
+    await wait(300);
+    await page.mouse.move(centre(neighbour).x, centre(neighbour).y, { steps: 8 });
+    await wait(120);
+    assert.notEqual(await previewTitle(), hovered, "moving along the dock must switch to the neighbour");
+    await page.mouse.move(640, 300, { steps: 10 });
+    await wait(500);
+    assert(await page.locator("#preview").evaluate(node => node.hidden));
+
+    // Pane peek: only the first one waits; sweeping to the next pane shows it at once.
+    const panes = page.locator("#grid .pane-tile");
+    const paneOne = await panes.nth(0).boundingBox();
+    const paneTwo = await panes.nth(1).boundingBox();
+    const paneName = (index) => panes.nth(index).locator(".label").textContent();
+    const peekFor = (name) => page.waitForFunction(expected => { const peek = document.getElementById("tile-peek"); return !peek.hidden && peek.querySelector(".peek-title")?.textContent === expected; }, name, { timeout: 1500, polling: 16 });
+    await page.mouse.move(640, 24, { steps: 6 });
+    await wait(1000);
+    await page.mouse.move(centre(paneOne).x, centre(paneOne).y, { steps: 4 });
+    const coldStart = Date.now();
+    await peekFor(await paneName(0));
+    const coldMs = Date.now() - coldStart;
+    await page.mouse.move(centre(paneTwo).x, centre(paneTwo).y, { steps: 6 });
+    const warmStart = Date.now();
+    await peekFor(await paneName(1));
+    const warmMs = Date.now() - warmStart;
+    assert(coldMs > 400 && warmMs < 300, JSON.stringify({ coldMs, warmMs }));
+    await page.mouse.move(640, 700, { steps: 8 });
+    await wait(700);
+
+    // Navigation tray: opens on resting, survives a diagonal path, closes on leaving, pins on click, and dismisses
+    // on an outside press or Escape (which must not also close the launcher).
+    await page.evaluate(() => { const saved = JSON.parse(localStorage.getItem("opaline.settings") || "{}"); localStorage.setItem("opaline.settings", JSON.stringify({ ...saved, navigationMode: "tray", compactBar: false, defaultPage: "home" })); });
+    await page.reload();
+    await page.waitForSelector("#grid .tile");
+    await page.keyboard.press("Alt+1");
+    await page.waitForSelector("#apps-surface:visible");
+    await wait(600);
+    const trayOpen = () => page.evaluate(() => document.getElementById("navigation-overflow").open);
+    const summaryBox = await page.locator("#navigation-overflow summary").boundingBox();
+    assert(!(await trayOpen()));
+    await page.mouse.move(centre(summaryBox).x, centre(summaryBox).y, { steps: 4 });
+    await wait(40);
+    assert(!(await trayOpen()), "hover must wait for a moment of intent");
+    await page.waitForFunction(() => document.getElementById("navigation-overflow").open, null, { timeout: 800 });
+    const listBox = await page.locator("#navigation-overflow .navigation-tray").boundingBox();
+    await page.mouse.move(listBox.x + listBox.width - 14, listBox.y + 14, { steps: 24 });
+    await wait(500);
+    assert(await trayOpen(), "the tray closed while the pointer was on its way to the list");
+    await page.mouse.move(200, 120, { steps: 12 });
+    await wait(500);
+    assert(!(await trayOpen()), "the tray must close once the pointer leaves for elsewhere");
+    await page.mouse.move(centre(summaryBox).x, centre(summaryBox).y, { steps: 4 });
+    await page.waitForFunction(() => document.getElementById("navigation-overflow").open, null, { timeout: 800 });
+    await page.mouse.down(); await page.mouse.up();
+    await page.mouse.move(200, 120, { steps: 12 });
+    await wait(600);
+    assert(await trayOpen(), "a click must pin a hover-opened tray");
+    await page.mouse.click(200, 400);
+    await wait(150);
+    assert(!(await trayOpen()), "a press outside must dismiss it");
+    await page.locator("#navigation-overflow summary").click();
+    assert(await trayOpen());
+    const hidesBefore = await page.evaluate(() => window.__demoCalls.filter(command => command === "hide").length);
+    await page.keyboard.press("Escape");
+    await wait(300);
+    assert(!(await trayOpen()), "Escape must close the tray first");
+    assert.equal(await page.evaluate(() => window.__demoCalls.filter(command => command === "hide").length), hidesBefore, "Escape must not also close the launcher");
+    await page.locator("#navigation-overflow summary").click();
+    await page.locator("#navigation-overflow .navigation-tray button[data-page='focus']").click();
+    await wait(300);
+    assert(!(await trayOpen()));
+    assert.equal(await page.locator("body").getAttribute("data-page"), "focus");
+    await page.evaluate(() => { const saved = JSON.parse(localStorage.getItem("opaline.settings") || "{}"); localStorage.setItem("opaline.settings", JSON.stringify({ ...saved, navigationMode: "split", defaultPage: "all-apps" })); });
+    await page.reload();
+    await page.waitForSelector("#app-list-surface:visible");
+  }
   // Gesture motion, last because it removes the Home screens the earlier checks rely on. Everything here goes through real
   // wheel events and the real recogniser; calling the page modules directly would create a second copy of their state.
   const releasedBy = (selector) => page.evaluate((target) => !document.querySelector(`${target}[data-gesture-preview]`), selector);

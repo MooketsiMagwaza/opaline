@@ -1,4 +1,5 @@
 import { byId, clamp, el } from "./dom";
+import { Closer, HoverGroup, pointer, pointerIsMoving } from "./hover-intent";
 
 export type MenuEntry = {
   label?: string;
@@ -12,9 +13,43 @@ export type MenuEntry = {
 const menu = () => byId("menu");
 let returnFocus: HTMLElement | null = null;
 
+// Submenus open on hover intent, not CSS :hover: a diagonal path to one is not cut by the rows it crosses, and moving from
+// one submenu row to the next is instant once one is open. Menus nest one level, so one open submenu at a time is enough.
+const submenuGroup = new HoverGroup(110);
+const submenuCloser = new Closer(() => setOpen(null), 180);
+let openRow: HTMLElement | null = null;
+let intentTimer: ReturnType<typeof setTimeout> | undefined;
+
+function setOpen(next: HTMLElement | null) {
+  if (openRow === next) return;
+  openRow?.classList.remove("open");
+  if (openRow) submenuGroup.closed();
+  openRow = next;
+  if (next) { next.classList.add("open"); submenuGroup.opened(); }
+}
+
+function resetHover() {
+  clearTimeout(intentTimer);
+  submenuCloser.stay();
+  setOpen(null);
+}
+
+/** Moves the open submenu to `target` once the pointer's intent is clear. */
+function decideSubmenu(target: HTMLElement) {
+  clearTimeout(intentTimer);
+  const decide = () => {
+    // Still on its way to the open submenu across this row: keep that one, and look again when the pointer settles.
+    if (openRow && openRow !== target && submenuCloser.heading(pointer) && pointerIsMoving()) { intentTimer = setTimeout(decide, 140); return; }
+    submenuCloser.stay();
+    setOpen(target);
+  };
+  intentTimer = setTimeout(decide, openRow ? 0 : submenuGroup.delay);
+}
+
 export const isMenuOpen = (): boolean => !menu().hidden;
 
 export function closeMenu() {
+  resetHover();
   const wasOpen = isMenuOpen();
   menu().hidden = true;
   menu().replaceChildren();
@@ -41,6 +76,16 @@ function build(entries: MenuEntry[], submenu = false): HTMLElement {
       row.setAttribute("aria-haspopup", "menu");
       row.append(el("span", "chevron", ["›"]));
       const wrapper = el("div", "has-submenu", [row, build(entry.items, true)]);
+      wrapper.addEventListener("pointerenter", (event) => {
+        if (event.pointerType !== "mouse") return;
+        if (openRow === wrapper) { clearTimeout(intentTimer); submenuCloser.stay(); } else decideSubmenu(wrapper);
+      });
+      wrapper.addEventListener("pointerleave", (event) => {
+        if (event.pointerType !== "mouse") return;
+        clearTimeout(intentTimer);
+        const submenu = wrapper.querySelector(".submenu");
+        if (openRow === wrapper && submenu) submenuCloser.leave({ x: event.clientX, y: event.clientY }, submenu.getBoundingClientRect());
+      });
       row.addEventListener("click", () => wrapper.querySelector<HTMLButtonElement>(".submenu .menu-item:not(:disabled)")?.focus());
       list.append(wrapper);
     } else {
@@ -55,6 +100,7 @@ function build(entries: MenuEntry[], submenu = false): HTMLElement {
 }
 
 export function showMenu(x: number, y: number, entries: MenuEntry[]) {
+  resetHover();
   returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const container = menu();
   container.replaceChildren(build(entries));

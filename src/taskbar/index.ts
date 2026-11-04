@@ -1,6 +1,7 @@
 import { api, type RailItem, type WindowInfo } from "../core/api";
 import { byId, clamp, el } from "../core/dom";
 import { iconElement, windowIconElement, forgetClosedWindowIcons } from "../core/icons";
+import { Closer, pointer, pointerIsMoving } from "../core/hover-intent";
 import { settings } from "../settings/store";
 import { toggleBar } from "../navigation/pages";
 
@@ -8,6 +9,10 @@ const REFRESH_MS = 3000;
 const THUMBNAIL_TTL_MS = 5000;
 const SHOW_DELAY_MS = 35;
 const HIDE_DELAY_MS = 220;
+
+// Leaving an icon for the preview closes it only if the pointer is not on its way there, and an icon crossed on that
+// path does not steal the preview (see core/hover-intent).
+const previewCloser = new Closer(() => hidePreview(), HIDE_DELAY_MS);
 
 let items: RailItem[] = [];
 let signature = "";
@@ -105,7 +110,7 @@ function dockButton(item: RailItem, index: number): HTMLElement {
 
   button.addEventListener("click", () => activate(item));
   button.addEventListener("pointerenter", () => schedulePreview(item, button));
-  button.addEventListener("pointerleave", scheduleHide);
+  button.addEventListener("pointerleave", leaveDock);
   button.addEventListener("focus", () => schedulePreview(item, button));
   button.addEventListener("blur", scheduleHide);
   return button;
@@ -160,6 +165,14 @@ function schedulePreview(item: RailItem, anchor: HTMLElement) {
   window.clearTimeout(hideTimer);
   if (!settings().railPreviews) return;
 
+  // On its way to the open preview across this icon: keep that preview, and switch only if the pointer settles here.
+  if (!byId("preview").hidden && previewCloser.heading(pointer) && pointerIsMoving()) {
+    window.clearTimeout(showTimer);
+    showTimer = window.setTimeout(() => { if (anchor.matches(":hover")) schedulePreview(item, anchor); }, 140);
+    return;
+  }
+  previewCloser.stay();
+
   // moving between icons swaps the preview at once; the first one waits a beat
   const started = performance.now();
   const cached = item.windows.length > 0 && item.windows.every((window) => window.minimized || thumbnails.get(window.hwnd)?.url);
@@ -179,6 +192,13 @@ function scheduleHide() {
   window.clearTimeout(showTimer);
   window.clearTimeout(hideTimer);
   hideTimer = window.setTimeout(() => hidePreview(), HIDE_DELAY_MS);
+}
+
+function leaveDock(event: PointerEvent) {
+  const card = byId("preview");
+  if (card.hidden || event.pointerType !== "mouse") { scheduleHide(); return; }
+  window.clearTimeout(showTimer);
+  previewCloser.leave({ x: event.clientX, y: event.clientY }, card.getBoundingClientRect());
 }
 
 function showPreview(item: RailItem, anchor: HTMLElement) {
@@ -207,6 +227,7 @@ function showPreview(item: RailItem, anchor: HTMLElement) {
 export function hidePreview(immediately = false) {
   window.clearTimeout(showTimer);
   window.clearTimeout(hideTimer);
+  previewCloser.stay();
 
   const card = byId("preview");
   if (immediately || !card.hidden) {
@@ -245,7 +266,7 @@ export function initRail() {
     event.preventDefault();
   }, { passive: false });
 
-  preview.addEventListener("pointerenter", () => window.clearTimeout(hideTimer));
+  preview.addEventListener("pointerenter", () => { window.clearTimeout(hideTimer); previewCloser.stay(); });
   preview.addEventListener("pointerleave", scheduleHide);
 
   rail.addEventListener("pointermove", (event) => {

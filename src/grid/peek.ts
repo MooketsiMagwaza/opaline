@@ -1,14 +1,19 @@
 import type { Item } from "../core/api";
 import { byId, clamp, el } from "../core/dom";
 import { iconElement } from "../core/icons";
+import { HoverGroup } from "../core/hover-intent";
 
+// Only the first peek waits half a second; sweeping across neighbouring tiles then shows each one at once.
+const peeks = new HoverGroup(500);
 let timer: number | undefined;
 let generation = 0;
+let shown = false;
 
 export function hidePeek() {
   window.clearTimeout(timer);
   generation++;
   byId("tile-peek").hidden = true;
+  if (shown) { shown = false; peeks.closed(); }
 }
 
 /** Adds a delayed, read-only folder preview without changing the grid layout. */
@@ -34,6 +39,8 @@ export function wirePeek(tile: HTMLElement, title: string, readItems: () => Prom
         ...(hasMore ? [el("span", "peek-more", ["More inside…"])] : []),
       );
       peek.hidden = false;
+      shown = true;
+      peeks.opened();
 
       const anchor = tile.getBoundingClientRect();
       const box = peek.getBoundingClientRect();
@@ -42,7 +49,7 @@ export function wirePeek(tile: HTMLElement, title: string, readItems: () => Prom
     }, delay);
   };
 
-  tile.addEventListener("pointerenter", () => show(500));
+  tile.addEventListener("pointerenter", () => show(peeks.delay));
   tile.addEventListener("pointerleave", hidePeek);
   tile.addEventListener("focus", () => show(0));
   tile.addEventListener("blur", hidePeek);

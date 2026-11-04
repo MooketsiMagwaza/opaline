@@ -15,8 +15,12 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Added a dependency-free build-size report and frontend size budget.
 - Added a Navigation setting that lets a normal Opaline open start on Home or All apps; choosing All apps focuses Search on open.
 - Added Desktop, Opaline Aero and locally optimised custom Opaline backgrounds. Frutiger Aero includes its own original landscape.
+- Added hover-intent behaviour shared by submenus, the taskbar preview, the pane peek and the navigation tray: popups stay open while the pointer travels toward them along a diagonal path (a safe-triangle and distance test), and once one popup is open its neighbours open immediately instead of each waiting out the hover delay.
+- Made the Dropdown Tray behave as a dropdown: it opens when the pointer rests on it, closes when the pointer leaves for elsewhere, stays open after a click until dismissed, and closes on an outside press or Escape (the first Escape no longer also closes the launcher).
 
 ### Changed
+- Reworked swipe and pinch motion. A swipe now slides only the Home content over stationary glass, with nothing clipping at the edges; a pinch zooms the page and cross-zooms into the destination. Both show the destination while held, commit with an overlapped out/in animation, no longer block the next gesture while they play, and honour reduced motion. Single-screen swipes rubber-band back instead of previewing a page that does not exist.
+- Raised the raw frontend code budget from 180 to 190 KiB for the gesture-motion and hover-intent systems; the 60 KiB gzip budget is unchanged (currently 52.2 KiB).
 - Completed the TypeScript feature-folder migration: the source root now contains documentation only, while app composition, shared core, Activity, Appearance, Focus, Grid/Home, Navigation, Settings and Taskbar own their runtime modules. Activity and Taskbar styling moved out of the shell stylesheet.
 - Expanded feature documentation with public functions, state ownership, dependencies, invariants, extension points and Mermaid UML/flow/state/sequence diagrams.
 - Reorganised Settings into Appearance, Home layout, Navigation and Taskbar sections so visual presentation, Home ordering, Opaline destinations and the Windows app mirror no longer overlap.
@@ -29,7 +33,8 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 ### Fixed
 - Replaced ghosted generic preset thumbnails and dot-box diagrams with a shared miniature of the actual launcher layout using current memory-only backdrop, app names, loaded app/taskbar icons and real configuration state.
 - Expanded the six built-in presets into distinct complete material profiles. Windows Mica now uses a flatter, mostly opaque WinUI 3-inspired treatment instead of sharing Opaline Frost's material.
-- Changed precision-touchpad recognition to commit once, consume the complete inertial tail and re-arm after a bounded quiet period. A 280 ms safety release prevents a stalled WebView2 View Transition from waiting for pointer movement; physical owner-device acceptance remains open.
+- Changed precision-touchpad recognition to commit once, consume the complete inertial tail and re-arm after a bounded quiet period. Page changes no longer use View Transitions (which could stall in WebView2 until the pointer moved); physical owner-device acceptance remains open.
+- Fixed the launcher stage being scrollable: its oversize blurred backdrop let a focus or scroll-into-view slide the whole UI sideways by a few pixels. The stage now clips instead.
 - Inlined the already-loaded stylesheet into isolated Settings simulations, eliminating repeated preview stylesheet requests and transient black frames.
 - Fixed Space on a focused Focus button (Reset, Finish, duration presets, phase tabs) toggling the timer instead of activating that button.
 - Fixed Settings Done reverting a change made while Settings was open, such as Ctrl+B; Done now applies only the edits staged in Settings.

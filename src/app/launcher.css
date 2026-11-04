@@ -74,6 +74,8 @@ button {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  /* The oversize blurred backdrop makes this scrollable, and focus or scroll-into-view can then slide the whole UI sideways. */
+  overflow: clip;
   transition: opacity 0.3s var(--ease), transform 0.36s var(--ease);
 }
 
@@ -903,7 +905,7 @@ input[type="color"] {
 .has-submenu::after { content: ""; position: absolute; top: 0; bottom: 0; right: -8px; width: 8px; }
 #menu.flip .has-submenu::after { right: auto; left: -8px; }
 .has-submenu > .menu-item { width: 100%; }
-.has-submenu:hover > .submenu,
+.has-submenu.open > .submenu,
 .has-submenu:focus-within > .submenu {
   display: flex;
 }

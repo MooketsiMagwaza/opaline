@@ -5,7 +5,9 @@ import { gzipSync } from "node:zlib";
 import { readFileSync } from "node:fs";
 
 const root = new URL("..", import.meta.url).pathname.replace(/^\/(?:([A-Za-z]:))/, "$1");
-const codeBudget = { raw: 180 * 1024, gzip: 60 * 1024 };
+// Raw was 180 KiB until the gesture motion system and the shared hover-intent module landed (about 11 KiB of deliberate
+// behaviour); gzip, which is what the user's machine actually pays for, is unchanged. Raise it only with a stated reason.
+const codeBudget = { raw: 190 * 1024, gzip: 60 * 1024 };
 const packageBudget = 420 * 1024;
 
 function filesBelow(path) {
