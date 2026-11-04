@@ -84,23 +84,28 @@ await page.route(/\/src\/app\/launcher\.ts(?:\?.*)?$/, async (route) => {
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();
-// The wheel recogniser cancels a gesture preview after 120 ms of silence, which a Playwright round trip can
-// outlast. Dispatch the event and sample the preview in the page, on the first frame that shows it.
-const wheelPreview = (selector, init) => page.evaluate(([target, eventInit]) => new Promise((resolve, reject) => {
+// The wheel recogniser cancels a gesture preview after 120 ms without input, which a Playwright round trip (or one
+// slow frame) can outlast. Stream a few small events the way a trackpad does and sample the preview in the page,
+// on the first frame that shows it. `maxEvents` keeps the total below the commit threshold so nothing navigates.
+const wheelPreview = (selector, { maxEvents, ...eventInit }) => page.evaluate(([target, count, init]) => new Promise((resolve, reject) => {
   const surface = document.querySelector(target);
-  surface.dispatchEvent(new WheelEvent("wheel", { ...eventInit, deltaMode: 0, bubbles: true, cancelable: true }));
+  let sent = 0;
+  const send = () => { if (sent < count) { sent++; surface.dispatchEvent(new WheelEvent("wheel", { ...init, deltaMode: 0, bubbles: true, cancelable: true })); } };
+  const feed = setInterval(send, 16);
+  send();
   const started = performance.now();
   const sample = () => {
     const cue = document.getElementById("gesture-cue");
     if (surface.querySelector(":scope > .home-motion")?.getAttribute("data-gesture-preview") === "true") {
+      clearInterval(feed);
       resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, transform: getComputedStyle(surface).transform });
       return;
     }
-    if (performance.now() - started > 400) { reject(new Error("The gesture preview never appeared.")); return; }
+    if (performance.now() - started > 2000) { clearInterval(feed); reject(new Error("The gesture preview never appeared.")); return; }
     requestAnimationFrame(sample);
   };
   requestAnimationFrame(sample);
-}), [selector, init]);
+}), [selector, maxEvents, eventInit]);
 const homeNamed = (name) => page.waitForFunction(expected => {
   const surface = document.getElementById("workspace-surface");
   return !surface.hidden && document.getElementById("workspace-title").textContent === expected;
@@ -218,7 +223,7 @@ try {
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await wait(600);
-  const swipePreview = await wheelPreview("#apps-surface", { deltaX: 22, deltaY: 0 });
+  const swipePreview = await wheelPreview("#apps-surface", { deltaX: 5, deltaY: 0, maxEvents: 7 }); // at most 35 of the 42 px threshold
   assert(swipePreview.cueVisible);
   assert.equal(swipePreview.transform, "none");
   await wait(400);
@@ -253,7 +258,7 @@ try {
   assert(await visible("#apps-surface"));
   await page.keyboard.press("Alt+1");
   await wait(600);
-  const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 20 });
+  const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 5, maxEvents: 8 }); // at most 40 of the 56 px threshold
   assert(pinchPreview.cueVisible);
   assert.equal(pinchPreview.cueText, "Settings");
   assert.equal(pinchPreview.transform, "none");
