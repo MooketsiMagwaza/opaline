@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Opaline</title>
-    <link rel="stylesheet" href="/src/launcher.css" />
-    <script type="module" src="/src/launcher.ts"></script>
+    <link rel="stylesheet" href="/src/app/launcher.css" />
+    <script type="module" src="/src/app/launcher.ts"></script>
   </head>
 
   <body data-style="frost" data-canvas="frosted" data-labels="true" data-rail="false" data-anim="true">
@@ -16,8 +16,8 @@
       <div id="shell" tabindex="-1">
         <header id="top">
           <nav id="header-left" class="header-nav glass" aria-label="Apps and screen time">
-            <button type="button" class="orb" data-page="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
-            <button type="button" class="orb" data-page="screen-time" title="Screen time" aria-label="Screen time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"/><rect x="5" y="11" width="3.5" height="6" rx=".8"/><rect x="10.25" y="7" width="3.5" height="10" rx=".8"/><rect x="15.5" y="4" width="3.5" height="13" rx=".8"/></svg></button>
+            <button type="button" class="orb" data-page="all-apps" data-nav-shortcut="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
+            <button type="button" class="orb" data-page="screen-time" data-nav-shortcut="screen-time" title="Screen time" aria-label="Screen time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"/><rect x="5" y="11" width="3.5" height="6" rx=".8"/><rect x="10.25" y="7" width="3.5" height="10" rx=".8"/><rect x="15.5" y="4" width="3.5" height="13" rx=".8"/></svg></button>
           </nav>
           <div class="search glass" id="search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -28,8 +28,8 @@
           </div>
 
           <nav id="header-right" class="header-nav glass" aria-label="Focus and settings">
-            <button type="button" class="orb" data-page="focus" title="Focus" aria-label="Focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></button>
-            <button type="button" class="orb" data-page="settings" id="settings-button" title="Settings" aria-label="Settings">
+            <button type="button" class="orb" data-page="focus" data-nav-shortcut="focus" title="Focus" aria-label="Focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            <button type="button" class="orb" data-page="settings" data-nav-shortcut="settings" id="settings-button" title="Settings" aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
                 <circle cx="16" cy="7" r="2" />
@@ -76,15 +76,57 @@
         </main>
 
         <main id="focus-surface" class="glass page-surface secondary-surface" aria-label="Focus" hidden>
-          <header class="page-heading"><div><span class="page-kicker">One thing at a time</span><h1>Focus</h1></div><span id="focus-completed" class="page-count">0 today</span></header>
-          <div class="page-scroll">
-            <section class="focus-workbench" aria-label="Pomodoro timer"><div class="segmented timer-phases" role="group" aria-label="Pomodoro phase"><button type="button" data-timer-phase="work">Focus</button><button type="button" data-timer-phase="short-break">Short break</button><button type="button" data-timer-phase="long-break">Long break</button></div><div class="focus-session"><div id="focus-progress" class="timer-ring"><div><span id="focus-phase" class="page-kicker">Focus</span><strong id="focus-clock" aria-live="off">25:00</strong></div></div><div class="focus-copy"><h2>One clear session.</h2><p id="focus-note" class="row-hint" role="status"></p><div class="focus-buttons"><button id="focus-start" type="button" class="chip primary">Start</button><button id="focus-reset" type="button" class="chip">Reset session</button></div></div></div></section>
-            <div class="focus-modes"><button id="focus-zen" type="button" class="mode-card"><span class="mode-glyph" aria-hidden="true">✧</span><span><strong>Zen mode</strong><small>Quiet quotes for a clearer mind</small></span><span class="mode-arrow" aria-hidden="true">↗</span></button><button id="focus-saver" type="button" class="mode-card"><span class="mode-glyph" aria-hidden="true">◷</span><span><strong>Screen saver</strong><small>A calm clock until you return</small></span><span class="mode-arrow" aria-hidden="true">↗</span></button></div>
-            <div id="focus-chart"></div>
+          <header class="page-heading focus-heading">
+            <div><span class="page-kicker">One thing at a time</span><h1>Focus</h1></div>
+            <span id="focus-completed" class="page-count">0 today</span>
+          </header>
+          <div class="page-scroll focus-scroll">
+            <section class="focus-hero" aria-label="Focus timer">
+              <div class="focus-intention-row">
+                <label for="focus-intention"><span>What are you focusing on?</span><input id="focus-intention" type="text" maxlength="100" autocomplete="off" placeholder="Give this session a clear intention" /></label>
+                <button id="focus-intention-clear" type="button" class="chip subtle" aria-label="Clear focus intention">Clear</button>
+              </div>
+              <div class="segmented timer-phases" role="group" aria-label="Timer phase"><button type="button" data-timer-phase="work">Focus</button><button type="button" data-timer-phase="short-break">Short break</button><button type="button" data-timer-phase="long-break">Long break</button></div>
+              <div class="focus-session">
+                <div id="focus-progress" class="timer-ring" aria-label="Session progress"><div><span id="focus-phase" class="page-kicker">Focus</span><strong id="focus-clock" aria-live="off">25:00</strong><span id="focus-state">Ready when you are</span></div></div>
+                <div class="focus-copy">
+                  <span class="focus-eyebrow">Current session</span>
+                  <h2 id="focus-title">Make room for one clear task.</h2>
+                  <p id="focus-note" class="row-hint" role="status"></p>
+                  <div class="focus-buttons"><button id="focus-start" type="button" class="chip primary">Start</button><button id="focus-advance" type="button" class="chip">Finish session</button><button id="focus-reset" type="button" class="chip subtle">Reset</button></div>
+                </div>
+              </div>
+              <div class="focus-presets" aria-label="Focus duration">
+                <span>Duration</span>
+                <button type="button" class="chip" data-focus-preset="25">25 min</button>
+                <button type="button" class="chip" data-focus-preset="50">50 min</button>
+                <label class="focus-custom-duration">Custom <input id="focus-custom-minutes" type="number" min="1" max="90" inputmode="numeric" aria-label="Custom focus minutes" /> min</label>
+              </div>
+            </section>
+            <section class="focus-summary" aria-label="Focus summary">
+              <div class="focus-stat"><span>Today</span><strong id="focus-today">0</strong><small>sessions</small></div>
+              <div class="focus-stat"><span>All time</span><strong id="focus-total">0</strong><small>sessions</small></div>
+              <div class="focus-stat"><span>Up next</span><strong id="focus-next">Short</strong><small id="focus-next-kind">break</small></div>
+            </section>
+            <section class="focus-support" aria-label="Focus modes">
+              <button id="focus-zen" type="button" class="mode-card"><span class="mode-glyph" aria-hidden="true">✧</span><span><strong>Immersive focus</strong><small>Your intention, timer and a little breathing room</small></span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+              <button id="focus-saver" type="button" class="mode-card"><span class="mode-glyph" aria-hidden="true">◷</span><span><strong>Quiet clock</strong><small>A calm screen until you return</small></span><span class="mode-arrow" aria-hidden="true">↗</span></button>
+              <div id="focus-chart" class="focus-history"></div>
+            </section>
+            <details class="focus-preferences">
+              <summary><span><strong>Focus preferences</strong><small>Breaks, Zen rotation and quiet-clock behaviour</small></span><span aria-hidden="true">⌄</span></summary>
+              <div class="focus-preference-grid">
+                <label><span>Short break</span><span><input id="focus-short-break" type="number" min="1" max="30" inputmode="numeric" /> min</span></label>
+                <label><span>Long break</span><span><input id="focus-long-break" type="number" min="5" max="60" inputmode="numeric" /> min</span></label>
+                <label><span>Zen quote rotation</span><span><input id="focus-quote-interval" type="number" min="5" max="120" step="5" inputmode="numeric" /> sec</span></label>
+                <label class="focus-preference-toggle"><span><strong>Automatic quiet clock</strong><small>Show Opaline after Windows has been idle.</small></span><input id="focus-saver-enabled" type="checkbox" role="switch" /></label>
+                <label><span>Idle before quiet clock</span><span><input id="focus-saver-idle" type="number" min="1" max="60" inputmode="numeric" /> min</span></label>
+              </div>
+            </details>
           </div>
         </main>
 
-        <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><span class="page-count">Changes apply automatically</span></header><div id="settings" class="settings-layout"></div></main>
+        <main id="settings-surface" class="glass page-surface secondary-surface" aria-label="Settings" hidden><header class="page-heading"><div><span class="page-kicker">Personalise Opaline</span><h1>Settings</h1></div><span class="page-count">Automatic apply · Off</span></header><div id="settings" class="settings-layout"></div></main>
 
         <p id="navigation-note" role="status"></p>
           <span id="gesture-cue" aria-hidden="true" hidden></span>
@@ -93,7 +135,26 @@
           <button type="button" id="page-next" class="edge-arrow" aria-label="Next Home screen" title="Next Home screen · Tab">›</button>
         </nav>
 
-        <div id="bottom-bar"><button id="home-dock" type="button" class="glass" title="Home · Alt+1" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.7 10 8.3-6.8 8.3 6.8v9.1c0 1-.8 1.8-1.8 1.8h-13c-1 0-1.8-.8-1.8-1.8z"/><path d="M9.2 20.9v-6.6h5.6v6.6"/></svg></button><aside id="rail" class="glass" aria-label="Taskbar" hidden></aside></div>
+        <div id="bottom-bar">
+          <button id="focus-capsule" type="button" class="glass" hidden><span id="focus-capsule-phase">Focus</span><strong id="focus-capsule-clock">25:00</strong></button>
+          <button id="home-dock" type="button" class="glass" title="Home · Alt+1" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.7 10 8.3-6.8 8.3 6.8v9.1c0 1-.8 1.8-1.8 1.8h-13c-1 0-1.8-.8-1.8-1.8z"/><path d="M9.2 20.9v-6.6h5.6v6.6"/></svg></button>
+          <nav id="navigation-dock" class="navigation-dock header-nav glass" aria-label="Main destinations">
+            <button type="button" class="orb" data-page="all-apps" data-nav-shortcut="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
+            <button type="button" class="orb" data-page="screen-time" data-nav-shortcut="screen-time" title="Screen time" aria-label="Screen time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19.5h16"/><rect x="5" y="11" width="3.5" height="6" rx=".8"/><rect x="10.25" y="7" width="3.5" height="10" rx=".8"/><rect x="15.5" y="4" width="3.5" height="13" rx=".8"/></svg></button>
+            <button type="button" class="orb" data-page="focus" data-nav-shortcut="focus" title="Focus" aria-label="Focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            <button type="button" class="orb" data-page="settings" data-nav-shortcut="settings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+          </nav>
+          <details id="navigation-overflow" class="navigation-overflow">
+            <summary class="glass" aria-label="Open navigation tray" title="More destinations"><span aria-hidden="true">•••</span></summary>
+            <nav class="navigation-tray header-nav glass" aria-label="Navigation tray">
+              <button type="button" data-page="all-apps" data-nav-shortcut="all-apps"><span>All apps</span></button>
+              <button type="button" data-page="screen-time" data-nav-shortcut="screen-time"><span>Screen time</span></button>
+              <button type="button" data-page="focus" data-nav-shortcut="focus"><span>Focus</span></button>
+              <button type="button" data-page="settings" data-nav-shortcut="settings"><span>Settings</span></button>
+            </nav>
+          </details>
+          <aside id="rail" class="glass" aria-label="Taskbar" hidden></aside>
+        </div>
         <div id="preview" class="glass" hidden></div>
         <div id="tile-peek" class="glass" role="status" hidden></div>
 

@@ -24,14 +24,20 @@ overlap one another or become stranded off-screen. Search and the rail remain in
 | S-09 | Centered side arrows stay inside the viewport and clear of search and taskbar | `[~]` | Responsive browser check; full native scaling matrix pending; see W-03/W-32 |
 | S-10 | Full two-line labels fit; overflowing grids scroll to the final row without faded/clipped names | `[~]` | Fixed flex shrinking and removed the unconditional edge mask; dense-grid verification required |
 | S-11 | A smaller bottom taskbar leaves the app surface taller, including when navigation is collapsed | `[~]` | Browser geometry checked at 1280, 1024, 800 and 600 CSS px; Windows scaling pass pending |
+| S-12 | Pane members can be reordered and retain that order | `[x]` | Owner accepted native pane reordering; ordered-store persistence is unit-tested |
+| S-13 | Insertion and grouping have separate hit targets and feedback | `[x]` | Owner accepted the stable themed edge/gap marker and centre grouping target in the native preview |
+| S-14 | Home can be sorted A–Z, Z–A or by usage without disabling later manual reordering | `[x]` | One-shot Settings actions pass isolated UI checks; pane contents intentionally remain manual-only |
 
 `[x]` means verified; `[~]` means implemented but still needs the indicated real-app check.
 
 ## Interaction rules
 
 - Drop a loose item, folder or pane between cells to reorder the centred grid.
+- A stable acrylic line previews insertion; the grid changes order only when the item is dropped.
 - Drop one loose item on another to make a pane, exactly as before.
 - Drop an item on a pane to add it, exactly as before.
+- Reorder members inside an open pane with the same between-cell interaction; dragging onto the popup backdrop still removes a member.
+- Home quick sorting is one-shot. The resulting order stays manually editable; pane contents are never automatically sorted.
 - Search results use a centred flow; clearing search restores the saved order.
 - Right-click a reordered item or pane and choose **Return to automatic order** to rejoin the generated order.
 - Pane-member removal remains metadata-only. No drag operation moves a Desktop file.
@@ -40,7 +46,8 @@ overlap one another or become stranded off-screen. Search and the rail remain in
 
 `groups.json` keeps a `layout` object alongside panes and launch counts. Keys are namespaced (`item:<path>` and `group:<id>`), and values
 remain normalized `{ "x": 0..1, "y": 0..1 }` records for backward compatibility. The current grid writes monotonically increasing `x`
-ranks with `y: 0`; older free-position records are read once in row-major order and rendered in snapped cells.
+ranks with `y: 0`; older free-position records are read once in row-major order and rendered in snapped cells. Each pane's existing
+`items` array is its member order, so pane reordering needs no schema migration.
 
 ## Acceptance pass
 
@@ -51,3 +58,7 @@ ranks with `y: 0`; older free-position records are read once in row-major order 
 5. Search for a known item, clear the search and confirm the prior order returns unchanged.
 6. Use **Return to automatic order** on an item and pane and confirm each rejoins the generated flow.
 7. Restart and inspect the real Desktop folder to confirm no file or folder was moved or renamed.
+8. Inside a pane, move its first member between two others. Confirm the marker stays stable, close/reopen the pane, then restart and confirm the order persists.
+9. Hover the centre and edge of the same loose-item target. Confirm only the centre shows grouping feedback and only the edge shows insertion feedback.
+10. Exercise the Home quick sorts for A–Z, Z–A and most used; manually move an entry after each sort and confirm the manual order wins. Confirm panes expose no sorting action.
+11. In a pane that scrolls, drag near both vertical edges and confirm it scrolls without losing the insertion target.

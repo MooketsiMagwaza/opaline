@@ -16,6 +16,7 @@ npm install
 npm test                   # Vitest: pane store, layout and organise rules
 npm run tauri dev          # app with hot-reloading UI; Rust changes rebuild automatically
 npm run build              # tsc + vite production bundle (the type-check)
+npm run size               # production frontend + native artifact sizes; enforces frontend budgets
 npm run icons              # re-rasterise assets/logo.svg and regenerate src-tauri/icons
 cargo fmt   --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
@@ -69,7 +70,7 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 ## Layout
 
 ```
-src/            UI: launcher.ts (entry) grid.ts rail.ts panel.ts groups.ts organize.ts glass.ts settings.ts menu.ts icons.ts api.ts dom.ts launcher.css
+src/            UI entry/coordinators; focus/, grid/, appearance/, navigation/ and settings/ co-locate feature logic, CSS and README; data/ holds typed product data
 src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs taskbar.rs store.rs
 scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol)
 assets/         logo.svg (+ generated PNG)

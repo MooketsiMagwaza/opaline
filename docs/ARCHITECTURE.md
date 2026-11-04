@@ -34,7 +34,7 @@ Search is an independent floating surface. The retained taskbar rail in `rail.ts
 plain icon + name with no per-item bubble. A pane uses one rounded mini-icon bubble and places its name below. The pane popup, preview,
 item picker and context menu are transient surfaces; Settings is a full page. This keeps hierarchy legible and bounds compositing work.
 
-The side arrows and Tab cycle the read-only Desktop Home and custom screens. Ctrl+Tab and Alt+1–5 select Home, All apps, Screen time, Focus and Settings. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session. `focus.ts` owns the Zen and screen-saver surfaces, while `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
+The side arrows and Tab cycle the read-only Desktop Home and custom screens. Ctrl+Tab and Alt+1–5 select Home, All apps, Screen time, Focus and Settings. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `focus/timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session; `focus/index.ts` owns the Focus page and `focus/ambient.ts` owns immersive and quiet-clock presentation. `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
 the overlay is visible, covering classic Start-menu entries and packaged apps without adding work to the opening path. `pages.ts` owns
 top-level page state and the Home-screen pager. `item-picker.ts` owns the shared searchable app/folder add flow for Home and named screens; `picker.rs` opens an owned Windows folder/file dialog on a worker and returns only the chosen path for metadata storage. Widgets were removed from the current UI and remain a roadmap item.
 
@@ -50,6 +50,7 @@ backdrop filter per card—so adding Desktop items does not add one expensive co
 - `groups.json`: virtual panes, normalized grid-order ranks and launch counts.
 - `config.json`: the hotkey needed before the UI exists.
 - `opaline.settings`: webview local storage for visual and behavioural settings.
+- `opaline.appearance.profiles`: up to 24 named local visual/layout profiles; export files use the versioned `opaline-visual-presets` JSON schema.
 - `workspaces.json`: up to eight named app/file/folder collections shown as Home screens after the Desktop-based first screen.
 - `screen-time.json`: foreground/maximised executable totals, current local-day totals and the pause preference. No window titles are saved.
 - `shell.json`: the opt-in Windows-key preference.
@@ -65,6 +66,16 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 - Desktop and AppsFolder refreshes happen after presentation. Taskbar enumeration and bounded thumbnail warming run after presentation and stop when hidden.
 - The UI keeps up to 32 decoded thumbnails in memory, shares concurrent requests per window and shows stale pixels while refreshing. A cached hover avoids capture entirely; cold PrintWindow can take longer than 50 ms.
 - Native usage sampling runs once a second while the app is alive, excluding idle periods and sleep gaps. It saves every 30 seconds and on normal exit; an abrupt process kill can lose the most recent interval.
+- `npm run size` fails when the production frontend exceeds 180 KiB raw or 60 KiB gzip. New UI data remains static TypeScript unless runtime editing actually requires a file or service.
+
+## Frontend module boundaries
+
+- `src/focus/`: timer state transitions, ambient presentation and the Focus page controller.
+- `src/grid/`: Home rendering, pane/group state, workspaces, drag/drop ordering and delayed folder/pane peeks; `index.ts` is the feature coordinator.
+- `src/appearance/`: local user-preset persistence, versioned import/export and validation.
+- `src/data/`: typed product data such as organise rules, focus copy and built-in appearance presets. Keeping it separate makes lists editable without runtime fetches.
+- Feature-owned CSS lives beside its feature (`focus/focus.css`, `grid/grid.css`, `appearance/appearance.css`, `navigation/navigation.css`, `settings/settings.css`) and is imported by `launcher.css`. Shared surfaces and tokens remain in the root stylesheet.
+- Settings edits are staged in memory. Done validates and writes the complete draft; Cancel restores persisted settings. Preview thumbnails may reuse the current in-memory backdrop but never persist it in a preset or export.
 
 ## Processes on Windows
 

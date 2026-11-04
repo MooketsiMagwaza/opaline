@@ -7,8 +7,11 @@ const { chromium } = require(process.env.OPALINE_PLAYWRIGHT_MODULE || "playwrigh
 const browser = await chromium.launch({ headless: true, executablePath: process.env.OPALINE_BROWSER_PATH || chromium.executablePath() });
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
 const page = await context.newPage();
+const verifyUrl = process.env.OPALINE_VERIFY_URL || "http://127.0.0.1:1420";
 const errors = [];
-page.on("pageerror", (error) => { errors.push(error.message); console.error("UI error:", error.message); });
+page.on("pageerror", (error) => { errors.push(error.stack || error.message); console.error("UI error:", error.stack || error.message); });
+page.on("console", (message) => { if (message.type() === "error") console.error("Browser console:", message.text()); });
+page.on("requestfailed", (request) => console.error("Request failed:", request.url(), request.failure()?.errorText));
 const output = new URL("../docs/images/", import.meta.url);
 mkdirSync(output, { recursive: true });
 
@@ -52,7 +55,7 @@ await page.addInitScript((manifest) => {
   window.__demoInvoke = async (command, args) => {
     window.__demoCalls.push(command);
     switch (command) {
-      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.2.1", codename: "Borosilicate", pinned: true };
+      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.2.2", codename: "Borosilicate", pinned: true };
       case "load_store": return localStorage.getItem(`demo:${args.name}`);
       case "save_store": if (window.__demoFailSave) throw new Error("Demo disk full"); localStorage.setItem(`demo:${args.name}`, args.json); return;
       case "list_items": return items;
@@ -71,7 +74,7 @@ await page.addInitScript((manifest) => {
     }
   };
 }, iconManifest);
-await page.route(/\/src\/launcher\.ts(?:\?.*)?$/, async (route) => {
+await page.route(/\/src\/app\/launcher\.ts(?:\?.*)?$/, async (route) => {
   const response = await route.fetch();
   await route.fulfill({ response, body: `const { mockIPC } = await import('/node_modules/@tauri-apps/api/mocks.js'); mockIPC(window.__demoInvoke, { shouldMockEvents: true });\n${await response.text()}` });
 });
@@ -104,25 +107,28 @@ const shot = async (name) => {
   }
 };
 try {
-  await page.goto("http://127.0.0.1:1420");
+  await page.goto(verifyUrl);
   await page.waitForSelector("#grid .tile"); await wait(1000);
   assert(await visible("#apps-surface"));
   assert.equal(await page.evaluate(() => document.activeElement?.id), "shell");
   await page.keyboard.press("s");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "search");
-  assert.equal(await page.locator("#search").inputValue(), "");
+  assert.equal(await page.locator("#search").inputValue(), "s");
+  await page.keyboard.press("Escape");
   await page.keyboard.press("Alt+2");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "shell");
   await page.keyboard.press("Alt+1");
   await page.keyboard.press("a");
-  assert.equal(await page.evaluate(() => document.activeElement?.id), "shell");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "search");
+  assert.equal(await page.locator("#search").inputValue(), "a");
+  await page.keyboard.press("Escape");
   assert(await page.locator("#search").evaluate(node => !node.dispatchEvent(new WheelEvent("wheel", { ctrlKey: true, deltaY: 40, bubbles: true, cancelable: true }))));
   assert.equal(await page.locator("#page-edges .edge-arrow").count(), 2);
   assert.equal(await page.locator(".home-footer .home-page-button").count(), 3);
   assert.equal(await page.locator("#home-add-trigger").count(), 0);
   assert(!(await visible("#status")));
   assert.equal(await page.locator("#page-nav, #quit-button").count(), 0);
-  assert.equal(await page.locator(".header-nav .orb").count(), 4);
+  assert.equal(await page.locator("#top .header-nav .orb").count(), 4);
   assert(await page.evaluate(() => {
     const search = getComputedStyle(document.getElementById("search-wrap"));
     const left = getComputedStyle(document.getElementById("header-left"));
@@ -166,13 +172,34 @@ try {
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement, "::view-transition-new(launcher-page)").animationTimingFunction), "cubic-bezier(0.16, 1, 0.3, 1)");
   assert(await visible("#workspace-surface"));
   assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
-  await wait(400);
-  await page.locator("#workspace-items").dispatchEvent("wheel", { deltaX: 120, deltaY: 0, deltaMode: 0 });
+  await page.waitForFunction(() => !document.body.classList.contains("gesture-transitioning"));
+  await page.locator("#workspace-items").dispatchEvent("wheel", { deltaX: 45, deltaY: 0, deltaMode: 0 });
+  await homeNamed("Screen 3");
+  await page.keyboard.press("Alt+1");
+  await wait(600);
+  // One forceful physical swipe may emit a long inertial tail across the view transition.
+  // Every tail event must be consumed without producing a second Home navigation.
+  await page.locator("#apps-surface").dispatchEvent("wheel", { deltaX: 120, deltaY: 1, deltaMode: 0 });
+  await homeNamed("Dev tools");
+  for (const deltaX of [96, 78, 61, 46]) {
+    await wait(20);
+    await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX, deltaY: 1, deltaMode: 0 });
+  }
+  await page.waitForFunction(() => !document.body.classList.contains("gesture-transitioning"));
+  for (const deltaX of [36, 27, 18, 12]) {
+    await wait(24);
+    await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX, deltaY: 1, deltaMode: 0 });
+  }
+  await wait(240);
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
+  await wait(190);
+  await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX: 90, deltaY: 0, deltaMode: 0 });
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await wait(600);
   await page.locator("#apps-surface").dispatchEvent("wheel", { deltaX: 22, deltaY: 0, deltaMode: 0 });
-  await page.waitForSelector("#gesture-cue:visible");
+  await page.waitForFunction(() => document.querySelector("#apps-surface > .home-motion")?.getAttribute("data-gesture-preview") === "true");
+  assert(await visible("#gesture-cue"));
   assert.equal(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
   assert.equal(await page.locator("#apps-surface > .home-motion").getAttribute("data-gesture-preview"), "true");
   await wait(400);
@@ -201,19 +228,19 @@ try {
   await touchPinch(560);
   await page.locator("#settings-surface").waitFor({ state: "visible" });
   assert(await visible("#settings-surface"));
-  await wait(400);
+  await page.waitForFunction(() => !document.body.classList.contains("gesture-transitioning"));
   await page.locator("#settings-surface").dispatchEvent("wheel", { ctrlKey: true, deltaY: -60, deltaMode: 0 });
   await page.locator("#apps-surface").waitFor({ state: "visible" });
   assert(await visible("#apps-surface"));
   await page.keyboard.press("Alt+1");
   await wait(600);
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 20, deltaMode: 0});
-  await page.waitForSelector("#gesture-cue:visible");
+  await wait(50);
   assert(await visible("#gesture-cue"));
   assert.equal(await page.locator("#gesture-cue").textContent(), "Settings");
   assert.equal(await page.locator("#apps-surface > .home-motion").getAttribute("data-gesture-preview"), "true");
   assert.equal(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
-  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 40, deltaMode: 0});
+  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 60, deltaMode: 0});
   await page.locator("#settings-surface").waitFor({ state: "visible" });
   assert(await visible("#settings-surface"));
   await page.keyboard.press("Alt+1");
@@ -282,14 +309,25 @@ try {
   await shot("screen-time-chart.png");
   await page.keyboard.press("Control+Alt+f");
   assert(await visible("#focus-surface"));
+  await page.locator("#focus-intention").fill("Finish the release notes");
+  assert.equal(await page.locator("#focus-title").textContent(), "Finish the release notes");
   await page.locator("#focus-start").click();
   assert.equal(await page.locator("#focus-start").textContent(), "Pause");
   await wait(250);
-  assert.equal(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgb(216, 233, 255)");
+  assert.notEqual(await page.locator("#focus-start").evaluate(node => getComputedStyle(node).backgroundColor), "rgba(0, 0, 0, 0)");
+  await page.keyboard.press("Space");
+  assert.equal(await page.locator("#focus-start").textContent(), "Resume");
+  await page.keyboard.press("Space");
+  assert.equal(await page.locator("#focus-start").textContent(), "Pause");
+  assert(await visible("#focus-capsule"));
   await shot("focus.png");
   assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 260);
   await page.locator("#focus-chart").scrollIntoViewIfNeeded();
   assert(await page.locator("#focus-chart").isVisible());
+  await page.locator(".focus-preferences summary").click();
+  await page.locator("#focus-short-break").fill("7");
+  await page.locator("#focus-short-break").press("Enter");
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("opaline.settings"))).shortBreakMinutes, 7);
   await page.locator("#focus-zen").click();
   assert(await visible("#ambient"));
   assert.equal(await page.locator("#ambient").getAttribute("data-mode"), "zen");
@@ -314,6 +352,20 @@ try {
   assert(Math.abs((start.x + start.width / 2) - (origin.x + origin.width / 2)) < 3);
   assert(Math.abs((start.y + start.height / 2) - (origin.y + origin.height / 2)) < 3);
   await shot("pane.png");
+  const firstMember = page.locator("#popup .pane-grid .tile").nth(0);
+  const secondMember = page.locator("#popup .pane-grid .tile").nth(1);
+  const firstBox = await firstMember.boundingBox(), secondBox = await secondMember.boundingBox();
+  assert(firstBox && secondBox);
+  await page.mouse.move(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(secondBox.x + secondBox.width / 2 + 8, secondBox.y + secondBox.height / 2, { steps: 3 });
+  await page.mouse.move(firstBox.x + 2, firstBox.y + firstBox.height / 2, { steps: 8 });
+  await wait(120);
+  assert.equal(await page.locator("#popup .insert-before, #popup .insert-after").count(), 1);
+  assert.equal(await page.locator("#popup .pane-grid .tile").first().getAttribute("data-path"), "demo:0");
+  await page.mouse.up(); await wait(380);
+  assert.equal(await page.locator("#popup .pane-grid .tile").first().getAttribute("data-path"), "demo:20");
+  assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem("demo:groups.json"))).groups.find(group => group.id === "ides").items, ["demo:20", "demo:0"]);
   await page.keyboard.press("Shift+Tab");
   assert(await visible("#popup"));
   assert(await page.evaluate(() => document.getElementById("popup").contains(document.activeElement)));
@@ -323,10 +375,84 @@ try {
   assert(await visible("#settings-surface"));
   await page.locator('.nav-item[data-id="behaviour"]').click();
   await shot("settings.png");
-  for (const section of ["appearance", "layout", "rail", "screen-time", "focus", "panes", "about"]) {
+  for (const section of ["appearance", "home-layout", "navigation", "rail", "screen-time", "panes", "about"]) {
     await page.locator(`.nav-item[data-id="${section}"]`).click();
     await shot(`settings-${section}.png`);
+    const expectsHomePreview = ["appearance", "home-layout", "navigation", "rail"].includes(section);
+    assert.equal(await page.locator(".settings-live-simulation").count(), expectsHomePreview ? 1 : 0);
+    if (section === "panes") assert.equal(await page.locator("#pane-motion-preview").count(), 1);
   }
+  await page.locator('.nav-item[data-id="appearance"]').click();
+  assert.equal(await page.locator(".appearance-preset-grid").first().locator(".appearance-preset").count(), 6);
+  await page.waitForFunction(() => [...document.querySelectorAll(".appearance-preview iframe")].every(frame => frame.contentDocument?.querySelector("#grid .tile")));
+  const materialPreviews = await page.locator(".appearance-preset-grid").first().locator(".appearance-preview").evaluateAll(nodes => nodes.map(node => { const root = node.querySelector("iframe")?.contentDocument?.documentElement; return { profile: node.dataset.profile, radius: root?.style.getPropertyValue("--radius"), fill: root?.style.getPropertyValue("--custom-rgb"), opacity: root?.style.getPropertyValue("--custom-opacity"), blur: root?.style.getPropertyValue("--pane-blur"), ghost: getComputedStyle(node, "::after").content }; }));
+  assert.equal(new Set(materialPreviews.map(preview => JSON.stringify(preview))).size, 6);
+  assert(materialPreviews.every(preview => preview.ghost === "none"));
+  assert.equal(await page.locator(".appearance-preview svg").count(), 0);
+  assert(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelectorAll("#grid .tile").length >= 8));
+  assert.equal(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelector("#grid .label")?.textContent), await page.locator("#grid .label").first().textContent());
+  await page.locator(".preset-name").fill("Workspace Glass");
+  await page.getByRole("button", { name: "Save current", exact: true }).click();
+  await page.getByRole("button", { name: /^Workspace Glass/ }).waitFor();
+  assert.match(await page.getByRole("button", { name: /^Workspace Glass/ }).textContent(), /Rail (on|off).*panel.*(header|taskbar|tray)/s);
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("opaline.appearance.profiles")))[0].name, "Workspace Glass");
+  await page.locator('.preset-transfer input[type="file"]').setInputFiles({
+    name: "opaline-visual-presets.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ schema: "opaline-visual-presets", version: 1, presets: [{ id: "portable", name: "Portable Glass", createdAt: new Date(0).toISOString(), settings: { backdropBlur: 12, tintColor: "#182238", tintStrength: .18, rail: false, surfaceWidth: 840 } }] })),
+  });
+  await page.getByRole("button", { name: /^Portable Glass/ }).waitFor();
+  assert(await page.getByRole("button", { name: "Export presets", exact: true }).isEnabled());
+  await page.getByRole("button", { name: /^Portable Glass/ }).scrollIntoViewIfNeeded();
+  await shot("settings-appearance-presets.png");
+  await page.getByRole("button", { name: /^Windows Mica/ }).click();
+  assert.equal(await page.locator("body").getAttribute("data-style"), "frost");
+  assert.equal(await page.locator(".settings-live-simulation").getAttribute("data-profile"), "mica");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-style"), "custom");
+  assert.equal(await page.locator("body").getAttribute("data-material"), "mica");
+  assert.equal(await page.locator("html").evaluate(node => node.style.getPropertyValue("--radius")), "12px");
+  assert.equal(await page.locator("html").evaluate(node => node.style.getPropertyValue("--custom-opacity")), "0.9");
+  await shot("settings-windows-mica.png");
+  await page.getByRole("button", { name: /^Opaline Original/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-style"), "frost");
+  await page.locator('.nav-item[data-id="navigation"]').click();
+  assert.equal(await page.locator(".navigation-preview svg").count(), 0);
+  assert(await page.locator(".navigation-preview iframe").first().evaluate(frame => frame.contentDocument.querySelectorAll("#grid .tile").length >= 8));
+  await page.getByRole("button", { name: /Navigation taskbar/ }).click();
+  assert.equal(await page.locator("body").getAttribute("data-navigation"), "split");
+  assert.equal(await page.getByRole("button", { name: /Navigation taskbar/ }).getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator(".settings-live-simulation").getAttribute("data-navigation"), "taskbar");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-navigation"), "taskbar");
+  assert.equal(await page.locator("#navigation-dock").count(), 1);
+  await page.getByRole("switch", { name: "Show Focus" }).click();
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-focus"), "true");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-focus"), "false");
+  assert.equal(await page.locator("body").getAttribute("data-navigation-overflow"), "true");
+  await page.getByRole("button", { name: /Dropdown tray/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-navigation"), "tray");
+  await page.keyboard.press("Alt+1");
+  assert(!(await visible("#navigation-dock")));
+  await page.locator("#navigation-overflow summary").click();
+  const trayBox = await page.locator(".navigation-tray").boundingBox();
+  const trayTriggerBox = await page.locator("#navigation-overflow summary").boundingBox();
+  assert(trayBox && trayTriggerBox && trayBox.y >= 0 && trayBox.y + trayBox.height < trayTriggerBox.y, JSON.stringify({ trayBox, trayTriggerBox }));
+  const searchBox = await page.locator("#search-wrap").boundingBox();
+  assert(searchBox && Math.abs(searchBox.x + searchBox.width / 2 - 640) < 2, JSON.stringify(searchBox));
+  await shot("settings-navigation-variants.png");
+  await page.keyboard.press("Alt+5");
+  await page.getByRole("button", { name: /Split header/ }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-navigation"), "tray");
+  await page.getByRole("button", { name: /Split header/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.locator('.nav-item[data-id="home-layout"]').click();
+  await page.getByRole("button", { name: "A–Z" }).click(); await wait(380);
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("demo:groups.json"))).layout["group:agents"].x, 0);
   await page.locator('.nav-item[data-id="workspaces"]').click();
   await shot("settings-workspaces.png");
   await page.getByRole("textbox", { name: "New workspace name" }).fill("Projects");
@@ -378,7 +504,7 @@ try {
   await page.setViewportSize({ width: 800, height: 600 });
   await page.keyboard.press("Alt+5");
   const bounds = await page.locator("#settings-surface").boundingBox();
-  assert(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= 800 && bounds.y + bounds.height <= 600);
+  assert(bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= 800 && bounds.y + bounds.height <= 600, JSON.stringify(bounds));
   await page.keyboard.press("Escape");
   await page.keyboard.press("Control+b");
   for (const width of [1024,800,600]) {
@@ -390,6 +516,15 @@ try {
     });
     assert(geometry.inBounds && !geometry.overlaps, JSON.stringify({width,...geometry}));
   }
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem("opaline.settings") || "{}");
+    localStorage.setItem("opaline.settings", JSON.stringify({ ...saved, defaultPage: "all-apps" }));
+  });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.reload();
+  await page.waitForSelector("#app-list-surface:visible");
+  assert.equal(await page.locator("body").getAttribute("data-page"), "all-apps");
+  await page.waitForFunction(() => document.activeElement?.id === "search");
   assert.deepEqual(errors, []);
   const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: screenshotCount, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));

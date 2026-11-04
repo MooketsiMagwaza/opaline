@@ -49,7 +49,7 @@ RULES (the important ones - the rest are in AGENTS.md):
 - Shell icon extraction must keep going through the single worker thread in src-tauri/src/icons.rs.
 - Keep Windows-specific code behind cfg(windows) with a non-Windows fallback. Do not break the Linux port path.
 - backdrop-filter panes must not live inside an element that has filter, mask, opacity<1, clip-path or its own backdrop-filter.
-- Keep Appearance focused: new user-facing material parameters need a clear use case, a default in src/settings.ts and a control in src/panel.ts.
+- Keep Appearance focused: new user-facing material parameters need a clear use case, a default in `src/settings/store.ts` and a control in `src/settings/panel.ts`.
 - Mark a WORKORDER item [x] only after you have SEEN it work, and say how in its Notes column. Update CHANGELOG.md (Unreleased) in the same change.
 - Do not commit screenshots of the real app (they show the owner's folder names). Do not push or publish anything unless asked.
 - On Windows, build from a short path or set CARGO_TARGET_DIR to a short folder (LNK1104 otherwise). Use OPALINE_PIN=1 for visual work.

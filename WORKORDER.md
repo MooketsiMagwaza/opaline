@@ -5,10 +5,13 @@ Everything in the original brief is traceable to a requirement ID (`R-xx`). Pull
 they touch.
 
 **Latest release:** [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) · codename **Borosilicate** (see [docs/NAMING.md](docs/NAMING.md)). Pinch input and gesture routing changed in this patch; the owner still experiences lag and occasional missed swipes, tracked as W-51.
+**Current candidate:** `v0.2.2` **Borosilicate** — pane reordering, stable themed insertion feedback and Home quick sorting accepted in the native preview; not tagged or published yet.
+**Next development target:** `v0.3.0` — implementation has started with the Focus redesign, named importable visual/layout presets, three rearrangeable navigation modes, staged Done/Cancel Settings, representative in-memory previews, size budgets and feature-owned modules/CSS/READMEs. Movable app-taskbar placement, direct panel resizing, restart caching and the optional edge-drawer Activity Center remain planned; see [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-10-29 — v0.2.1 release and persistent gesture bug.
+**Last updated:** 2026-11-02 — v0.3.0 implementation started; v0.2.2 remains the local manifest version until full acceptance.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
+The superseding 0.3.0 experience scope and new requirements R-52–R-64 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.
@@ -128,7 +131,8 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-46 | Brighter theme-matched header capsules | P0 | `[~]` | Browser visual pass; owner theme/scaling pass pending; W-38 |
 | R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |
 | R-48 | Compact grouped charts and Focus/Zen visual pass | P1 | `[~]` | Browser chart geometry and screenshots; owner visual pass pending; W-40/W-41 |
-| R-50 | Make trackpad gestures consistently responsive and smooth | P1 | `[ ]` | Persistent known bug accepted for v0.2.1. Profile real WebView2 wheel/pinch event timing, tune recognition and completion motion, then obtain owner device acceptance; W-51 |
+| R-50 | Make trackpad gestures consistently responsive and smooth | P1 | `[~]` | Owner isolated consecutive-swipe failure: the 350 ms wheel-burst lock was extended by inertial events, while pinch reset its separate mode. Candidate rearms after 120 ms silence/160 ms burst gap; browser test performs consecutive same-direction swipes without mouse movement. Physical owner retest required; W-51. |
+| R-51 | Distinguish between-item insertion from grouping, manually reorder pane contents and provide one-shot Home sorting | P0 | `[x]` | Owner accepted the native v0.2.2 pointer preview on 1 November; stable marker, persistence tests, 21 frontend tests, production build and isolated UI suite pass ([grid work order](docs/SPATIAL_WORKORDER.md)) |
 
 ## 3. Architecture
 
@@ -230,7 +234,7 @@ blur, tint and lensing.
 - [ ] CI job on `ubuntu-latest`
 
 ### WP11 — Quality
-- [x] Frontend unit tests: organisation, groups, ordering, settings validation, workspace writes and focus deadline/phase transitions (18 tests passed locally, 29 October)
+- [x] Frontend unit tests: organisation, groups, drag ordering, settings validation, workspace writes and focus deadline/phase transitions (21 tests passed locally, 1 November)
 - [x] Rust unit tests: display names, pixels, Taskband matching and usage/date/sleep attribution (11 tests passed locally, 29 October)
 - [ ] Manual pass of §9 before each release
 - [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement
@@ -289,7 +293,7 @@ blur, tint and lensing.
 | Code projects *(folders)* | `*-source`, `Projects`, `*Tinker*`, repo/workspace names |
 | Archive *(folders)* | `BACKUPS`, `Legacy*`, archive/old names |
 
-Rules live in `src/organize.ts` as plain data. Anything that matches nothing stays loose.
+Rules live in `src/grid/organize-rules.ts` as plain data. Anything that matches nothing stays loose.
 
 ## 7. Data formats
 
@@ -374,11 +378,12 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
 7. **Release follow-up.** The v0.2.1 NSIS, MSI, portable ZIP and checksums are published and hash-verified. Record installer smoke-test evidence separately; profile the gesture bug in W-51 on the owner's trackpad when that work resumes.
-8. **Then P1 features** from §11, one work package at a time, each with acceptance criteria added here first.
+8. **Build the planned 0.3.0 experience in order.** Follow M0–M6 in `docs/V0_3_WORKORDER.md`, beginning with the measured baseline
+   and Focus redesign. Existing native acceptance gaps remain regression gates; the larger scope does not silently mark them complete.
 
 ## 13. Known issues
 
-- **Persistent in v0.2.1:** two-finger swipe and pinch can still feel laggy or fail to register a short gesture on the owner's trackpad. Correct page routing is covered by browser checks, and physical pinch reaches WebView2, but real-device responsiveness is not accepted. Track in W-51; use Tab/Home dots or Alt+1–5 meanwhile.
+- **Persistent in v0.2.1; candidate fix in progress:** the owner isolated consecutive horizontal swipes failing until a mouse move, while pinch works. The current candidate shortens wheel-burst rearm and browser checks consecutive swipes without pointer movement. Real-device responsiveness is not accepted until the owner retests W-51; use Tab/Home dots or Alt+1–5 meanwhile.
 - Fabric motion and real pointer grid reordering have not had their full real-app pass yet.
 - Taskband parsing deliberately consumes only self-describing link names/AppUserModelIDs from the undocumented blob and falls back safely.
 - Native cold thumbnails measured 66.5–131.6 ms after GDI downsampling. Cached demo presentation measured 13–17 ms; owner cached-hover parity remains open.

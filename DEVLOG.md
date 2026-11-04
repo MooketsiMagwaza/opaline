@@ -2,6 +2,132 @@
 
 Newest first.
 
+## 2026-11-02 · Settings and input quality pass
+
+The owner asked for the 0.3 bootstrap to stop treating one full Home simulation as the answer to every Settings task. Settings now takes
+nearly the full launcher window, with a shorter heading and compact bottom Cancel/Done buttons. The real Home simulation appears only in
+Appearance, Home layout, Navigation and Taskbar. Screen time and Home screens keep their working area, while Panes has a dedicated looping
+open-from-tile demonstration driven by the staged motion duration. Focus timing, break, Zen and Quiet Clock preferences moved onto the
+Focus page itself.
+
+Home and All apps now support type-to-search: the first printable key focuses Search and becomes the first query character. Search remains
+out of the way on Focus, Settings, menus and text controls. The precision-touchpad recogniser no longer guesses whether a rising delta is a
+new stroke. It consumes a committed tail until 240 ms of quiet, and page navigation has a separate 280 ms safety release for the WebView2
+case where `ViewTransition.finished` waits for mouse movement before resolving. Automated replay covers a decaying forceful tail and a
+second swipe without pointer movement; physical owner-device feel still requires confirmation.
+
+Appearance now owns an Opaline-specific background choice: current Desktop, the bundled original Opaline Aero landscape, or a custom image
+downsampled and compressed locally before persistence. Frutiger Aero selects that landscape as part of its full preset recipe. Preview
+iframes receive the already-loaded stylesheet inline, avoiding repeated stylesheet calls and the transient black/ghost frames seen when
+seven simulations loaded together. The bundled landscape was reduced from 347.9 KiB at 1672×941 to 138.8 KiB at 1280×720. The measured
+frontend is 171.3 KiB raw / 48.6 KiB gzip for code and UI, plus the bounded raster asset; code and total-package budgets are reported
+separately.
+
+## 2026-11-02 · 0.3 implementation starts with Focus, presets and module boundaries
+
+Implementation began without changing the 0.2.2 manifest version. Focus now separates pure timer transitions, ambient/quiet modes and
+DOM control, with finish and skip intentionally accounting for sessions differently. The page has an intention, explicit timer state,
+duration controls, summaries and a compact active-session capsule. Grid hover previews and drag/drop moved into their own controllers,
+Focus styling moved out of `launcher.css`, and organise categories became typed static data instead of controller-embedded rules.
+
+Appearance now offers six named Opaline-native starting points and a local collection of user-named visual/layout presets. A user
+preset captures acrylic values, sizing, labels, rail and compact-bar choices; collections import and export as a validated versioned
+JSON document. No backend, dependency or background request was added. Preview cards deliberately use ordinary gradients rather than
+one backdrop-filter each.
+
+Navigation now has three live arrangements: the original split header, a compact destination taskbar beside Home, and a dropdown tray.
+Pin switches keep selected destinations primary and move the rest to overflow; Alt+1–5 remains available. The Settings previews and
+applied launcher controls use the same Opaline tokens. Focus, Grid, Appearance and Navigation each own their CSS and a feature README;
+`launcher.css` is being reduced to shared shell and material rules rather than remaining the owner of every screen.
+
+The owner rejected abstract preview diagrams and automatic Settings writes. Appearance and Navigation cards now simulate the proposed
+layout over the current in-memory backdrop with the saved panel proportion; no image enters local storage or exported presets. Settings
+uses an in-memory draft with a sticky Done/Cancel boundary. Browser acceptance verifies that an uncommitted navigation change leaves
+the launcher unchanged, Done applies it, and Cancel restores the saved selection.
+
+The first simulation still layered a generic panel/search diagram over every card and the built-in presets changed only blur and tint,
+so the owner correctly reported ghosted previews and themes that were not meaningfully distinct. The renderer now uses one miniature
+launcher over the current memory-only backdrop, populated with the session's loaded app and taskbar icon images. Each built-in carries a
+complete material recipe and an explicit material profile. Windows Mica is flatter, 90% opaque, low-blur and 12 px rounded; One UI,
+Apple Glass, Frutiger Aero, Deep Night and Opaline Original each have separate surface/shadow/highlight behavior. Automated coverage
+checks six unique preview recipes, the absence of the discarded outer ghost layer, real preview images and the applied Mica variables.
+
+The owner isolated the long-standing gesture miss: after one horizontal trackpad swipe, another swipe did not register until the mouse
+moved, while pinch continued to work. The wheel controller kept its swipe burst locked for 350 ms and extended that lock with the
+touchpad's inertial tail; changing to pinch reset the mode, explaining why pinch escaped the stale state. The candidate now treats
+120 ms of wheel silence as the physical burst boundary and 160 ms as a new-burst gap. Browser acceptance performs two same-direction
+Home swipes back-to-back after only the page transition, with no mouse movement. W-51 remains partial until the owner confirms this on
+the physical trackpad.
+
+The first re-arm candidate exposed the opposite failure on a forceful swipe: its inertial tail could survive the 120 ms timer and be
+interpreted as another page movement after the View Transition. The recogniser now handles committed input before asking whether the
+page is temporarily navigable, consumes the entire decaying tail with a 560 ms quiet fallback, and recognises a new stroke from a
+direction change or rising impulse. The browser check injects a large swipe plus eight decaying events across the transition and asserts
+one move, then sends a new same-direction stroke without mouse movement and asserts the second move.
+
+The owner also rejected the remaining preview cards as diagrams rather than screen simulations. Appearance and Navigation now share an
+isolated 1280 × 800 copy of the real Home DOM and compiled launcher stylesheet, including the current wallpaper, live tiles/panes, labels,
+search/header/panel/Home controls and taskbar. Draft navigation/material state is applied only inside that frame; no substitute SVG diagram
+is used. One larger simulation stays visible above every Settings
+section and updates immediately while the real launcher remains unchanged until Done. Settings navigation was separated into Appearance,
+Home layout, Navigation and Taskbar so presentation, ordering, Opaline destinations and the Windows app mirror have distinct homes.
+
+The partial feature migration was completed for TypeScript: `src` now contains only its architecture README, and runtime modules live in
+`app`, `core`, `activity`, `appearance`, `focus`, `grid`, `navigation`, `settings` or `taskbar`. Activity and Taskbar CSS also moved out of
+the shell. Each area now documents functionality, public exports, state/data flow, dependencies, invariants and extension points with
+Mermaid diagrams; contributor and testing paths were updated to the real module locations.
+
+Navigation now also has a staged Default opening page choice between Home and All apps. A normal native open respects it and focuses
+Search when All apps is the chosen default, while explicit
+page requests and Alt shortcuts keep their existing destinations. The full-width Settings commit footer and status copy were removed;
+only compact material-aware Cancel and Done actions remain at the lower-right, with Done disabled when nothing has changed.
+
+The production frontend is 162.0 KiB raw / 46.3 KiB gzip after these slices, below the new 180 KiB / 60 KiB budgets. The existing 0.2.2
+release host built the final local slice to a 4.91 MiB executable, 1.61 MiB NSIS installer and 2.38 MiB MSI. These are size evidence,
+not published 0.3 release candidates; manifests intentionally remain at 0.2.2 until full update acceptance.
+
+## 2026-11-02 · 0.3.0 experience bootstrap decision
+
+After accepting the 0.2.2 reordering work, the owner decided to bootstrap a full update rather than treat the next changes as another
+small patch. The planned target is 0.3.0, led by a complete Focus-page UX pass, followed by a movable Opaline taskbar, a dedicated live
+layout customiser for resizing the main panel, and measured full-restart/startup improvements. The 0.2.2 manifests remain unchanged
+while this is planning work; 0.3.0 will supersede the unpublished candidate only after implementation and acceptance.
+
+The performance plan builds on, rather than ignores, the current caches. Warm opens already reuse the live DOM and an in-memory
+backdrop, and a bounded frontend cache retains some icons. The 0.3.0 plan adds a versioned native last-known manifest and disk icon
+cache so an unchanged Desktop can render recognisable content immediately after a full process restart, then validate in the
+background. Backdrops, live window icons and thumbnails remain memory-only. Performance will be judged by repeatable median and p95
+measurements, not a best run.
+
+The full scope, sequence, budgets, privacy boundaries and acceptance matrix are in `docs/V0_3_WORKORDER.md`. No feature code was
+changed for this decision.
+
+The owner then expanded the plan with a reviewable notification inbox and possible Google Calendar inputs. These are grouped into an
+optional Activity Center rather than another permanent main page. Opaline's own Focus alerts can always appear there. Mirroring other
+apps' Windows notifications is a separate, off-by-default capability because it exposes sensitive message content and requires a
+Windows permission plus package identity; installed and portable feasibility must be proven before it is promised. Retention is
+bounded, per-app exclusions are planned, and stored notification history must use Windows user-bound protection.
+
+Calendar support is staged without an Opaline backend: local events and `.ics` import first, then an optional direct read-only Google
+Calendar connection using desktop OAuth with PKCE. That connector would make explicit network requests and requires secure refresh
+token storage, a Google Cloud OAuth client and consent/verification work. If those operational gates are not ready, the offline agenda
+can ship in 0.3.0 while Google sync remains experimental or moves to 0.3.x.
+
+The owner added a backendless news feed and clarified that the Activity Center must feel spatially obvious rather than become another
+page. The planned center is now a pane-like edge drawer with Notifications, Agenda and News modules. Settings has a master switch plus
+per-module switches, and both the drawer and Opaline taskbar use four miniature monitor previews for Bottom, Top, Left and Right,
+inspired by the supplied Windows taskbar-behaviour reference but rendered with Opaline's material. Alignment and size controls follow
+the previews. RSS/Atom and OPML provide news without an Opaline service or API key; disabled News performs no network work, remote
+feed markup is sanitised, and article images remain off by default.
+
+## 2026-11-01 · 0.2.2 distinct insertion, grouping and pane ordering
+
+The owner reported that pane members could not be reordered and that Home dragging exposed only the grouping highlight, with no clear way to insert between entries. The drag controller now treats the centre of an eligible item or pane as the grouping target and its edges/gaps as insertion targets. An initial preview moved cells during drag, but the owner found the feedback jittery. The revised preview leaves the grid stable under the pointer and uses a restrained acrylic line; order changes once on drop.
+
+Pane member order reuses the existing ordered `Group.items` array, so no store migration or Desktop-file operation is needed. At the owner's direction, pane contents remain manually ordered and have no automatic sorting. Settings exposes one-shot A–Z, Z–A and most-used actions only for Home. Unit coverage increased to 21 tests; release-artifact and installer checks remain separate.
+
+The owner tested the revised native preview, confirmed that reordering and the themed stable marker work, and selected version 0.2.2. The manifest versions now identify the candidate as 0.2.2; tagging, CI artifacts and installer publication remain separate release steps.
+
 ## 2026-10-29 · 0.2.1 release decision and remaining gesture bug
 
 After testing the latest local preview, the owner still experienced gesture lag and intermittent missed swipes. The owner chose to ship 0.2.1 with this recorded as a persistent known bug for later work, and authorized a pull request, merge and updated release tag. W-51 tracks physical-device profiling and acceptance; browser routing and timing checks alone do not close it. The 0.2.1 documentation distinguishes the corrected swipe/pinch destinations from the unresolved interaction feel.

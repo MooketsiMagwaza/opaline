@@ -6,6 +6,47 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+### Added
+- Rebuilt the Focus workflow around a clear intention, explicit ready/running/paused states, 25/50/custom durations, finish-versus-skip semantics, keyboard control, session summaries and a compact running-timer capsule.
+- Added six Opaline-native visual starting points—Opaline Original, Windows Mica, One UI Glass, Apple Glass, Frutiger Aero and Deep Night—plus named user visual/layout presets. User presets capture appearance, panel and icon sizing, rail/bar choices and motion settings, and support validated local JSON import/export.
+- Added Split Header, Navigation Taskbar and Dropdown Tray arrangements with live previews. Individual destinations can stay pinned or move into the overflow tray.
+- Added staged Settings editing with a persistent bottom Done/Cancel bar. Navigation and appearance previews reuse the current in-memory backdrop and actual panel proportions without persisting the image.
+- Added task-specific Settings previews: Home simulations only where Home is being changed, plus a looping pane-origin motion preview for Panes.
+- Added a dependency-free build-size report and frontend size budget.
+- Added a Navigation setting that lets a normal Opaline open start on Home or All apps; choosing All apps focuses Search on open.
+- Added Desktop, Opaline Aero and locally optimised custom Opaline backgrounds. Frutiger Aero includes its own original landscape.
+
+### Changed
+- Completed the TypeScript feature-folder migration: the source root now contains documentation only, while app composition, shared core, Activity, Appearance, Focus, Grid/Home, Navigation, Settings and Taskbar own their runtime modules. Activity and Taskbar styling moved out of the shell stylesheet.
+- Expanded feature documentation with public functions, state ownership, dependencies, invariants, extension points and Mermaid UML/flow/state/sequence diagrams.
+- Reorganised Settings into Appearance, Home layout, Navigation and Taskbar sections so visual presentation, Home ordering, Opaline destinations and the Windows app mirror no longer overlap.
+- Replaced the fixed dark Settings commit slab and status copy with compact material-aware Cancel/Done actions at the lower-right.
+- Expanded Settings into a near-full-window workspace, removed unrelated Home previews from Screen time and Home screens, and moved Focus preferences onto the Focus page.
+- Changed launcher search to accept type-to-search from Home and All apps instead of requiring a dedicated S shortcut.
+- Removed per-card backdrop filtering from appearance previews so preset count does not multiply compositor work.
+- Changed Settings from automatic application to an explicit validated commit; operating-system actions remain intentionally immediate.
+
+### Fixed
+- Replaced ghosted generic preset thumbnails and dot-box diagrams with a shared miniature of the actual launcher layout using current memory-only backdrop, app names, loaded app/taskbar icons and real configuration state.
+- Expanded the six built-in presets into distinct complete material profiles. Windows Mica now uses a flatter, mostly opaque WinUI 3-inspired treatment instead of sharing Opaline Frost's material.
+- Changed precision-touchpad recognition to commit once, consume the complete inertial tail and re-arm after a bounded quiet period. A 280 ms safety release prevents a stalled WebView2 View Transition from waiting for pointer movement; physical owner-device acceptance remains open.
+- Inlined the already-loaded stylesheet into isolated Settings simulations, eliminating repeated preview stylesheet requests and transient black frames.
+
+### Planning
+- Scoped the planned 0.3.0 experience update: a Focus-first UI redesign, optional intention and completion feedback, a compact running timer, four-edge Opaline taskbar placement, a live panel customiser, and versioned restart caches with measured performance budgets.
+- Kept backdrop captures and live window thumbnails memory-only; pane-internal ordering remains manual.
+- Added an Activity Center feasibility track: Opaline alert history, opt-in Windows notification mirroring with bounded encrypted retention, an offline `.ics` agenda, and a possible direct read-only Google Calendar connector with no Opaline backend.
+- Planned a toggleable pane-like Activity Center with Notifications, Agenda and News modules, four-edge visual placement previews, alignment/size controls, and direct RSS/Atom feeds with no Opaline news backend.
+
+## [0.2.2] — 2026-11-01 "Borosilicate"
+
+### Added
+- Pane members can be reordered in place and keep their order after the pane closes or Opaline restarts.
+- One-shot Home sorting actions for A–Z, Z–A and most-used order.
+
+### Changed
+- Dragging at a tile edge now previews a between-items insertion with a stable acrylic line; the tile centre retains the existing create/add-to-pane action.
+
 ## [0.2.1] — 2026-10-29 "Borosilicate"
 
 ### Fixed

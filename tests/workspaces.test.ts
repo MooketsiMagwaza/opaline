@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-vi.mock("../src/api", () => ({ api: { loadStore: vi.fn(), saveStore: vi.fn().mockResolvedValue(undefined) } }));
-import { api } from "../src/api";
-import { createWorkspace, loadWorkspaces, normalizeWorkspaces, pinItem, workspaces } from "../src/workspaces";
+vi.mock("../src/core/api", () => ({ api: { loadStore: vi.fn(), saveStore: vi.fn().mockResolvedValue(undefined) } }));
+import { api } from "../src/core/api";
+import { createWorkspace, loadWorkspaces, normalizeWorkspaces, pinItem, workspaces } from "../src/grid/workspaces";
 
 describe("workspace persistence", () => {
   it("validates identities, names and duplicate pins, and limits keyboard slots", () => {

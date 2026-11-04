@@ -1,0 +1,327 @@
+/* ---------- grid ---------- */
+
+#grid-layer {
+  min-height: 0;
+  padding: 20px 0 24px;
+  overflow-y: auto;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--card));
+  justify-content: center;
+  align-content: start;
+  gap: 14px 8px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+#grid.ordered {
+  display: grid;
+  width: 100%;
+  min-height: min-content;
+}
+
+#grid.ordered > .tile {
+  position: relative;
+  margin: 0;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 60px 0;
+  color: var(--dim);
+  font-size: 15px;
+  text-align: center;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: var(--card);
+  height: calc(var(--tile) + 60px);
+  margin: 0 auto;
+  padding: 8px;
+  overflow: visible;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) * 0.72);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.14s var(--ease), opacity 0.14s;
+}
+
+.tile::before {
+  content: none;
+}
+
+.tile > * {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.tile:hover,
+.tile:focus-visible {
+  transform: translateY(-2px);
+}
+
+.tile:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.82);
+  outline-offset: 2px;
+}
+
+.tile:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.tile.lifted {
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+.tile.drop-target {
+  outline: 2px solid rgba(255, 255, 255, 0.86);
+  outline-offset: 2px;
+  transform: scale(1.06);
+}
+
+.tile.insert-before::after,
+.tile.insert-after::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  top: 14%;
+  bottom: 14%;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, transparent, var(--text) 18%, var(--text) 82%, transparent);
+  box-shadow: 0 0 0 1px var(--acrylic-border), 0 0 8px var(--acrylic-highlight);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.tile.insert-before::after { left: -4px; }
+.tile.insert-after::after { right: -4px; }
+
+.item-tile > .ico,
+.pane-tile > .minis {
+  transition: transform 0.14s var(--ease), box-shadow 0.16s, border-color 0.16s;
+}
+
+.item-tile:hover > .ico,
+.item-tile:focus-visible > .ico,
+.pane-tile:hover > .minis,
+.pane-tile:focus-visible > .minis {
+  transform: scale(1.05);
+}
+
+.pane-tile > .minis {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: calc(var(--radius) * 0.7);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, calc(var(--plate) + 0.08)), transparent 52%),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.065));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 10px 24px rgba(6, 10, 28, 0.2);
+}
+
+body[data-style="solid"] .pane-tile > .minis {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(150deg, #293650, #172136);
+}
+
+body[data-style="frost"] .pane-tile > .minis {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.055));
+}
+
+body[data-style="clear"] .pane-tile > .minis {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.025));
+}
+
+body[data-style="custom"] .pane-tile > .minis {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, calc(var(--plate) + 0.08)), transparent 52%),
+    rgba(var(--custom-rgb), var(--custom-opacity));
+}
+
+/* children must not steal drag events, or drop targets flicker */
+body.dragging .tile * {
+  pointer-events: none;
+}
+
+.ico {
+  display: grid;
+  place-items: center;
+}
+
+.item-tile > .ico {
+  width: calc(var(--tile) * 0.78);
+  height: calc(var(--tile) * 0.78);
+}
+
+.ico img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: none;
+  -webkit-user-drag: none;
+}
+
+.ico .fallback {
+  font-size: calc(var(--tile) * 0.36);
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.minis {
+  display: grid;
+  gap: calc(var(--tile) * 0.04);
+  place-items: center;
+  width: var(--tile);
+  height: var(--tile);
+  padding: calc(var(--tile) * 0.12);
+}
+
+.minis.n4 {
+  grid-template: repeat(2, 1fr) / repeat(2, 1fr);
+}
+
+.minis.n9 {
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+}
+
+.minis .ico {
+  width: 100%;
+  height: 100%;
+}
+
+.minis .ico img {
+  filter: none;
+}
+
+.label {
+  display: -webkit-box;
+  max-width: calc(var(--card) - 18px);
+  min-height: 2.5em;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  word-break: break-word;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+body[data-labels="false"] .label {
+  display: none;
+}
+
+body[data-labels="false"] .item-tile > .ico,
+body[data-labels="false"] .pane-tile > .minis {
+  width: calc(var(--tile) * 0.82);
+  height: calc(var(--tile) * 0.82);
+}
+
+#status {
+  padding: 2px 0 2px;
+  color: var(--dim);
+  font-size: 12.5px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- pane popup ---------- */
+
+#popup-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 10, 26, 0.18);
+}
+
+body[data-canvas="clear"] #popup-layer {
+  background: transparent;
+}
+
+#popup {
+  --r: 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(760px, 88vw);
+  max-height: 80vh;
+  padding: 30px 34px 24px;
+  opacity: 0;
+  transform-origin: center;
+  transform: translate(var(--pane-from-x, 0px), var(--pane-from-y, 0px)) scale(var(--pane-from-scale, .35));
+  transition: transform var(--pane-motion, 320ms) cubic-bezier(.2,.8,.2,1), opacity var(--pane-motion, 320ms) ease;
+}
+
+#popup.open {
+  opacity: 1;
+  transform: none;
+}
+
+#popup.measuring { transition: none; transform: none; visibility: hidden; }
+#popup.initial { transition: none; }
+
+.pane-name {
+  align-self: center;
+  width: min(420px, 100%);
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+  transition: background 0.15s;
+}
+
+.pane-name:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pane-name:focus {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.pane-grid {
+  display: grid;
+  /* auto-fit collapses empty columns, so a pane with two items centres them */
+  grid-template-columns: repeat(auto-fit, var(--card));
+  justify-content: center;
+  gap: 10px 6px;
+  padding: 4px 0;
+  overflow-y: auto;
+}
+
+.pane-actions {
+  display: flex;
+  justify-content: center;
+}
+#tile-peek { --r: 15px; position: absolute; z-index: 6; width: min(306px, calc(100vw - 24px)); padding: 13px 15px; pointer-events: none; box-shadow: 0 16px 38px rgba(4,9,23,.32); animation: peek-appear .18s ease-out both; }
+.peek-title { display: block; margin-bottom: 9px; color: var(--text); font-size: 13px; overflow-wrap: anywhere; }
+.peek-grid { display: grid; grid-template-columns: repeat(var(--peek-columns, 2), minmax(0, 1fr)); gap: 8px; }
+.peek-tile { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 4px; padding: 7px 3px; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: rgba(255,255,255,.055); }
+.peek-tile .ico { width: 29px; height: 29px; flex: none; }
+.peek-name { max-width: 100%; color: var(--text); font-size: 10px; line-height: 1.2; text-align: center; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.peek-empty, .peek-more { display: block; padding-top: 4px; color: var(--dim); font-size: 11px; }
+@keyframes peek-appear { from { opacity: 0; transform: translateY(5px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+body[data-anim="false"] #tile-peek { animation: none; }
+@media (prefers-reduced-motion: reduce) { #tile-peek { animation: none; } }

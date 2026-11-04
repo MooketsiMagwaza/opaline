@@ -1,0 +1,47 @@
+.navigation-styles { margin: 0 0 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.navigation-style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.navigation-style-card { display: flex; min-width: 0; flex-direction: column; gap: 5px; padding: 8px; border: 1px solid rgba(255,255,255,.13); border-radius: 14px; background: rgba(255,255,255,.035); color: var(--text); text-align: left; cursor: pointer; }
+.navigation-style-card:hover { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.075); }
+.navigation-style-card[aria-pressed="true"] { border-color: rgba(191,219,255,.72); background: rgba(191,219,255,.11); box-shadow: 0 0 0 2px rgba(126,175,231,.14); }
+.navigation-style-card strong { padding-inline: 3px; font-size: 11px; }
+.navigation-style-card small { min-height: 28px; padding-inline: 3px; color: var(--dim); font-size: 9px; line-height: 1.35; }
+@media (max-width: 700px) { .navigation-style-grid { grid-template-columns: 1fr; } }
+
+/* Applied launcher arrangements. Hidden primary shortcuts remain in the overflow tray. */
+#navigation-dock, #navigation-overflow { display: none; }
+body[data-navigation="taskbar"] #header-left,
+body[data-navigation="taskbar"] #header-right,
+body[data-navigation="tray"] #header-left,
+body[data-navigation="tray"] #header-right { display: none; }
+body[data-navigation="taskbar"] #search-wrap,
+body[data-navigation="tray"] #search-wrap { grid-column: 2; }
+body[data-navigation="taskbar"] #navigation-dock { display: flex; }
+body[data-navigation="tray"] #navigation-overflow,
+body:not([data-navigation="tray"])[data-navigation-overflow="true"] #navigation-overflow { display: block; }
+
+body[data-shortcut-all-apps="false"] #header-left [data-nav-shortcut="all-apps"],
+body[data-shortcut-all-apps="false"] #navigation-dock [data-nav-shortcut="all-apps"],
+body[data-shortcut-screen-time="false"] #header-left [data-nav-shortcut="screen-time"],
+body[data-shortcut-screen-time="false"] #navigation-dock [data-nav-shortcut="screen-time"],
+body[data-shortcut-focus="false"] #header-right [data-nav-shortcut="focus"],
+body[data-shortcut-focus="false"] #navigation-dock [data-nav-shortcut="focus"],
+body[data-shortcut-settings="false"] #header-right [data-nav-shortcut="settings"],
+body[data-shortcut-settings="false"] #navigation-dock [data-nav-shortcut="settings"] { display: none; }
+
+body:not([data-navigation="tray"])[data-shortcut-all-apps="true"] .navigation-tray [data-nav-shortcut="all-apps"],
+body:not([data-navigation="tray"])[data-shortcut-screen-time="true"] .navigation-tray [data-nav-shortcut="screen-time"],
+body:not([data-navigation="tray"])[data-shortcut-focus="true"] .navigation-tray [data-nav-shortcut="focus"],
+body:not([data-navigation="tray"])[data-shortcut-settings="true"] .navigation-tray [data-nav-shortcut="settings"] { display: none; }
+
+.navigation-dock { flex: none; height: 52px; padding: 4px; }
+.navigation-overflow { position: relative; flex: none; }
+.navigation-overflow[open] { z-index: 12; }
+.navigation-overflow > summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 17px; color: var(--text); cursor: pointer; list-style: none; letter-spacing: 2px; }
+.navigation-overflow > summary::-webkit-details-marker { display: none; }
+.navigation-overflow[open] > summary { border-color: rgba(191,219,255,.52); background: rgba(191,219,255,.12); }
+.navigation-overflow > .navigation-tray { position: absolute; right: 0; bottom: 60px; display: flex; width: 156px; height: auto; flex-direction: column; align-items: stretch; padding: 6px; border-radius: 16px; box-shadow: 0 16px 42px rgba(2,7,19,.38); }
+.navigation-tray button { min-height: 34px; padding: 7px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.navigation-tray button:hover, .navigation-tray button:focus-visible, .navigation-tray button[aria-current="page"] { background: rgba(255,255,255,.12); }
+body[data-navigation="tray"] .navigation-tray { right: 50%; transform: translateX(50%); }
+body[data-compact-bar="true"] #navigation-dock,
+body[data-compact-bar="true"] #navigation-overflow { display: none; }

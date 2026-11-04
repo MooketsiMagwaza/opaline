@@ -62,7 +62,7 @@ Console messages and exceptions from the page are printed at the end. Example â€
 Tips
 
 - Call the Rust commands directly from an `eval`:
-  `(async () => { const { api } = await import('/src/api.ts'); return (await api.rail()).map(i => i.name); })()`.
+  `(async () => { const { api } = await import('/src/core/api.ts'); return (await api.rail()).map(i => i.name); })()`.
 - Hover effects need real events: `el.dispatchEvent(new PointerEvent('pointerenter'))`. Context menu:
   `el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y }))`.
 - Write the steps file **without a byte-order mark** (PowerShell 5.1's `Set-Content -Encoding UTF8` adds one and `JSON.parse` fails).

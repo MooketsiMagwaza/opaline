@@ -83,7 +83,7 @@ The blank desktop is an original illustration based on the owner's example, with
 |---|---|---|
 | ![Zen quotes](docs/images/zen.png) | ![Quiet screen saver](docs/images/screen-saver.png) | ![Full-page settings](docs/images/settings.png) |
 
-[Every Settings section](docs/images/settings-appearance.png): [Layout](docs/images/settings-layout.png) · [Taskbar](docs/images/settings-rail.png) · [Workspaces](docs/images/settings-workspaces.png) · [Screen time](docs/images/settings-screen-time.png) · [Focus](docs/images/settings-focus.png) · [Panes](docs/images/settings-panes.png) · [About](docs/images/settings-about.png).
+[Settings](docs/images/settings-appearance.png): [Home layout](docs/images/settings-home-layout.png) · [Navigation](docs/images/settings-navigation.png) · [Taskbar](docs/images/settings-rail.png) · [Home screens](docs/images/settings-workspaces.png) · [Screen time](docs/images/settings-screen-time.png) · [Panes](docs/images/settings-panes.png) · [About](docs/images/settings-about.png). Focus preferences live on the Focus screen itself.
 
 ![A pane peek showing its member names after a short hover](docs/images/folder-peek.png)
 
@@ -137,9 +137,9 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | Key | Does |
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | Open / close (rebindable in Settings) |
-| <kbd>S</kbd> | Focus search without entering a character |
+| Start typing | Focus search and enter the query immediately on Home or All apps |
 | <kbd>Enter</kbd> | Launch the top result |
-| <kbd>S</kbd>, then <kbd>↓</kbd> | Move from search into tiles |
+| Search, then <kbd>↓</kbd> | Move from search into tiles |
 | <kbd>Esc</kbd> | Clear search → close pane/menu/settings → close Opaline |
 | Click empty space | Close |
 | Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |

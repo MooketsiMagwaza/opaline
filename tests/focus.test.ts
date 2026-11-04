@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { localDateKey, recentDays } from "../src/charts";
-import { newTimer, remainingTime, restoreTimer, settleTimer, toggleTimer, type TimerDurations } from "../src/timer";
+import { localDateKey, recentDays } from "../src/activity/charts";
+import { finishTimer, newTimer, remainingTime, restoreTimer, settleTimer, skipTimer, toggleTimer, type TimerDurations } from "../src/focus/timer";
 
 const durations: TimerDurations = { work: 25 * 60000, "short-break": 5 * 60000, "long-break": 15 * 60000 };
 
@@ -23,6 +23,21 @@ describe("focus timer", () => {
     expect(state.phase).toBe("long-break");
     expect(state.completedSessions).toBe(4);
     expect(state.dailySessions[localDateKey(new Date(start))]).toBe(4);
+  });
+
+  it("distinguishes finishing a session from skipping it", () => {
+    const now = Date.parse("2026-11-02T09:00:00");
+    const initial = newTimer(durations);
+    const skipped = skipTimer(initial, now, durations);
+    expect(skipped.phase).toBe("short-break");
+    expect(skipped.completedSessions).toBe(0);
+    expect(skipped.dailySessions).toEqual({});
+
+    const finished = finishTimer(initial, now, durations);
+    expect(finished.phase).toBe("short-break");
+    expect(finished.completedSessions).toBe(1);
+    expect(finished.dailySessions[localDateKey(new Date(now))]).toBe(1);
+    expect(finishTimer(finished, now, durations).phase).toBe("work");
   });
 
   it("makes calendar days across month boundaries", () => {

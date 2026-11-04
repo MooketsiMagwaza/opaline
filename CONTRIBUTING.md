@@ -37,14 +37,18 @@ Useful while developing:
 | Icons (one STA worker) | `src-tauri/src/icons.rs` |
 | Taskbar mirror | `src-tauri/src/taskbar.rs` |
 | Persistent files | `src-tauri/src/store.rs` |
-| UI entry, open/close lifecycle, keyboard | `src/launcher.ts` |
-| Tile grid, pane popup, drag & drop | `src/grid.ts` |
-| Rail and hover previews | `src/rail.ts` |
-| Panes (state) and auto-organise rules | `src/groups.ts`, `src/organize.ts` |
-| Glass and lens | `src/glass.ts`, `src/launcher.css` |
-| Settings (state) and the full Settings page | `src/settings.ts`, `src/panel.ts` |
-| Home additions and shared app/folder picker | `src/home.ts`, `src/item-picker.ts` |
-| Context menu · icon cache · Rust commands · DOM helpers | `src/menu.ts`, `src/icons.ts`, `src/api.ts`, `src/dom.ts` |
+| UI entry, open/close lifecycle, keyboard | `src/app/launcher.ts` |
+| Tile grid and pane popup | `src/grid/index.ts` |
+| Grid drag/drop and folder/pane peeks | `src/grid/drag.ts`, `src/grid/peek.ts` |
+| Rail and hover previews | `src/taskbar/index.ts` |
+| Panes (state) and data-driven auto-organise rules | `src/grid/groups.ts`, `src/grid/organize.ts`, `src/grid/organize-rules.ts` |
+| Focus controller, ambient modes and timer rules | `src/focus/index.ts`, `src/focus/ambient.ts`, `src/focus/timer.ts` |
+| Shared glass and shell styles | `src/core/glass.ts`, `src/app/launcher.css` |
+| Feature styles | `src/focus/focus.css`, `src/grid/grid.css`, `src/appearance/appearance.css`, `src/navigation/navigation.css`, `src/settings/settings.css` |
+| Settings (state) and the full Settings page | `src/settings/store.ts`, `src/settings/panel.ts` |
+| Built-in and user visual presets | `src/data/appearance-presets.ts`, `src/appearance/user-presets.ts` |
+| Home additions and shared app/folder picker | `src/grid/workspaces.ts`, `src/grid/item-picker.ts` |
+| Context menu · icon cache · Rust commands · DOM helpers | `src/core/menu.ts`, `src/core/icons.ts`, `src/core/api.ts`, `src/core/dom.ts` |
 | Logo and generated icons | `assets/logo.svg`, `npm run icons` |
 
 ## Checks that must pass
