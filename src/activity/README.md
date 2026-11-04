@@ -4,8 +4,9 @@ Owns local usage-report presentation and reusable daily charts.
 
 - `index.ts` loads `UsageReport`, filters it, computes summaries, renders app rows and exposes `initUsage`, `refreshUsage`, `renderUsage` and
   `setUsageQuery`.
-- `charts.ts` contains local-date keys, recent-day ranges and the accessible daily bar-chart renderer. Focus reuses only these date/chart
-  helpers; it does not depend on Screen time state.
+- `charts.ts` contains local-date keys, recent-day ranges, the value axes (`timeAxis` for durations, `countAxis` for counts; round steps, at
+  most four intervals, unit-tested) and the accessible daily bar-chart renderer, which draws the axis, faint rules, dated and weekday-labelled
+  days and marks today. Focus reuses only these helpers; it does not depend on Screen time state.
 - `activity.css` owns insights, charts, toolbars and usage rows.
 
 ```mermaid

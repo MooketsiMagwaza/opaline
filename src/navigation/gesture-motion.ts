@@ -34,14 +34,14 @@ const cue = (): HTMLElement => byId("gesture-cue");
 
 export const motionAllowed = (): boolean => document.body.dataset.anim !== "false" && !matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** Paints the live preview of a gesture in progress. `resistance` < 1 makes it a rubber band that cannot go anywhere. */
-export function showPreview(source: GestureSource, direction: number, progress: number, mode: GestureMode, resistance = 1) {
+/** Paints the live preview of a gesture in progress. */
+export function showPreview(source: GestureSource, direction: number, progress: number, mode: GestureMode) {
   endTransition(); // a new gesture takes over from any motion still settling, which would otherwise hide the preview
   if (preview && preview.mode !== mode) clearPreview();
   const element = preview?.element ?? source.locate(mode);
   if (!element) return;
 
-  const eased = easeOut(progress) * resistance;
+  const eased = easeOut(progress);
   element.dataset.gesturePreview = "true";
   element.dataset.gestureMode = mode;
   element.style.setProperty("--gesture-dir", String(direction));
@@ -63,13 +63,16 @@ export function clearPreview(keepCue = false) {
   if (!keepCue) hideCue();
 }
 
+// Only these two constant glyphs are ever written as markup; the destination name is always set as text.
+const ARROWS = { previous: "M15 5l-7 7 7 7", next: "M9 5l7 7-7 7" } as const;
+
 function paintCue(source: GestureSource, direction: number, progress: number, mode: GestureMode) {
   const label = source.destination(direction, mode);
   const node = cue();
   if (!label) { node.hidden = true; return; }
 
   const heading = direction > 0 ? "next" : "previous";
-  if (node.hidden || node.dataset.mode !== mode || node.dataset.direction !== heading || node.textContent !== label) {
+  if (node.hidden || node.dataset.mode !== mode || node.dataset.direction !== heading || node.dataset.label !== label) {
     const panel = source.panel();
     const shell = byId("shell").getBoundingClientRect();
     const box = panel?.getBoundingClientRect();
@@ -79,7 +82,10 @@ function paintCue(source: GestureSource, direction: number, progress: number, mo
       node.style.setProperty("--cue-w", `${box.width}px`);
       node.style.setProperty("--cue-h", `${box.height}px`);
     }
-    node.textContent = label;
+    node.innerHTML = `<span class="cue-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ARROWS[heading]}"/></svg></span><span class="cue-label"></span>`;
+    node.querySelector(".cue-label")!.textContent = label;
+    node.dataset.label = label;
+    node.dataset.kicker = `${heading === "next" ? "Next" : "Previous"} ${mode === "pinch" ? "page" : "screen"}`;
     node.dataset.mode = mode;
     node.dataset.direction = heading;
     delete node.dataset.leaving;

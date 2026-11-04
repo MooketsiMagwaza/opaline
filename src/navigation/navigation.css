@@ -15,6 +15,22 @@ body[data-navigation="tray"] #header-left,
 body[data-navigation="tray"] #header-right { display: none; }
 body[data-navigation="taskbar"] #search-wrap,
 body[data-navigation="tray"] #search-wrap { grid-column: 2; }
+/* Destination icons are drawn a touch lighter than their markup (1.8 to 2) so they read as part of the glass, in every arrangement. */
+.header-nav .orb svg { stroke-width: 1.55; }
+/* Taskbar ends lifts the two header groups to the bottom corners. The sidebar is the taskbar turned on its side: one compact
+   glass pill of every destination, centred on a chosen edge. The header groups give way to it and the page panel keeps clear. */
+body[data-navigation="ends"] #search-wrap, body[data-navigation="sidebar"] #search-wrap { grid-column: 2; }
+body[data-navigation="ends"] #header-left, body[data-navigation="ends"] #header-right { position: fixed; z-index: 4; bottom: 12px; }
+body[data-navigation="ends"] #header-left { left: 20px; }
+body[data-navigation="ends"] #header-right { right: 20px; }
+body[data-navigation="ends"] #rail { max-width: calc(100vw - 380px); } /* leave the two end clusters clear */
+body[data-navigation="sidebar"] #header-left, body[data-navigation="sidebar"] #header-right { display: none; }
+.navigation-sidebar { display: none; }
+body[data-navigation="sidebar"] .navigation-sidebar { position: fixed; z-index: 4; top: 50%; display: flex; width: 52px; height: auto; flex-direction: column; align-items: center; gap: 3px; padding: 4px 3px; border-color: rgba(255,255,255,.32); transform: translateY(-50%); }
+.navigation-sidebar::after { content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; background: rgba(255,255,255,.12); pointer-events: none; }
+body[data-navigation-side="left"] .navigation-sidebar { left: 12px; }
+body[data-navigation-side="right"] .navigation-sidebar { right: 12px; }
+body[data-navigation="sidebar"] .page-surface { width: min(var(--surface-width, 960px), calc(100% - 176px)); }
 /* A header pill whose destinations are all hidden would render as an empty glass capsule: remove it and
    keep the remaining items in their own columns (a hidden grid item lets the others auto-flow). */
 body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-left,
@@ -27,12 +43,16 @@ body:not([data-navigation="tray"])[data-navigation-overflow="true"] #navigation-
 
 body[data-shortcut-all-apps="false"] #header-left [data-nav-shortcut="all-apps"],
 body[data-shortcut-all-apps="false"] #navigation-dock [data-nav-shortcut="all-apps"],
+body[data-shortcut-all-apps="false"] #navigation-sidebar [data-nav-shortcut="all-apps"],
 body[data-shortcut-screen-time="false"] #header-left [data-nav-shortcut="screen-time"],
 body[data-shortcut-screen-time="false"] #navigation-dock [data-nav-shortcut="screen-time"],
+body[data-shortcut-screen-time="false"] #navigation-sidebar [data-nav-shortcut="screen-time"],
 body[data-shortcut-focus="false"] #header-right [data-nav-shortcut="focus"],
 body[data-shortcut-focus="false"] #navigation-dock [data-nav-shortcut="focus"],
+body[data-shortcut-focus="false"] #navigation-sidebar [data-nav-shortcut="focus"],
 body[data-shortcut-settings="false"] #header-right [data-nav-shortcut="settings"],
-body[data-shortcut-settings="false"] #navigation-dock [data-nav-shortcut="settings"] { display: none; }
+body[data-shortcut-settings="false"] #navigation-dock [data-nav-shortcut="settings"],
+body[data-shortcut-settings="false"] #navigation-sidebar [data-nav-shortcut="settings"] { display: none; }
 
 body:not([data-navigation="tray"])[data-shortcut-all-apps="true"] .navigation-tray [data-nav-shortcut="all-apps"],
 body:not([data-navigation="tray"])[data-shortcut-screen-time="true"] .navigation-tray [data-nav-shortcut="screen-time"],
@@ -69,27 +89,42 @@ body[data-compact-bar="true"] #navigation-overflow { display: none; }
   transform: scale(calc(1 + var(--gesture-dir) * var(--gesture-p) * .075));
   opacity: calc(1 - var(--gesture-fade) * .5);
 }
-/* The cue is a ghost of what is coming. For a pinch it is the destination page, the size of the panel, growing into place. */
+/* The cue is a ghost of what is coming, made of the same glass as the panels it leads to. For a pinch it is the destination
+   page, the size of the panel, growing into place; for a swipe it is a small pill at the edge the next screen comes from. */
 #gesture-cue {
   position: absolute; z-index: 5; left: var(--cue-x, 50%); top: var(--cue-y, 50%); width: var(--cue-w, auto); height: var(--cue-h, auto);
-  display: grid; place-items: center; box-sizing: border-box; pointer-events: none;
-  color: var(--text); font-weight: 600; letter-spacing: -.01em; text-shadow: 0 2px 14px rgba(11,18,38,.5);
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box; pointer-events: none; color: var(--text);
+  border: 1px solid var(--acrylic-border);
+  background: linear-gradient(145deg, var(--acrylic-highlight), transparent 42%), var(--acrylic-fill);
+  -webkit-backdrop-filter: blur(var(--pane-blur)) saturate(1.28); backdrop-filter: blur(var(--pane-blur)) saturate(1.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 16px 40px rgba(4,8,18,.3), 0 2px 8px rgba(4,8,18,.18);
 }
+#gesture-cue .cue-arrow { display: grid; flex: none; place-items: center; border: 1px solid rgba(255,255,255,.26); border-radius: 50%; background: rgba(255,255,255,.1); }
+#gesture-cue .cue-arrow svg { width: 55%; height: 55%; }
+#gesture-cue .cue-label { font-weight: 620; letter-spacing: -.01em; }
 #gesture-cue[data-mode="pinch"] {
-  border: 1px solid rgba(255,255,255,.28); border-radius: calc(var(--radius) + 8px); font-size: 28px;
-  background: linear-gradient(160deg, rgba(var(--custom-rgb), .62), rgba(var(--custom-rgb), .4));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 30px 80px rgba(2,7,19,.34);
+  flex-direction: column; gap: 6px; border-radius: var(--radius);
   opacity: calc(var(--gesture-p) * var(--gesture-p) * 1.15);
   transform: scale(calc(.88 + var(--gesture-p) * .12));
 }
+#gesture-cue[data-mode="pinch"] .cue-arrow { width: 52px; height: 52px; margin-bottom: 6px; }
+#gesture-cue[data-mode="pinch"] .cue-label { font-size: 26px; }
+#gesture-cue[data-mode="pinch"]::after { content: attr(data-kicker); color: var(--dim); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 #gesture-cue[data-mode="swipe"] {
-  width: auto; height: auto; padding: 8px 15px; border-radius: 999px; font-size: 13px;
-  background: rgba(var(--custom-rgb), .74); border: 1px solid rgba(255,255,255,.26);
+  width: auto; height: auto; gap: 9px; padding: 6px 15px 6px 7px; border-radius: 999px; font-size: 13px;
   top: calc(var(--cue-y) + var(--cue-h) / 2);
   opacity: calc(var(--gesture-p) * 1.2);
 }
+#gesture-cue[data-mode="swipe"][data-direction="next"] { flex-direction: row-reverse; padding: 6px 7px 6px 15px; }
+#gesture-cue[data-mode="swipe"] .cue-arrow { width: 26px; height: 26px; }
 #gesture-cue[data-mode="swipe"][data-direction="next"] { left: calc(var(--cue-x) + var(--cue-w) - 22px); transform: translate(calc(-100% + (1 - var(--gesture-p)) * 22px), -50%); }
 #gesture-cue[data-mode="swipe"][data-direction="previous"] { left: calc(var(--cue-x) + 22px); transform: translate(calc((var(--gesture-p) - 1) * 22px), -50%); }
+/* Quiet reminders of the keys that steer a page. They sit in the panel's bottom corner so they take no layout space. */
+.page-surface > .key-hints { position: absolute; right: 18px; bottom: 8px; z-index: 3; display: flex; gap: 14px; margin: 0; color: var(--dim); font-size: 10.5px; pointer-events: none; }
+.key-hints span { display: inline-flex; align-items: center; gap: 4px; }
+.key-hints kbd { min-width: 17px; padding: 0 4px; font-size: 10px; line-height: 1.5; border-bottom-width: 1px; }
+body[data-compact-bar="true"] .key-hints { display: none; }
+@media (max-width: 860px) { .key-hints { display: none; } }
 #gesture-cue[data-leaving="true"] { opacity: 0 !important; transition: opacity .16s linear; }
 /* The copy of the page that is leaving. For a swipe it is only the clipping frame, so its glass is hidden rather than doubled. */
 [data-gesture-ghost] { pointer-events: none; will-change: transform, opacity; transition: none !important; }

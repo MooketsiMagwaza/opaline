@@ -55,6 +55,13 @@ backdrop filter per card—so adding Desktop items does not add one expensive co
 - `screen-time.json`: foreground/maximised executable totals, current local-day totals and the pause preference. No window titles are saved.
 - `shell.json`: the opt-in Windows-key preference.
 
+`identity.rs` gives every executable one key, one human name and one icon source, shared by screen time and the taskbar. A packaged app (a
+folder under `WindowsApps`) is keyed by its package family, so it stays one entry across updates, and takes the name and icon of its
+Start-menu entry (its own executable is unreadable); other programs use the name in their file details, then the file name. A Store app
+shown through `ApplicationFrameHost.exe` is resolved through the `Windows.UI.Core.CoreWindow` inside the frame, and time that cannot be
+attributed is not charged. Lookups are cached; a guess made while the Start-menu catalogue lacked an app is retried after ten minutes.
+History recorded before this existed is merged and renamed on the sampler thread when Opaline starts, never on the path to the first frame.
+
 Changing a pane or grid order only changes metadata. Desktop files are never moved, renamed or deleted. The public identifier migration
 reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.github.mooketsimagwaza.opaline` without deleting the old copy.
 
@@ -66,7 +73,7 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 - Desktop and AppsFolder refreshes happen after presentation. Taskbar enumeration and bounded thumbnail warming run after presentation and stop when hidden.
 - The UI keeps up to 32 decoded thumbnails in memory, shares concurrent requests per window and shows stale pixels while refreshing. A cached hover avoids capture entirely; cold PrintWindow can take longer than 50 ms.
 - Native usage sampling runs once a second while the app is alive, excluding idle periods and sleep gaps. It saves every 30 seconds and on normal exit; an abrupt process kill can lose the most recent interval.
-- `npm run size` fails when the production frontend exceeds 190 KiB raw or 60 KiB gzip (raw was 180 KiB until the gesture motion and hover-intent systems; see `scripts/measure-build.mjs`). New UI data remains static TypeScript unless runtime editing actually requires a file or service.
+- `npm run size` fails when the production frontend exceeds 200 KiB raw or 60 KiB gzip (raw was 180 KiB until the gesture motion and hover-intent systems and 190 KiB until the help, Home-screen, chart and navigation work; see `scripts/measure-build.mjs`). New UI data remains static TypeScript unless runtime editing actually requires a file or service.
 
 ## Frontend module boundaries
 

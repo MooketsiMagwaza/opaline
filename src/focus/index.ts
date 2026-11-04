@@ -1,5 +1,5 @@
 import { byId } from "../core/dom";
-import { dailyChart, localDateKey, recentDays } from "../activity/charts";
+import { countAxis, dailyChart, localDateKey, recentDays } from "../activity/charts";
 import { PHASE_LABELS } from "./content";
 import { onSettingsChange, settings, updateSettings } from "../settings/store";
 import { closeAmbient, handleFocusKey, initAmbient, isAmbientOpen, openAmbient, tickAmbient } from "./ambient";
@@ -115,7 +115,7 @@ function renderTimer() {
 export function refreshFocus() {
   updateCompletion();
   renderTimer();
-  byId("focus-chart").replaceChildren(dailyChart(recentDays(7), timer.dailySessions, "Focus sessions this week", count => `${count} session${count === 1 ? "" : "s"}`));
+  byId("focus-chart").replaceChildren(dailyChart(recentDays(7), timer.dailySessions, "Focus sessions this week", count => `${count} session${count === 1 ? "" : "s"}`, countAxis));
 }
 
 function toggleCurrentTimer() {

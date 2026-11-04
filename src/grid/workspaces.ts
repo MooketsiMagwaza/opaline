@@ -3,6 +3,7 @@ import type { MenuEntry } from "../core/menu";
 
 export type Workspace = { id: string; name: string; items: Item[] };
 const FILE = "workspaces.json";
+export const MAX_WORKSPACES = 8;
 let spaces: Workspace[] = [];
 let saving = Promise.resolve();
 const listeners = new Set<() => void>();
@@ -11,7 +12,7 @@ export function normalizeWorkspaces(value: unknown): Workspace[] {
   if (!Array.isArray(value)) return [];
   const ids = new Set<string>(["desktop", "all-apps", "screen-time"]);
   return value.filter((space) => space && typeof space.id === "string" && !ids.has(space.id) && ids.add(space.id))
-    .slice(0, 8).map((space) => ({
+    .slice(0, MAX_WORKSPACES).map((space) => ({
       id: space.id,
       name: typeof space.name === "string" ? space.name.trim().slice(0, 40) || "Workspace" : "Workspace",
       items: Array.isArray(space.items) ? space.items.filter((item: Item) => item && typeof item.path === "string" && typeof item.name === "string")
@@ -43,9 +44,17 @@ function change(edit: (next: Workspace[]) => void): Promise<void> {
   return operation;
 }
 
+/** "Screen 4" and so on: the first number not already used, counting Desktop as screen 1. */
+export function nextScreenName(): string {
+  const used = new Set(spaces.map((space) => space.name));
+  let number = spaces.length + 2;
+  while (used.has(`Screen ${number}`)) number++;
+  return `Screen ${number}`;
+}
+
 export function createWorkspace(name: string) {
   return change((next) => {
-    if (next.length >= 8) throw new Error("You can have up to eight custom screens.");
+    if (next.length >= MAX_WORKSPACES) throw new Error(`You can have up to ${MAX_WORKSPACES} custom screens.`);
     next.push({ id: crypto.randomUUID(), name: name.trim().slice(0, 40) || "Workspace", items: [] });
   });
 }

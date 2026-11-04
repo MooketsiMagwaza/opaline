@@ -11,7 +11,7 @@ they touch.
 **Last updated:** 2026-11-04 — v0.3.0 scope settled and gesture/hover work built; v0.2.2 remains the local manifest version until the owner accepts the 0.3.0 build.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
-The superseding 0.3.0 experience scope and new requirements R-52–R-69 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
+The superseding 0.3.0 experience scope and new requirements R-52–R-74 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.

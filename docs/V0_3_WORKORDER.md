@@ -16,8 +16,13 @@ specification for those releases; only the release each requirement targets chan
 | R-52 Focus redesign, R-53 intention and session controls, R-54 running-timer capsule | **0.3.0** | `[~]` built and unit-tested; owner/native acceptance open |
 | R-60 Settings/data migration, accessibility | **0.3.0** | `[~]` normalisation and tests in place; reduced-motion and keyboard paths covered by the UI suite |
 | R-65 Rearrangeable navigation, R-66 feature-first frontend, R-67 staged Settings and representative previews | **0.3.0** | `[~]` built; UI suite green; owner visual acceptance open |
-| R-68 Gesture motion: a swipe or pinch previews, commits and settles smoothly, without clipping | **0.3.0** | `[~]` built; the browser suite checks the preview, commit, rubber-band and reduced-motion paths; needs the owner's physical trackpad (W-51) |
+| R-68 Gesture motion: a swipe or pinch previews, commits and settles smoothly, without clipping | **0.3.0** | `[~]` built; the browser suite checks the preview, commit, themed cue and reduced-motion paths; needs the owner's physical trackpad (W-51) |
 | R-69 Hover intent: popups follow the pointer's path, neighbours warm up together, the tray behaves as a dropdown | **0.3.0** | `[~]` built; real-mouse paths are in the UI suite; needs native WebView2 confirmation |
+| R-70 Readable app names and real icons in Screen time and the taskbar | **0.3.0** | `[~]` built with Rust unit tests; needs a look at the owner's real apps in the native build |
+| R-71 Android-style Home screens: a trailing plus page, plus on an empty screen, in-place remove | **0.3.0** | `[~]` built; covered by the UI suite |
+| R-72 Shortcuts & help, with key hints on pages steered by keyboard | **0.3.0** | `[~]` built; covered by the UI suite |
+| R-73 Chart axes on Screen time and Focus | **0.3.0** | `[~]` built; axis maths unit-tested, rendering covered by the UI suite |
+| R-74 More navigation arrangements (Taskbar ends, Sidebar) and compact navigation only with the taskbar mirror | **0.3.0** | `[~]` built; covered by the UI suite |
 | R-55 Completion feedback and local session history | 0.3.x | `[ ]` not started; ships as a follow-up once 0.3.0 is accepted |
 | R-56 Four-edge taskbar placement, R-57 live layout customiser | 0.4.0 | `[ ]` not started; needs rail geometry for every edge and a physical-resize pass |
 | R-58 Cached restart without icon churn, R-59 measured startup budgets | 0.4.0 | `[ ]` not started; needs the Rust cache and the on-device baseline in §8 |
@@ -81,6 +86,11 @@ continues to read Desktop files without moving them. Pane contents remain manual
 | R-66 | Complete a feature-first frontend migration | P1 | Feature logic, CSS, data and README ownership are clear; `launcher.css` retains only shared shell/material rules |
 | R-67 | Make Settings changes explicit and previews representative | P0 | Visual/layout edits stage until Done, Cancel restores saved state, and previews simulate the current backdrop/layout without persisting imagery |
 | R-68 | Make swipe and pinch feel smooth and legible | P0 | A held swipe slides only Home content with nothing clipping; a held pinch zooms and cross-zooms into the destination; the destination is named while held; commit never blocks the next gesture; reduced motion keeps the cue and drops the movement |
+| R-70 | Name apps as people know them and show their real icons | P0 | Screen time and the taskbar show the Start-menu or publisher name, never `WhatsApp.Root` or `ApplicationFrameHost`; packaged apps show their real icon; one entry per app across updates; old history is merged |
+| R-71 | Add and remove Home screens in place, as on Android | P0 | The last page is an empty new-screen page with a plus (Enter works); the pager ends with a plus dot; an empty screen has a plus that opens the picker; every custom screen can be removed, with confirmation when it holds items |
+| R-72 | Make every shortcut and gesture discoverable | P0 | Settings has a Shortcuts & help section opened by F1 or ?; keyboard-steered pages show arrow, Enter and Tab hints |
+| R-73 | Make the charts readable | P0 | A labelled value axis with round steps, faint rules, dated and weekday-labelled days, today marked |
+| R-74 | Offer taskbar-like and sidebar navigation without stranding the controls | P0 | Taskbar ends and Sidebar (left or right) arrangements with live previews; compact navigation applies only while the taskbar mirror is on |
 | R-69 | Follow standard hover-intent rules for popups | P0 | A popup stays open while the pointer travels toward it on a diagonal path; once one popup is open its neighbours open at once; the tray opens on rest, closes on leaving, pins on click and dismisses on an outside press or Escape |
 
 ## 4. Focus experience
@@ -316,6 +326,8 @@ set the tightest honest budget. Do not delay the first frame to create a cosmeti
 
 - `[~]` R-68: `navigation/gesture-motion.ts` drives the preview through three custom properties (transform and opacity only) and commits by navigating at once while a ghost clone cross-animates with the Web Animations API; View Transitions are no longer used. Browser frame captures show no clipping leak and no blank frame. Physical-trackpad feel is still the owner's call.
 - `[~]` R-69: `core/hover-intent.ts` (`PathGuard`, `Closer`, `HoverGroup`) is used by context-menu submenus, the taskbar preview, the pane peek and `navigation/tray.ts`. Unit tests cover the geometry; the UI suite drives real mouse paths, and the new checks fail on the preceding commit.
+- `[~]` R-70: `identity.rs` resolves executables to a stable key, a Start-menu or file-details name and a readable icon source; screen-time history is merged and renamed at start-up. Verified in unit tests; the real apps are checked in the native build.
+- `[~]` R-71, R-72, R-73, R-74: Android-style Home screens, the Shortcuts & help section and key hints, chart axes, and the Taskbar ends and Sidebar arrangements are built and covered by the UI suite and unit tests. The single-screen rubber band was removed because a swipe always has the new-screen page to go to.
 - Fixed in passing: the launcher stage was scrollable because of its oversize blurred backdrop, so a focus could shift the whole UI by a few pixels; it now clips.
 - Budget: the raw code budget is 190 KiB (was 180) and gzip stays at 60 KiB; the build measures 182.8 KiB raw / 52.2 KiB gzip.
 

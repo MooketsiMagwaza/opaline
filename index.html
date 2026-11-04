@@ -44,6 +44,7 @@
             <div id="grid-layer"><div id="grid"></div></div>
             <footer class="home-footer"><span id="status"></span><nav id="home-pages" class="home-pages" aria-label="Home screens"></nav></footer>
           </div>
+          <p class="key-hints" aria-hidden="true"><span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Move</span><span><kbd>Enter</kbd> Open</span><span><kbd>Tab</kbd> Next screen</span></p>
         </main>
 
         <main id="app-list-surface" class="glass page-surface secondary-surface" aria-label="All apps" hidden>
@@ -52,14 +53,16 @@
             <span id="app-list-count" class="page-count"></span>
           </header>
           <div id="app-list" class="app-list"></div>
+          <p class="key-hints" aria-hidden="true"><span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Move</span><span><kbd>Enter</kbd> Open</span><span><kbd>Esc</kbd> Close</span></p>
         </main>
 
         <main id="workspace-surface" class="glass page-surface secondary-surface" aria-label="Workspace" hidden>
           <div class="home-motion home-motion-workspace">
-            <header class="page-heading"><h1 id="workspace-title">Screen 2</h1><button id="workspace-add-trigger" type="button" class="chip">+ Add app or folder</button></header>
+            <header class="page-heading"><h1 id="workspace-title">Screen 2</h1><div class="page-actions"><button id="workspace-add-trigger" type="button" class="chip">+ Add app or folder</button><button id="workspace-remove" type="button" class="chip">Remove screen</button></div></header>
             <div id="workspace-items" class="app-list"></div>
             <nav id="workspace-pages" class="home-pages" aria-label="Home screens"></nav>
           </div>
+          <p class="key-hints" aria-hidden="true"><span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Move</span><span><kbd>Enter</kbd> Open</span><span><kbd>Tab</kbd> Next screen</span></p>
         </main>
 
         <section id="item-picker" class="glass" aria-label="Add to screen" hidden><header class="picker-heading"><h2 id="picker-title">Add to screen</h2><button id="picker-close" type="button" class="chip">Close</button></header><div class="workspace-picker"><label for="workspace-app-search">Find a Windows app</label><input id="workspace-app-search" type="search" placeholder="Search installed apps…" autocomplete="off"/><div id="workspace-app-results" class="workspace-app-results" aria-label="Matching installed apps"></div><div class="workspace-picker-actions"><button type="button" id="workspace-browse-folder" class="chip">Choose folder…</button><button type="button" id="workspace-browse-file" class="chip">Choose file…</button></div><details class="workspace-path-fallback"><summary>Enter a path instead</summary><form id="workspace-path-form" class="workspace-editor"><input id="workspace-path" class="workspace-name" type="text" placeholder="Full folder or file path" aria-label="Full folder or file path" required /><button type="submit" class="chip">Add path</button></form></details><p id="workspace-path-note" class="note" role="status"></p></div></section>
@@ -134,6 +137,13 @@
           <button type="button" id="page-prev" class="edge-arrow" aria-label="Previous Home screen" title="Previous Home screen · Shift+Tab">‹</button>
           <button type="button" id="page-next" class="edge-arrow" aria-label="Next Home screen" title="Next Home screen · Tab">›</button>
         </nav>
+
+        <nav id="navigation-sidebar" class="navigation-sidebar header-nav glass" aria-label="Main destinations">
+            <button type="button" class="orb" data-page="all-apps" data-nav-shortcut="all-apps" title="All apps" aria-label="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
+            <button type="button" class="orb" data-page="screen-time" data-nav-shortcut="screen-time" title="Screen time" aria-label="Screen time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 19.5h16"/><rect x="5" y="11" width="3.5" height="6" rx=".8"/><rect x="10.25" y="7" width="3.5" height="10" rx=".8"/><rect x="15.5" y="4" width="3.5" height="13" rx=".8"/></svg></button>
+            <button type="button" class="orb" data-page="focus" data-nav-shortcut="focus" title="Focus" aria-label="Focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></button>
+            <button type="button" class="orb" data-page="settings" data-nav-shortcut="settings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+          </nav>
 
         <div id="bottom-bar">
           <button id="focus-capsule" type="button" class="glass" hidden><span id="focus-capsule-phase">Focus</span><strong id="focus-capsule-clock">25:00</strong></button>

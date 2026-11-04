@@ -464,6 +464,9 @@ body[data-style="custom"][data-surface-tone="light"] #status {
 .workspace-empty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 310px; color: var(--dim); text-align: center; }
 .workspace-empty-mark { display: grid; place-items: center; width: 58px; height: 58px; border: 1px solid rgba(255,255,255,.23); border-radius: 18px; background: rgba(255,255,255,.07); color: var(--text); font-size: 30px; font-weight: 300; }
 .workspace-empty strong { color: var(--text); font-size: 18px; }
+button.workspace-empty-mark { padding: 0; font-family: inherit; line-height: 1; cursor: pointer; transition: background .15s, transform .15s var(--ease); }
+button.workspace-empty-mark:hover, button.workspace-empty-mark:focus-visible { background: rgba(255,255,255,.16); transform: scale(1.06); }
+.page-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .workspace-empty p { margin: 0 0 6px; }
 
 .app-list-item {
@@ -543,6 +546,13 @@ body.popup-open #apps-surface {
 .home-page-button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: rgba(225,235,251,.38); cursor: pointer; }
 .home-page-button:hover { background: rgba(255,255,255,.75); transform: scale(1.2); }
 .home-page-button[aria-current="page"] { background: #e4f1ff; box-shadow: 0 0 0 3px rgba(200,224,255,.12); }
+/* The trailing dot that adds a screen is a plus, not a dot. */
+.home-page-button.add { position: relative; width: 14px; height: 14px; background: transparent; }
+.home-page-button.add::before, .home-page-button.add::after { content: ""; position: absolute; top: 50%; left: 50%; border-radius: 1px; background: rgba(225,235,251,.6); transform: translate(-50%, -50%); }
+.home-page-button.add::before { width: 10px; height: 1.6px; }
+.home-page-button.add::after { width: 1.6px; height: 10px; }
+.home-page-button.add:hover::before, .home-page-button.add:hover::after, .home-page-button.add[aria-current="page"]::before, .home-page-button.add[aria-current="page"]::after { background: #fff; }
+.home-page-button.add[aria-current="page"] { box-shadow: none; }
 #workspace-pages { margin-top: auto; }
 #bottom-bar { position: absolute; bottom: 12px; left: 50%; z-index: 4; display: flex; align-items: center; gap: 9px; height: 52px; transform: translateX(-50%); }
 #focus-capsule { --r: 18px; display: flex; flex: none; align-items: center; gap: 9px; height: 44px; padding: 6px 13px; border-radius: 18px; color: var(--text); cursor: pointer; }
@@ -661,6 +671,11 @@ body.popup-open .secondary-surface { pointer-events: none; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* A short control (a segmented choice) should not take the width the description needs. */
+@media (min-width: 701px) {
+  .row:has(> .control > .segmented:not(.themes)) { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
 .row-label {
   font-size: 14px;
 }
@@ -732,6 +747,7 @@ input[type="color"] {
 
 .segmented {
   display: flex;
+  flex: none;
   gap: 2px;
   padding: 3px;
   border-radius: 12px;
@@ -740,7 +756,8 @@ input[type="color"] {
 
 .segmented button {
   flex: 1;
-  padding: 7px 12px;
+  padding: 6px 12px;
+  white-space: nowrap;
   border: 0;
   border-radius: 9px;
   background: transparent;

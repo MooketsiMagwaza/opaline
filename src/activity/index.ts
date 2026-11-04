@@ -1,6 +1,6 @@
 import { api, type UsageReport } from "../core/api";
 import { byId, el } from "../core/dom";
-import { dailyChart, recentDays } from "./charts";
+import { dailyChart, recentDays, timeAxis } from "./charts";
 import { iconElement } from "../core/icons";
 import { showMenu } from "../core/menu";
 
@@ -34,7 +34,7 @@ export function renderUsage() {
   const chosen = entries.find(entry => entry.id === selectedApp);
   const daily: Record<string, number> = {};
   for (const entry of chosen ? [chosen] : entries) for (const [day, seconds] of Object.entries(entry.dailySeconds || {})) daily[day] = (daily[day] || 0) + seconds;
-  byId("usage-chart").replaceChildren(dailyChart(days, daily, chosen ? `${chosen.name} · Daily activity` : "Daily activity", formatDuration));
+  byId("usage-chart").replaceChildren(dailyChart(days, daily, chosen ? `${chosen.name} · Daily activity` : "Daily activity", formatDuration, timeAxis));
   const clearSelection = byId<HTMLButtonElement>("usage-all-apps"); clearSelection.hidden = !chosen;
   const maximum = Math.max(1, ...rows.map(entry => entry.seconds));
   byId("usage-list").replaceChildren(...(rows.length ? rows.map(entry => {

@@ -9,6 +9,17 @@
 .settings-live-preview { min-width: 0; }
 .settings-live-preview .launcher-screen-preview { width: 100%; min-height: 100px; }
 .settings-section-description { max-width: 680px; margin: -8px 0 15px; font-size: 12px; }
+.help-intro { margin: 0 0 12px; color: var(--dim); font-size: 12px; }
+.shortcut-group { margin: 0 0 18px; }
+.shortcut-group h3 { margin: 0 0 4px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.14); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.shortcut-row { display: grid; grid-template-columns: minmax(160px, 38%) minmax(0, 1fr); align-items: center; gap: 16px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+.shortcut-keys { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.key-combination { display: inline-flex; align-items: center; gap: 3px; }
+.key-plus, .key-or { color: var(--dim); font-size: 11px; }
+kbd { min-width: 22px; padding: 2px 7px; border: 1px solid rgba(255,255,255,.24); border-bottom-width: 2px; border-radius: 6px; background: rgba(255,255,255,.08); color: var(--text); font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1.5; text-align: center; }
+.gesture-name { padding: 2px 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(255,255,255,.06); font-size: 11px; font-weight: 600; }
+.shortcut-action { margin: 0; font-size: 12.5px; line-height: 1.45; }
+@media (max-width: 700px) { .shortcut-row { grid-template-columns: 1fr; gap: 4px; } }
 .settings-commit { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: 8px; min-height: 48px; padding: 5px 20px 8px; }
 .settings-commit .chip { min-width: 76px; }
 .settings-commit .chip:disabled { opacity: .42; cursor: default; }

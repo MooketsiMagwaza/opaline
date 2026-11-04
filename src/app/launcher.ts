@@ -7,7 +7,7 @@ import { forgetFailedIcons } from "../core/icons";
 import { closeMenu, isMenuOpen } from "../core/menu";
 import { organize } from "../grid/organize";
 import * as pages from "../navigation/pages";
-import { initPanel, isRecordingHotkey, syncPanel } from "../settings/panel";
+import { initPanel, isRecordingHotkey, openSection, syncPanel } from "../settings/panel";
 import { hidePreview, initRail, refreshRail, startRail, stopRail, syncRailCompact } from "../taskbar";
 import { RAIL_AVAILABLE, applySettings, onSettingsChange, settings } from "../settings/store";
 import { loadWorkspaces } from "../grid/workspaces";
@@ -217,11 +217,21 @@ function typeToSearch(event: KeyboardEvent) {
   pages.setQuery(search.value);
 }
 
+/** F1 anywhere, or ? when nothing is being typed into. */
+function isHelpKey(event: KeyboardEvent): boolean {
+  if (event.ctrlKey || event.altKey || event.metaKey) return false;
+  if (event.key === "F1") return true;
+  const target = event.target as HTMLElement;
+  const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
+  return event.key === "?" && !editing && !isMenuOpen() && !grid.isPopupOpen() && !itemPicker.isOpen();
+}
+
 function onKey(event: KeyboardEvent) {
   if (handleFocusKey(event) || isRecordingHotkey() || trapPopupTab(event)) return;
   if (handleFocusPageKey(event)) return;
   if (event.key === "Escape") { event.preventDefault(); dismissCurrentLayer(); return; }
   if (event.ctrlKey && event.key.toLowerCase() === "q") { event.preventDefault(); void api.quit(); return; }
+  if (isHelpKey(event)) { event.preventDefault(); pages.show("settings"); openSection("help"); return; }
   if (handlePageKeys(event)) return;
   if (event.key.startsWith("Arrow") && (pages.handleArrow(event) || grid.handleArrow(event))) { event.preventDefault(); return; }
   typeToSearch(event);

@@ -103,7 +103,7 @@ const wheelPreviewOnce = (selector, { maxEvents, ...eventInit }) => page.evaluat
     const mover = init.ctrlKey ? surface : surface.querySelector(":scope > .home-motion");
     if (mover?.getAttribute("data-gesture-preview") === "true") {
       clearInterval(feed);
-      resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, transform: getComputedStyle(surface).transform, moverTransform: getComputedStyle(mover).transform });
+      resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, cueKicker: cue.dataset.kicker, cueArrow: Boolean(cue.querySelector(".cue-arrow svg")), cueGlass: getComputedStyle(cue).backdropFilter !== "none", transform: getComputedStyle(surface).transform, moverTransform: getComputedStyle(mover).transform });
       return;
     }
     if (performance.now() - started > 2000) {
@@ -173,7 +173,12 @@ try {
   await page.keyboard.press("Escape");
   assert(await page.locator("#search").evaluate(node => !node.dispatchEvent(new WheelEvent("wheel", { ctrlKey: true, deltaY: 40, bubbles: true, cancelable: true }))));
   assert.equal(await page.locator("#page-edges .edge-arrow").count(), 2);
-  assert.equal(await page.locator(".home-footer .home-page-button").count(), 3);
+  // Keyboard hints sit in the panel corner on pages steered with the keys.
+  assert(await visible("#apps-surface .key-hints"));
+  assert.equal(await page.locator("#apps-surface .key-hints kbd").count(), 6);
+  // Desktop, the two custom screens and the trailing plus that adds another.
+  assert.equal(await page.locator(".home-footer .home-page-button").count(), 4);
+  assert.equal(await page.locator(".home-footer .home-page-button.add").count(), 1);
   assert.equal(await page.locator("#home-add-trigger").count(), 0);
   assert(!(await visible("#status")));
   assert.equal(await page.locator("#page-nav, #quit-button").count(), 0);
@@ -198,10 +203,17 @@ try {
   assert(await visible("#page-edges"));
   assert(!(await visible("#workspace-add-trigger")));
   await shot("screen-3.png");
+  // Swiping on from the last screen reaches the trailing new-screen page, then wraps to Desktop; and back the same way.
+  await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX: 120, deltaY: 0, deltaMode: 0 });
+  await homeNamed("New screen");
+  await wait(700);
   await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX: 120, deltaY: 0, deltaMode: 0 });
   await page.locator("#apps-surface").waitFor({ state: "visible" });
-  await wait(400);
+  await wait(700); // the outgoing ghost shares the page ids until its animation ends
   await page.locator("#apps-surface").dispatchEvent("wheel", { deltaX: -120, deltaY: 0, deltaMode: 0 });
+  await homeNamed("New screen");
+  await wait(700);
+  await page.locator("#workspace-surface").dispatchEvent("wheel", { deltaX: -120, deltaY: 0, deltaMode: 0 });
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await page.mouse.move(640, 450);
@@ -271,7 +283,9 @@ try {
   await page.locator("#app-list-surface").waitFor({ state: "visible" });
   await page.keyboard.press("Alt+1");
   await wait(600);
-  await touchSwipe(115);
+  await touchSwipe(115); // the previous page from Desktop is the trailing new-screen page
+  await homeNamed("New screen");
+  await page.locator("#workspace-pages .home-page-button").nth(2).click();
   await homeNamed("Screen 3");
   assert.equal(await page.locator("#workspace-title").textContent(), "Screen 3");
   await page.keyboard.press("Alt+1");
@@ -293,6 +307,9 @@ try {
   const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 1, maxEvents: 50 }); // at most 50 of the 56 px threshold
   assert(pinchPreview.cueVisible);
   assert.equal(pinchPreview.cueText, "Settings");
+  // The cue is made of the panel glass, points the way, and names the move.
+  assert(pinchPreview.cueArrow && pinchPreview.cueGlass);
+  assert.equal(pinchPreview.cueKicker, "Previous page");
   assert.notEqual(pinchPreview.transform, "none"); // a pinch zooms the whole panel
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 60, deltaMode: 0});
   await page.locator("#settings-surface").waitFor({ state: "visible" });
@@ -352,7 +369,11 @@ try {
   assert.equal(await page.locator("#usage-total").textContent(), "3 hr 17 min");
   await shot("screen-time.png");
   assert.equal(await page.locator("#usage-chart .chart-day").count(), 7);
-  assert((await page.locator("#usage-chart .chart-bars").boundingBox()).width < 260);
+  assert((await page.locator("#usage-chart .chart-bars").boundingBox()).width < 400); // a week stays compact; a month fills the page
+  // The chart has a labelled value axis (the demo peak is 3 h 17 min, so it tops out at 4 h) and dated, weekday-labelled days.
+  assert.deepEqual(await page.locator("#usage-chart .chart-axis span").allTextContents(), ["4h", "3h", "2h", "1h", "0"]);
+  assert.equal(await page.locator("#usage-chart .chart-rules span").count(), 5);
+  assert.equal(await page.locator("#usage-chart .chart-day-label small").count(), 7);
   await page.locator("#usage-period").click();
   await page.getByRole("menuitemradio", { name: "Last 30 days" }).click();
   assert.equal(await page.locator("#usage-chart .chart-day").count(), 30);
@@ -395,7 +416,7 @@ try {
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("opaline.settings"))).focusMinutes, 25);
   await page.locator("#focus-custom-minutes").focus();
   assert.equal(await page.locator("#focus-custom-minutes").evaluate(node => getComputedStyle(node).outlineStyle), "solid"); // keyboard focus must be visible
-  assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 260);
+  assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 400);
   await page.locator("#focus-chart").scrollIntoViewIfNeeded();
   assert(await page.locator("#focus-chart").isVisible());
   await page.locator(".focus-preferences summary").click();
@@ -607,7 +628,11 @@ try {
   await page.keyboard.press("Tab");
   assert.equal(await page.locator("#workspace-title").textContent(), "Projects");
   await shot("empty-home-screen.png");
-  await page.locator(".workspace-empty button").click();
+  // An empty screen offers a real plus as well as the labelled button; both open the picker.
+  await page.locator(".workspace-empty button.workspace-empty-mark").click();
+  assert(await visible("#item-picker"));
+  await page.locator("#picker-close").click();
+  await page.locator(".workspace-empty .chip").click();
   await page.locator("#workspace-app-search").fill("Visual Studio Code");
   await shot("workspace-picker.png");
   await page.keyboard.press("Tab");
@@ -668,6 +693,81 @@ try {
   await page.waitForSelector("#app-list-surface:visible");
   assert.equal(await page.locator("body").getAttribute("data-page"), "all-apps");
   await page.waitForFunction(() => document.activeElement?.id === "search");
+  // Taskbar ends and side rails dock the two header groups at the screen's edges while search stays centred, and controls
+  // only minimise when the taskbar mirror is there to bring them back.
+  const applyNavigation = async (changes) => {
+    await page.evaluate((patch) => { const saved = JSON.parse(localStorage.getItem("opaline.settings") || "{}"); localStorage.setItem("opaline.settings", JSON.stringify({ ...saved, defaultPage: "home", ...patch })); }, changes);
+    await page.reload();
+    await page.waitForSelector("#grid .tile");
+    await page.keyboard.press("Alt+1");
+    await page.waitForSelector("#apps-surface:visible");
+    await wait(600);
+  };
+  const boxOf = (id) => page.evaluate((target) => { const box = document.getElementById(target).getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height }; }, id);
+  await applyNavigation({ navigationMode: "ends", compactBar: false, rail: true });
+  {
+    const [left, right, search, rail] = await Promise.all(["header-left", "header-right", "search-wrap", "rail"].map(boxOf));
+    assert(left.x < 40 && left.y > 700, JSON.stringify(left));
+    assert(right.x + right.width > 1240 && right.y > 700, JSON.stringify(right));
+    assert(Math.abs(search.x + search.width / 2 - 640) < 2 && search.y < 60, JSON.stringify(search));
+    assert(rail.x > left.x + left.width && rail.x + rail.width < right.x, "the taskbar must stay clear of both end groups");
+    await shot("navigation-taskbar-ends.png");
+  }
+  await applyNavigation({ navigationMode: "sidebar", navigationSide: "left" });
+  {
+    const [bar, search, panel] = await Promise.all(["navigation-sidebar", "search-wrap", "apps-surface"].map(boxOf));
+    // The taskbar turned on its side: a compact pill (not a full-height strip) hugging the left edge, centred vertically.
+    assert(bar.x < 24 && bar.width < 60 && bar.height > bar.width * 2 && bar.height < 260, JSON.stringify(bar));
+    assert(Math.abs(bar.y + bar.height / 2 - 400) < 4, JSON.stringify(bar));
+    assert.equal(await page.locator("#navigation-sidebar .orb").count(), 4);
+    assert(Math.abs(search.x + search.width / 2 - 640) < 2, JSON.stringify(search));
+    assert(panel.x > bar.x + bar.width, "the page panel keeps clear of the sidebar");
+    assert(!(await visible("#header-left")) && !(await visible("#header-right")), "the header groups give way to the sidebar");
+    await shot("navigation-sidebar.png");
+  }
+  await page.locator('#navigation-sidebar [data-page="all-apps"]').click();
+  assert(await visible("#app-list-surface"));
+  assert.equal(await page.locator('#navigation-sidebar [data-page="all-apps"]').getAttribute("aria-current"), "page");
+  await applyNavigation({ navigationMode: "sidebar", navigationSide: "right" });
+  {
+    const bar = await boxOf("navigation-sidebar");
+    assert(bar.x + bar.width > 1256 && bar.height < 260, JSON.stringify(bar));
+  }
+  // The edge choice shows only while Sidebar is the arrangement.
+  await page.keyboard.press("Alt+5");
+  await page.locator('.nav-item[data-id="navigation"]').click();
+  assert(await page.getByRole("group", { name: "Sidebar edge" }).isVisible());
+  await page.getByRole("button", { name: /Split header/ }).click();
+  assert(!(await page.getByRole("group", { name: "Sidebar edge" }).isVisible()));
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await applyNavigation({ navigationMode: "split", compactBar: true, rail: false });
+  assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "false", "no taskbar, nothing to bring the controls back: they stay");
+  assert(await visible("#header-left"));
+  await page.keyboard.press("Alt+5");
+  await page.locator('.nav-item[data-id="navigation"]').click();
+  assert(await page.getByRole("switch", { name: "Compact navigation" }).isDisabled());
+  await page.keyboard.press("Alt+1");
+  await page.keyboard.press("Control+b");
+  assert.match(await page.locator("#navigation-note").textContent(), /taskbar mirror/);
+  assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "false");
+  await applyNavigation({ navigationMode: "split", compactBar: false, rail: true });
+  // Help: F1 (or ? when nothing is being typed) opens the shortcut list; it covers keys and gestures and Esc leaves it.
+  await page.keyboard.press("Alt+1");
+  await page.waitForSelector("#apps-surface:visible");
+  await page.locator("#shell").focus();
+  await page.keyboard.press("F1");
+  assert(await visible("#settings-surface"));
+  assert.equal(await page.locator(".nav-item[aria-current='page'], .nav-item.active").first().textContent(), "Shortcuts & help");
+  assert(await page.locator(".shortcut-group").count() >= 5);
+  assert((await page.locator(".shortcut-keys kbd").allTextContents()).includes("Esc"));
+  assert(await page.locator(".gesture-name", { hasText: "Pinch in or out" }).isVisible());
+  await shot("settings-help.png");
+  await page.keyboard.press("Escape");
+  assert(await visible("#apps-surface"));
+  await page.locator("#shell").focus();
+  await page.keyboard.press("?");
+  assert(await visible("#settings-surface"));
+  await page.keyboard.press("Alt+1");
   // Hover intent: popups follow the pointer's path instead of closing on it, and neighbouring triggers warm up together.
   // Real mouse paths, because the point is how a hand actually travels; moves are chunked so each pointermove is a real event.
   {
@@ -827,9 +927,41 @@ try {
   assert.equal(calm.ghosts, 0);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await wait(400);
-  // With no other Home screen a swipe is a rubber band: it eases a little, promises no destination, never navigates,
-  // and springs back on release instead of snapping.
-  // The app always restores two screens on load, so this state exists only after a user removes them in Settings.
+  // Home screens work like Android's: a trailing plus page creates the next screen, and a screen can be removed in place.
+  await page.keyboard.press("Alt+1");
+  await page.waitForSelector("#apps-surface:visible");
+  const dots = () => page.locator(".home-footer .home-page-button").count();
+  const screensBefore = await dots();
+  const titles = await page.locator(".home-footer .home-page-button").evaluateAll(nodes => nodes.map(node => node.title));
+  const lastScreen = titles[titles.length - 2];
+  // Swiping back from Desktop wraps to the new-screen page, and the cue says so.
+  const toNewScreen = await wheelPreview("#apps-surface", { deltaX: -1, deltaY: 0, maxEvents: 40 });
+  assert(toNewScreen.cueVisible);
+  assert.match(toNewScreen.cueText, /New screen/);
+  await wait(400);
+  assert(await releasedBy("#apps-surface > .home-motion"));
+  await page.locator(".home-footer .home-page-button.add").click();
+  await homeNamed("New screen");
+  assert.equal(await page.locator("#workspace-remove").isVisible(), false, "the new-screen page has nothing to remove");
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("aria-label")), "Add a Home screen");
+  await page.keyboard.press("Enter");
+  assert.match(await page.locator("#workspace-title").textContent(), /^Screen \d+$/);
+  assert.equal(await dots(), screensBefore + 1);
+  assert(await page.locator(".workspace-empty").isVisible());
+  // An empty screen has nothing to lose: removing it is immediate and lands on the screen before it.
+  await page.locator("#workspace-remove").click();
+  await homeNamed(lastScreen);
+  assert.equal(await dots(), screensBefore);
+  // A screen with items asks first.
+  await page.locator("#workspace-pages .home-page-button").nth(1).click();
+  await homeNamed("Dev tools");
+  await page.locator("#workspace-remove").click();
+  assert.equal(await page.locator("#workspace-remove").textContent(), "Confirm removal");
+  assert.equal(await page.locator("#workspace-title").textContent(), "Dev tools");
+  await page.locator("#workspace-remove").click();
+  await page.waitForFunction(() => document.body.dataset.page === "desktop");
+  assert.equal(await dots(), screensBefore - 1);
+  // Every custom screen can go; the plus page is always still there to start again.
   await page.keyboard.press("Alt+5");
   await page.locator('.nav-item[data-id="workspaces"]').click();
   while (await page.getByRole("button", { name: "Remove", exact: true }).count()) {
@@ -840,19 +972,12 @@ try {
   }
   await page.keyboard.press("Alt+1");
   await page.waitForSelector("#apps-surface:visible");
-  const rubber = await wheelPreview("#apps-surface", { deltaX: 1, deltaY: 0, maxEvents: 40 });
-  assert(!rubber.cueVisible);
-  const eased = Number(rubber.moverTransform.match(/matrix(?:3d)?\(([^)]+)\)/)[1].split(",").map(Number)[rubber.moverTransform.startsWith("matrix3d") ? 12 : 4]);
-  assert(eased < 0 && eased > -20, rubber.moverTransform);
-  await wait(400);
-  assert(await releasedBy("#apps-surface > .home-motion"));
-  assert.notEqual(await page.locator("#apps-surface > .home-motion").evaluate(node => getComputedStyle(node).transitionDuration), "0s");
-  const refused = await wheelNow("#apps-surface", { deltaX: 120, deltaY: 1 });
-  assert.equal(refused.page, "desktop");
-  assert.equal(refused.animations, 0);
-  assert.equal(refused.ghosts, 0);
-  await wait(500);
-  assert.equal(await page.locator("body").getAttribute("data-page"), "desktop");
+  assert.equal(await dots(), 2, "Desktop and the plus");
+  // With Desktop alone a swipe still has somewhere to go: the new-screen page.
+  await wheelNow("#apps-surface", { deltaX: 120, deltaY: 1 });
+  await wait(700);
+  assert.equal(await page.locator("#workspace-title").textContent(), "New screen");
+  assert.equal(await page.locator("[data-gesture-ghost]").count(), 0);
   assert.deepEqual(errors, []);
   const result = { ui: "passed", cachedPreviewMs: timing.milliseconds, screenshots: screenshotCount, viewport: "1280x800, 1024x600, 800x600, 600x600", errors };
   writeFileSync(new URL("../ui-verification.local.json", import.meta.url), JSON.stringify(result, null, 2));

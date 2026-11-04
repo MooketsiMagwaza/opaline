@@ -6,7 +6,8 @@ import { importBackground } from "../appearance/background";
 import { byId, el } from "../core/dom";
 import type { QuickSort } from "../grid";
 import { createLauncherPreview, updateLauncherPreview } from "./launcher-preview";
-import { DEFAULTS, RAIL_AVAILABLE, normalizeSettings, type Settings, settings, updateSettings } from "./store";
+import { helpControl } from "./help";
+import { DEFAULTS, NAVIGATION_LABELS, RAIL_AVAILABLE, normalizeSettings, type Settings, settings, updateSettings } from "./store";
 import { createWorkspace, removeWorkspace, renameWorkspace, workspaces } from "../grid/workspaces";
 import { refreshUsage } from "../activity";
 import { absorbLiveChanges, stagedChanges } from "./draft";
@@ -24,8 +25,8 @@ type Option = [value: string, label: string];
 
 type Control =
   | { kind: "range"; key: keyof Settings; label: string; min: number; max: number; step: number; format: (value: number) => string; hint?: string }
-  | { kind: "segmented"; key: keyof Settings; label: string; options: Option[]; hint?: string }
-  | { kind: "toggle"; key: keyof Settings; label: string; hint?: string }
+  | { kind: "segmented"; key: keyof Settings; label: string; options: Option[]; hint?: string; onlyWhen?: { key: keyof Settings; value: string } }
+  | { kind: "toggle"; key: keyof Settings; label: string; hint?: string; requires?: { key: keyof Settings; because: string } }
   | { kind: "color"; key: keyof Settings; label: string; hint?: string }
   | { kind: "hotkey" }
   | { kind: "autostart" }
@@ -33,6 +34,7 @@ type Control =
   | { kind: "action"; label: string; hint?: string; button: string; run: (note: (text: string) => void) => void }
   | { kind: "actions"; label: string; hint?: string; buttons: { label: string; run: (note: (text: string) => void) => void }[] }
   | { kind: "about" }
+  | { kind: "help" }
   | { kind: "navigation-style" }
   | { kind: "appearance-presets" }
   | { kind: "background" };
@@ -113,8 +115,9 @@ function sections(): Section[] {
       description: "Choose where Opaline’s main destinations live and which ones stay visible.",
       controls: [
         { kind: "navigation-style" },
+        { kind: "segmented", key: "navigationSide", label: "Sidebar edge", options: [["left", "Left"], ["right", "Right"]], hint: "Which side of the screen the sidebar sits on.", onlyWhen: { key: "navigationMode", value: "sidebar" } },
         { kind: "segmented", key: "defaultPage", label: "Default opening page", options: [["home", "Home"], ["all-apps", "All apps"]], hint: "Choose what a normal Opaline open shows first. Explicit page shortcuts keep their usual destinations." },
-        { kind: "toggle", key: "compactBar", label: "Compact navigation", hint: "Minimise page controls while keeping keyboard shortcuts available. Ctrl+B toggles this quickly." },
+        { kind: "toggle", key: "compactBar", label: "Compact navigation", hint: "Minimise page controls while keeping keyboard shortcuts available. Ctrl+B toggles this quickly.", requires: { key: "rail", because: "Turn on the taskbar mirror first" } },
         { kind: "toggle", key: "shortcutAllApps", label: "Show All apps", hint: "Hidden destinations remain available from the navigation tray and keyboard." },
         { kind: "toggle", key: "shortcutScreenTime", label: "Show Screen time" },
         { kind: "toggle", key: "shortcutFocus", label: "Show Focus" },
@@ -175,6 +178,7 @@ function sections(): Section[] {
         },
       ],
     },
+    { id: "help", title: "Shortcuts & help", description: "Every keyboard shortcut and gesture. Press F1 or ? anywhere in Opaline to return here.", controls: [{ kind: "help" }] },
     {
       id: "about",
       title: "About",
@@ -280,7 +284,14 @@ function segmentedRow(control: Extract<Control, { kind: "segmented" }>): HTMLEle
   };
   syncers.push(show);
   show();
-  return row(control.label, control.hint, el("div", "control", [group]));
+  const held = row(control.label, control.hint, el("div", "control", [group]));
+  if (control.onlyWhen) {
+    const { key, value } = control.onlyWhen;
+    const place = () => { held.hidden = String(panelSettings()[key]) !== value; };
+    syncers.push(place);
+    place();
+  }
+  return held;
 }
 
 function switchElement(read: () => boolean, write: (value: boolean) => void): { node: HTMLElement; show: () => void } {
@@ -299,8 +310,16 @@ function toggleRow(control: Extract<Control, { kind: "toggle" }>): HTMLElement {
     (value) => patch(control.key, value),
   );
   node.setAttribute("aria-label", control.label);
-  syncers.push(show);
-  return row(control.label, control.hint, el("div", "control", [node]));
+  // A setting that only works alongside another one is switched off, with the reason beside it, rather than silently doing nothing.
+  const because = el("span", "note");
+  const showRequirement = () => {
+    const blocked = control.requires !== undefined && !panelSettings()[control.requires.key];
+    node.toggleAttribute("disabled", blocked);
+    because.textContent = blocked ? control.requires!.because : "";
+  };
+  syncers.push(show, showRequirement);
+  showRequirement();
+  return row(control.label, control.hint, el("div", "control", [because, node]));
 }
 
 function colorRow(control: Extract<Control, { kind: "color" }>): HTMLElement {
@@ -390,7 +409,7 @@ function updateLivePreview() {
 function syncPreviewCaptions() {
   const current = panelSettings();
   const summary = document.getElementById("settings-preview-summary");
-  if (summary) summary.textContent = `${current.navigationMode === "split" ? "Split header" : current.navigationMode === "taskbar" ? "Navigation taskbar" : "Dropdown tray"} · ${current.surfaceWidth}px panel · taskbar ${current.rail ? "shown" : "hidden"}`;
+  if (summary) summary.textContent = `${NAVIGATION_LABELS[current.navigationMode]} · ${current.surfaceWidth}px panel · taskbar ${current.rail ? "shown" : "hidden"} · opens on ${current.defaultPage === "all-apps" ? "All apps" : "Home"}`;
   document.getElementById("pane-motion-preview")?.style.setProperty("--demo-pane-motion", `${current.paneMotionMs}ms`);
 }
 
@@ -435,6 +454,8 @@ function navigationStyleControl(): HTMLElement {
     { id: "split", name: "Split header", description: "Apps left, Focus and Settings right." },
     { id: "taskbar", name: "Navigation taskbar", description: "One compact dock beside Home." },
     { id: "tray", name: "Dropdown tray", description: "Minimise destinations into one menu." },
+    { id: "ends", name: "Taskbar ends", description: "Destinations at both ends of the bottom bar." },
+    { id: "sidebar", name: "Sidebar", description: "Every destination in one bar down the left or right edge." },
   ] as const;
   const buttons = modes.map(mode => {
     const current = panelSettings();
@@ -445,9 +466,13 @@ function navigationStyleControl(): HTMLElement {
     const button = el("button", "navigation-style-card", [preview, el("strong", "", [mode.name]), el("small", "", [mode.description])]);
     button.type = "button";
     button.addEventListener("click", () => stageSettings({ navigationMode: mode.id }));
-    return { button, id: mode.id };
+    return { button, preview, id: mode.id };
   });
-  const show = () => buttons.forEach(({ button, id }) => button.setAttribute("aria-pressed", String(panelSettings().navigationMode === id)));
+  // Each card shows its arrangement with everything else as currently staged (opening page, hidden destinations, compact bar).
+  const show = () => buttons.forEach(({ button, preview, id }) => {
+    button.setAttribute("aria-pressed", String(panelSettings().navigationMode === id));
+    updateLauncherPreview(preview, normalizeSettings({ ...panelSettings(), navigationMode: id }));
+  });
   syncers.push(show);
   show();
   return el("section", "navigation-styles", [
@@ -475,7 +500,7 @@ function appearancePresetControl(): HTMLElement {
     const apply = el("button", "appearance-preset user-preset", [
       preview,
       el("strong", "", [preset.name]),
-      el("small", "", [`${preset.settings.rail ? "Rail on" : "Rail off"} · ${preset.settings.surfaceWidth}px panel · ${preset.settings.navigationMode === "split" ? "split header" : preset.settings.navigationMode === "taskbar" ? "nav taskbar" : "nav tray"}`]),
+      el("small", "", [`${preset.settings.rail ? "Rail on" : "Rail off"} · ${preset.settings.surfaceWidth}px panel · ${NAVIGATION_LABELS[preset.settings.navigationMode].toLowerCase()}`]),
     ]);
     apply.type = "button";
     apply.addEventListener("click", () => stageSettings(preset.settings));
@@ -767,6 +792,8 @@ function build(control: Control | SpecialControl): HTMLElement {
       return actionsRow(control);
     case "about":
       return aboutRow();
+    case "help":
+      return helpControl(hooks.status().hotkey);
     case "navigation-style":
       return navigationStyleControl();
     case "appearance-presets":
@@ -837,6 +864,11 @@ export function initPanel(panelHooks: PanelHooks) {
   const commitBar = el("footer", "settings-commit", [cancel, done]);
   byId("settings").replaceChildren(nav, el("div", "settings-main", [el("div", "settings-body"), commitBar]));
   select(current);
+}
+
+/** Opens Settings on a given section; the caller has already shown the Settings page. */
+export function openSection(id: string) {
+  if (hooks && sections().some(section => section.id === id)) select(id);
 }
 
 export function refreshPanel() {

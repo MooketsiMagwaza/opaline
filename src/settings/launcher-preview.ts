@@ -1,8 +1,15 @@
 import type { Settings } from "./store";
-import { materialSettings } from "./store";
+import { compactNavigation, materialSettings } from "./store";
 import { resolvedBackground } from "../appearance/background";
+import type { AppEntry } from "../core/api";
+import { iconElement } from "../core/icons";
 
 type PreviewOptions = { settings: Settings; className: string };
+const PREVIEW_APP_ROWS = 14;
+let previewApps: AppEntry[] = [];
+
+/** The installed apps, so a preview of the All apps page can list real names. */
+export function setPreviewApps(apps: AppEntry[]) { previewApps = apps; }
 type PreviewState = { frame: HTMLIFrameElement; wanted: Settings; applied: Settings; loaded: boolean };
 
 const TILE_SIZES = { small: 60, medium: 72, large: 88 } as const;
@@ -66,16 +73,52 @@ function homeStage(settings: Settings): HTMLElement {
   if (!source) return document.createElement("div");
   const stage = source.cloneNode(true) as HTMLElement;
   stage.classList.remove("pre", "overlay-enter", "overlay-leave");
-  stage.querySelectorAll("#app-list-surface,#workspace-surface,#screen-time-surface,#focus-surface,#settings-surface,#item-picker,#ambient,#popup-layer,#menu,#preview,#tile-peek,#gesture-cue,#page-edges,#navigation-note").forEach(node => node.remove());
+  stage.querySelectorAll("#workspace-surface,#screen-time-surface,#focus-surface,#settings-surface,#item-picker,#ambient,#popup-layer,#menu,#preview,#tile-peek,#gesture-cue,#page-edges,#navigation-note").forEach(node => node.remove());
   const home = stage.querySelector<HTMLElement>("#apps-surface");
   if (home) home.hidden = false;
-  stage.querySelectorAll("[aria-current='page']").forEach(node => node.removeAttribute("aria-current"));
-  stage.querySelector("#home-dock")?.setAttribute("aria-current", "page");
+  const list = stage.querySelector<HTMLElement>("#app-list-surface");
+  if (list) {
+    list.hidden = false;
+    fillAppRows(stage);
+  }
+  markOpeningPage(stage, settings.defaultPage);
   const search = stage.querySelector<HTMLInputElement>("#search");
   if (search) search.value = "";
   const backdrop = stage.querySelector<HTMLImageElement>("#backdrop");
   if (backdrop) applyBackdrop(backdrop, settings);
   return stage;
+}
+
+/**
+ * The All apps list is only rendered once someone visits it, but a preview of "opens on All apps" needs rows either way.
+ * A list already rendered is cloned with the stage; otherwise rows are built from the installed apps.
+ */
+function fillAppRows(stage: HTMLElement) {
+  const list = stage.querySelector<HTMLElement>("#app-list");
+  if (!list || list.querySelector(".library-row")) return;
+  const shown = previewApps.slice(0, PREVIEW_APP_ROWS);
+  list.replaceChildren(...shown.map(app => {
+    const row = document.createElement("div");
+    row.className = "library-row";
+    const button = document.createElement("button");
+    button.className = "app-list-item";
+    button.type = "button";
+    const name = document.createElement("span");
+    name.className = "app-list-name";
+    name.textContent = app.name;
+    button.append(iconElement(app.path, app.name), name);
+    row.append(button);
+    return row;
+  }));
+  const count = stage.querySelector("#app-list-count");
+  if (count) count.textContent = `${previewApps.length} apps`;
+}
+
+/** Highlights the page Opaline opens on, in whichever navigation arrangement is showing. */
+function markOpeningPage(root: ParentNode, page: Settings["defaultPage"]) {
+  root.querySelectorAll("[aria-current='page']").forEach(node => node.removeAttribute("aria-current"));
+  const targets = page === "all-apps" ? root.querySelectorAll("[data-page='all-apps']") : root.querySelectorAll("#home-dock");
+  targets.forEach(node => node.setAttribute("aria-current", "page"));
 }
 
 function applyBackdrop(image: HTMLImageElement, settings: Settings) {
@@ -107,10 +150,10 @@ function bodyValues(settings: Settings): Record<string, string> {
   const luminance = (custom.r * .2126 + custom.g * .7152 + custom.b * .0722) / 255;
   return {
     style: settings.glassStyle, material: settings.materialProfile, canvas: "frosted", labels: String(settings.showLabels),
-    rail: String(settings.rail), anim: String(settings.animations), compactBar: String(settings.compactBar), navigation: settings.navigationMode,
+    rail: String(settings.rail), anim: String(settings.animations), compactBar: String(compactNavigation(settings)), navigation: settings.navigationMode, navigationSide: settings.navigationSide,
     shortcutAllApps: String(settings.shortcutAllApps), shortcutScreenTime: String(settings.shortcutScreenTime), shortcutFocus: String(settings.shortcutFocus),
     shortcutSettings: String(settings.shortcutSettings), navigationOverflow: String(!settings.shortcutAllApps || !settings.shortcutScreenTime || !settings.shortcutFocus || !settings.shortcutSettings),
-    surfaceTone: luminance > .62 && settings.customSurfaceOpacity > .55 ? "light" : "dark", page: "desktop",
+    surfaceTone: luminance > .62 && settings.customSurfaceOpacity > .55 ? "light" : "dark", page: "desktop", defaultPage: settings.defaultPage,
   };
 }
 
@@ -122,7 +165,7 @@ function bodyAttributes(settings: Settings): string {
 
 function sourceDocument(settings: Settings): string {
   const stage = homeStage(settings).outerHTML;
-  return `<!doctype html><html style="${rootStyle(settings)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=1280"><style>${previewCss()}\nhtml,body{width:1280px;height:800px;margin:0;overflow:hidden}body{background:#0b1220}#shell{pointer-events:none}#apps-surface{display:grid!important}</style></head><body ${bodyAttributes(settings)}>${stage}</body></html>`;
+  return `<!doctype html><html style="${rootStyle(settings)}"><head><meta charset="UTF-8"><meta name="viewport" content="width=1280"><style>${previewCss()}\nhtml,body{width:1280px;height:800px;margin:0;overflow:hidden}body{background:#0b1220}#shell{pointer-events:none}#apps-surface{display:grid!important}body[data-default-page="all-apps"] #apps-surface,body:not([data-default-page="all-apps"]) #app-list-surface{display:none!important}</style></head><body ${bodyAttributes(settings)}>${stage}</body></html>`;
 }
 
 function labelPreview(preview: HTMLElement, settings: Settings) {
@@ -145,6 +188,7 @@ function flush(state: PreviewState) {
     const image = doc.getElementById("backdrop") as HTMLImageElement | null;
     if (image) applyBackdrop(image, wanted);
   }
+  if (wanted.defaultPage !== applied.defaultPage) markOpeningPage(doc, wanted.defaultPage);
   state.applied = wanted;
 }
 

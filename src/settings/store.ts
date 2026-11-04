@@ -2,7 +2,11 @@ import { api } from "../core/api";
 
 export type GlassStyle = "solid" | "liquid" | "frost" | "clear" | "custom";
 export type MaterialProfile = "opaline" | "mica" | "one-ui" | "apple-glass" | "aero" | "night" | "custom";
-export type NavigationMode = "split" | "taskbar" | "tray";
+export type NavigationMode = "split" | "taskbar" | "tray" | "ends" | "sidebar";
+export type NavigationSide = "left" | "right";
+export const NAVIGATION_LABELS: Record<NavigationMode, string> = {
+  split: "Split header", taskbar: "Navigation taskbar", tray: "Dropdown tray", ends: "Taskbar ends", sidebar: "Sidebar",
+};
 export type DefaultPage = "home" | "all-apps";
 export type BackgroundMode = "desktop" | "aero" | "custom";
 export const RAIL_AVAILABLE = true;
@@ -37,6 +41,7 @@ export type Settings = {
   surfaceWidth: number;
   taskbarIconSize: number;
   navigationMode: NavigationMode;
+  navigationSide: NavigationSide;
   defaultPage: DefaultPage;
   backgroundMode: BackgroundMode;
   customBackground: string;
@@ -83,6 +88,7 @@ export const DEFAULTS: Settings = {
   surfaceWidth: 960,
   taskbarIconSize: 30,
   navigationMode: "split",
+  navigationSide: "left",
   defaultPage: "home",
   backgroundMode: "desktop",
   customBackground: "",
@@ -151,11 +157,17 @@ export function normalizeSettings(value: unknown): Settings {
       const [min, max] = ranges[key];
       merged[key] = Number.isFinite(merged[key]) ? Math.min(max, Math.max(min, merged[key])) : DEFAULTS[key];
     }
-    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], navigationMode: ["split", "taskbar", "tray"], defaultPage: ["home", "all-apps"], backgroundMode: ["desktop", "aero", "custom"], materialProfile: ["opaline", "mica", "one-ui", "apple-glass", "aero", "night", "custom"] })) {
+    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], navigationMode: ["split", "taskbar", "tray", "ends", "sidebar"], navigationSide: ["left", "right"], defaultPage: ["home", "all-apps"], backgroundMode: ["desktop", "aero", "custom"], materialProfile: ["opaline", "mica", "one-ui", "apple-glass", "aero", "night", "custom"] })) {
       if (!values.includes(String(merged[key as keyof Settings]))) (merged as Record<string, unknown>)[key] = DEFAULTS[key as keyof Settings];
     }
     return merged;
 }
+
+/**
+ * Navigation controls only minimise when the taskbar mirror is showing: that is where the button that brings them back lives,
+ * so without it the controls would vanish with no way to restore them but the keyboard.
+ */
+export const compactNavigation = (s: Settings): boolean => RAIL_AVAILABLE && s.rail && s.compactBar;
 
 function load(): Settings {
   try {
@@ -243,8 +255,9 @@ export function applySettings() {
   body.labels = String(s.showLabels);
   body.rail = String(RAIL_AVAILABLE && s.rail);
   body.anim = String(s.animations);
-  body.compactBar = String(s.compactBar);
+  body.compactBar = String(compactNavigation(s));
   body.navigation = s.navigationMode;
+  body.navigationSide = s.navigationSide;
   body.shortcutAllApps = String(s.shortcutAllApps);
   body.shortcutScreenTime = String(s.shortcutScreenTime);
   body.shortcutFocus = String(s.shortcutFocus);
