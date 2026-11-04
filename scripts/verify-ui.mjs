@@ -11,7 +11,11 @@ const verifyUrl = process.env.OPALINE_VERIFY_URL || "http://127.0.0.1:1420";
 const errors = [];
 page.on("pageerror", (error) => { errors.push(error.stack || error.message); console.error("UI error:", error.stack || error.message); });
 page.on("console", (message) => { if (message.type() === "error") console.error("Browser console:", message.text()); });
-page.on("requestfailed", (request) => console.error("Request failed:", request.url(), request.failure()?.errorText));
+page.on("requestfailed", (request) => {
+  // A Settings preview replaced while its icons are still loading aborts those loads; that is expected.
+  if (request.failure()?.errorText === "net::ERR_ABORTED" && request.frame() !== page.mainFrame()) return;
+  console.error("Request failed:", request.url(), request.failure()?.errorText);
+});
 const output = new URL("../docs/images/", import.meta.url);
 mkdirSync(output, { recursive: true });
 
@@ -80,6 +84,23 @@ await page.route(/\/src\/app\/launcher\.ts(?:\?.*)?$/, async (route) => {
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();
+// The wheel recogniser cancels a gesture preview after 120 ms of silence, which a Playwright round trip can
+// outlast. Dispatch the event and sample the preview in the page, on the first frame that shows it.
+const wheelPreview = (selector, init) => page.evaluate(([target, eventInit]) => new Promise((resolve, reject) => {
+  const surface = document.querySelector(target);
+  surface.dispatchEvent(new WheelEvent("wheel", { ...eventInit, deltaMode: 0, bubbles: true, cancelable: true }));
+  const started = performance.now();
+  const sample = () => {
+    const cue = document.getElementById("gesture-cue");
+    if (surface.querySelector(":scope > .home-motion")?.getAttribute("data-gesture-preview") === "true") {
+      resolve({ cueVisible: !cue.hidden && cue.getClientRects().length > 0, cueText: cue.textContent, transform: getComputedStyle(surface).transform });
+      return;
+    }
+    if (performance.now() - started > 400) { reject(new Error("The gesture preview never appeared.")); return; }
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+}), [selector, init]);
 const homeNamed = (name) => page.waitForFunction(expected => {
   const surface = document.getElementById("workspace-surface");
   return !surface.hidden && document.getElementById("workspace-title").textContent === expected;
@@ -197,11 +218,9 @@ try {
   await homeNamed("Screen 3");
   await page.keyboard.press("Alt+1");
   await wait(600);
-  await page.locator("#apps-surface").dispatchEvent("wheel", { deltaX: 22, deltaY: 0, deltaMode: 0 });
-  await page.waitForFunction(() => document.querySelector("#apps-surface > .home-motion")?.getAttribute("data-gesture-preview") === "true");
-  assert(await visible("#gesture-cue"));
-  assert.equal(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
-  assert.equal(await page.locator("#apps-surface > .home-motion").getAttribute("data-gesture-preview"), "true");
+  const swipePreview = await wheelPreview("#apps-surface", { deltaX: 22, deltaY: 0 });
+  assert(swipePreview.cueVisible);
+  assert.equal(swipePreview.transform, "none");
   await wait(400);
   assert(await visible("#apps-surface"));
   await touchSwipe(-60);
@@ -234,12 +253,10 @@ try {
   assert(await visible("#apps-surface"));
   await page.keyboard.press("Alt+1");
   await wait(600);
-  await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 20, deltaMode: 0});
-  await wait(50);
-  assert(await visible("#gesture-cue"));
-  assert.equal(await page.locator("#gesture-cue").textContent(), "Settings");
-  assert.equal(await page.locator("#apps-surface > .home-motion").getAttribute("data-gesture-preview"), "true");
-  assert.equal(await page.locator("#apps-surface").evaluate(node => getComputedStyle(node).transform), "none");
+  const pinchPreview = await wheelPreview("#apps-surface", { ctrlKey: true, deltaX: 0, deltaY: 20 });
+  assert(pinchPreview.cueVisible);
+  assert.equal(pinchPreview.cueText, "Settings");
+  assert.equal(pinchPreview.transform, "none");
   await page.locator("#apps-surface").dispatchEvent("wheel", {ctrlKey: true, deltaX: 0, deltaY: 60, deltaMode: 0});
   await page.locator("#settings-surface").waitFor({ state: "visible" });
   assert(await visible("#settings-surface"));
@@ -321,6 +338,22 @@ try {
   assert.equal(await page.locator("#focus-start").textContent(), "Pause");
   assert(await visible("#focus-capsule"));
   await shot("focus.png");
+  // Space belongs to a focused button; the page-level timer shortcut must not swallow it.
+  await page.locator("#focus-reset").focus();
+  await page.keyboard.press("Space");
+  assert.equal(await page.locator("#focus-start").textContent(), "Start");
+  assert.match(await page.locator("#focus-note").textContent(), /Session reset/);
+  await page.locator("#focus-start").click();
+  await page.locator("#focus-advance").focus();
+  await page.keyboard.press("Space");
+  assert.match(await page.locator("#focus-note").textContent(), /Finish this session now/);
+  assert.equal(await page.locator("#focus-start").textContent(), "Pause");
+  await page.locator('[data-focus-preset="50"]').focus();
+  await page.keyboard.press("Space");
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("opaline.settings"))).focusMinutes, 50);
+  await page.locator('[data-focus-preset="25"]').focus();
+  await page.keyboard.press("Space");
+  assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("opaline.settings"))).focusMinutes, 25);
   assert((await page.locator("#focus-chart .chart-bars").boundingBox()).width < 260);
   await page.locator("#focus-chart").scrollIntoViewIfNeeded();
   assert(await page.locator("#focus-chart").isVisible());
@@ -391,6 +424,26 @@ try {
   assert.equal(await page.locator(".appearance-preview svg").count(), 0);
   assert(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelectorAll("#grid .tile").length >= 8));
   assert.equal(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelector("#grid .label")?.textContent), await page.locator("#grid .label").first().textContent());
+  // Staging runs on every slider tick: the live preview must update in place, never reload its document.
+  const sliderTick = await page.evaluate(async () => {
+    const live = document.querySelector("#settings-live-preview iframe");
+    let rewrites = 0;
+    // Two narrow observers: any srcdoc write anywhere in Settings, and any rebuild (child swap) of the live preview host.
+    const watcher = new MutationObserver(records => { rewrites += records.length; });
+    watcher.observe(document.getElementById("settings"), { subtree: true, attributes: true, attributeFilter: ["srcdoc"] });
+    watcher.observe(document.getElementById("settings-live-preview"), { childList: true });
+    const slider = document.querySelector('.settings-body input[type="range"]');
+    const original = slider.value;
+    const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    slider.value = String(Number(original) + 3); slider.dispatchEvent(new Event("input", { bubbles: true })); await nextFrame();
+    const updated = live.contentDocument.documentElement.style.getPropertyValue("--bd-blur");
+    slider.value = original; slider.dispatchEvent(new Event("input", { bubbles: true })); await nextFrame();
+    watcher.disconnect();
+    return { rewrites, sameFrame: document.querySelector("#settings-live-preview iframe") === live, updated, original };
+  });
+  assert.equal(sliderTick.rewrites, 0);
+  assert(sliderTick.sameFrame);
+  assert.equal(sliderTick.updated, `${Number(sliderTick.original) + 3}px`);
   await page.locator(".preset-name").fill("Workspace Glass");
   await page.getByRole("button", { name: "Save current", exact: true }).click();
   await page.getByRole("button", { name: /^Workspace Glass/ }).waitFor();
@@ -450,6 +503,18 @@ try {
   assert.equal(await page.locator("body").getAttribute("data-navigation"), "tray");
   await page.getByRole("button", { name: /Split header/ }).click();
   await page.getByRole("button", { name: "Done", exact: true }).click();
+  // A change made outside Settings (Ctrl+B) while an edit is staged must survive Done.
+  await page.getByRole("switch", { name: "Show Screen time" }).click();
+  await page.keyboard.press("Control+b");
+  assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-screen-time"), "false");
+  assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "true");
+  await page.keyboard.press("Control+b");
+  assert.equal(await page.locator("body").getAttribute("data-compact-bar"), "false");
+  await page.getByRole("switch", { name: "Show Screen time" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  assert.equal(await page.locator("body").getAttribute("data-shortcut-screen-time"), "true");
   await page.locator('.nav-item[data-id="home-layout"]').click();
   await page.getByRole("button", { name: "A–Z" }).click(); await wait(380);
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("demo:groups.json"))).layout["group:agents"].x, 0);

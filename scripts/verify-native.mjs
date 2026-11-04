@@ -20,7 +20,7 @@ async function evaluate(expression) {
 }
 try {
   const result = await evaluate(`(async () => {
-    const { api } = await import('/src/api.ts');
+    const { api } = await import('/src/core/api.ts');
     const status = await api.status();
     const apps = await api.listApps();
     const rail = await api.rail();
@@ -37,7 +37,7 @@ try {
   assert(result.usageSupported);
   if (process.argv.includes("--isolated-persistence")) {
     const saved = await evaluate(`(async () => {
-      const { api } = await import('/src/api.ts');
+      const { api } = await import('/src/core/api.ts');
       const marker = JSON.parse(await api.loadStore('config.json') || '{}');
       if (marker.testProfile !== true) throw new Error('Persistence checks require the isolated test profile marker.');
       const json = JSON.stringify([{id:'verify',name:'Native check',items:[]}]);
@@ -56,7 +56,7 @@ try {
   }
   if (process.argv.includes("--export-demo-icons")) {
     const icons = await evaluate(`(async () => {
-      const { api } = await import('/src/api.ts'); const apps = await api.listApps();
+      const { api } = await import('/src/core/api.ts'); const apps = await api.listApps();
       const names = ['Visual Studio Code','Terminal','Docker Desktop','Firefox','Microsoft Edge','Discord','WhatsApp','Obsidian','Notion','Spotify','Steam','Krita','OBS Studio','Notion Calendar','ChatGPT','Claude','Codex','Android Studio'];
       const result = {};
       for (const name of names) { const app = apps.find(app => app.name === name); if (app) { const icon = await api.icon(app.path); if (icon) result[name] = icon; } }
