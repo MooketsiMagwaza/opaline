@@ -123,10 +123,14 @@ function toggleCurrentTimer() {
   renderTimer();
 }
 
+/** Controls that activate on Space themselves; taking the key would make them unusable from the keyboard. */
+const ACTIVATES_ON_SPACE = "button, a[href], summary, select, [role='button'], [role='switch'], [role='tab']";
+
 export function handleFocusPageKey(event: KeyboardEvent): boolean {
   const target = event.target as HTMLElement;
   const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
-  if (byId("focus-surface").hidden || event.code !== "Space" || editing || event.ctrlKey || event.altKey || event.metaKey) return false;
+  const activatesOnSpace = target instanceof Element && target.closest(ACTIVATES_ON_SPACE) !== null;
+  if (byId("focus-surface").hidden || event.code !== "Space" || editing || activatesOnSpace || event.ctrlKey || event.altKey || event.metaKey) return false;
   event.preventDefault();
   if (!event.repeat) toggleCurrentTimer();
   return true;
