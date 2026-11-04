@@ -5,7 +5,7 @@ import { APPEARANCE_PRESETS, appearanceValues, matchesAppearance, type Appearanc
 import { importBackground } from "../appearance/background";
 import { byId, el } from "../core/dom";
 import type { QuickSort } from "../grid";
-import { createLauncherPreview } from "./launcher-preview";
+import { createLauncherPreview, updateLauncherPreview } from "./launcher-preview";
 import { DEFAULTS, RAIL_AVAILABLE, normalizeSettings, type Settings, settings, updateSettings } from "./store";
 import { createWorkspace, removeWorkspace, renameWorkspace, workspaces } from "../grid/workspaces";
 import { refreshUsage } from "../activity";
@@ -230,7 +230,7 @@ function syncCommitBar() {
 function stageSettings(patch: Partial<Settings>) {
   draft = normalizeSettings({ ...panelSettings(), ...patch });
   syncers.forEach(sync => sync());
-  syncLivePreview();
+  updateLivePreview();
   syncCommitBar();
 }
 
@@ -372,10 +372,23 @@ function appearancePreview(values: AppearanceValues): HTMLElement {
   });
 }
 
-function syncLivePreview() {
+/** Rebuilds the live Home preview from the current DOM, for when what it shows may have changed. */
+function rebuildLivePreview() {
   const host = document.getElementById("settings-live-preview");
+  if (host) host.replaceChildren(createLauncherPreview({ settings: panelSettings(), className: "settings-live-simulation" }));
+  syncPreviewCaptions();
+}
+
+/** Applies staged settings to the existing preview in place; staging runs on every slider tick. */
+function updateLivePreview() {
+  const existing = document.querySelector<HTMLElement>("#settings-live-preview .launcher-screen-preview");
+  if (!existing) { rebuildLivePreview(); return; }
+  updateLauncherPreview(existing, panelSettings());
+  syncPreviewCaptions();
+}
+
+function syncPreviewCaptions() {
   const current = panelSettings();
-  if (host) host.replaceChildren(createLauncherPreview({ settings: current, className: "settings-live-simulation" }));
   const summary = document.getElementById("settings-preview-summary");
   if (summary) summary.textContent = `${current.navigationMode === "split" ? "Split header" : current.navigationMode === "taskbar" ? "Navigation taskbar" : "Dropdown tray"} · ${current.surfaceWidth}px panel · taskbar ${current.rail ? "shown" : "hidden"}`;
   document.getElementById("pane-motion-preview")?.style.setProperty("--demo-pane-motion", `${current.paneMotionMs}ms`);
@@ -777,13 +790,13 @@ function select(id: string) {
     .querySelectorAll<HTMLElement>(".nav-item")
     .forEach((item) => item.setAttribute("aria-current", item.dataset.id === id ? "page" : "false"));
   syncCommitBar();
-  syncLivePreview();
+  rebuildLivePreview();
 }
 
 export function syncPanel() {
   absorbLiveSettings();
   syncers.forEach((sync) => sync());
-  syncLivePreview();
+  rebuildLivePreview();
   syncCommitBar();
 }
 
