@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-05 · 0.3.0 "Crown" installed and released
+
+The owner asked for the build to be installed properly, to start at login, and for the work to be merged to `main` and released. The NSIS and MSI installers were built locally with `npm run tauri build -- --bundles nsis,msi` (1.77 and 2.54 MiB). The machine already had the 0.2.1 MSI in Program Files, a stale per-user 0.2.x copy installed by an earlier agent session inside the Codex app's package folder (with the Start Menu shortcut pointing at it), and a Run entry that still pointed at a debug build. The MSI upgrade needs elevation: running it from the user's AppData folder failed with 1619 because the elevated installer could not open the package there, so it was copied to a shared folder first and installed from there. The stale copy was removed with its own uninstaller, and the `Opaline` Run entry was pointed at the installed exe with `--hidden`, the same value the app's own Launch at login switch writes (the path is quoted here because it contains a space).
+
+One thing surfaced: the MSI creates an all-users Desktop shortcut, although the release checklist says the installers create none; only the NSIS installer removes its own. It is recorded in the work order and changelog, not fixed.
+
 ## 2026-11-04 · Review pass, gesture motion, hover intent and the settled 0.3.0 scope
 
 The unreleased 0.3 work was reviewed end to end on branch `feat/v0.3-experience`: five confirmed bugs (Focus Space handling, a never-started session being recordable as finished, Done reverting live edits, preset id collisions, silent save failures) and several smaller ones were fixed and are covered by the UI suite and unit tests.

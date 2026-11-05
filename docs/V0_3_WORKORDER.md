@@ -1,7 +1,7 @@
 # Opaline 0.3.0 experience work order
 
-**Status:** scope settled on 4 November 2026 (§0); built as 0.3.0 "Crown" and awaiting the owner's native acceptance (§11); partial slices are listed in §10.  
-**Release intent:** supersede the unpublished 0.2.2 candidate with a 0.3.0 that ships the scope in §0 after every acceptance gate there passes. The manifests were bumped to 0.3.0 "Crown" on 4 November 2026 at the owner's request; nothing is tagged, pushed or published until the owner has accepted it.  
+**Status:** scope settled on 4 November 2026 (§0); released as 0.3.0 "Crown" on 5 November 2026, with the owner's native acceptance (§11) still open; partial slices are listed in §10.  
+**Release intent:** supersede the unpublished 0.2.2 candidate with a 0.3.0 that ships the scope in §0 after every acceptance gate there passes. The manifests were bumped to 0.3.0 "Crown" on 4 November 2026, and the owner had it tagged and published on 5 November before finishing the native checks.  
 **Priority order:** Focus experience → navigation, presets and interaction polish → taskbar placement (built in 0.3.0) → (later releases) layout customisation → restart/startup performance → optional Activity Center integrations.
 
 ## 0. Scope decision (settled 4 November 2026)
@@ -35,7 +35,7 @@ specification for those releases; only the release each requirement targets chan
 
 **0.3.0 release gates:** `npm test`, `npm run build`, `npm run size`, `tsc --noEmit`, `cargo fmt --check`, Clippy with warnings denied,
 `cargo test --locked`, a clean UI suite, then the owner's acceptance of Focus, the gestures (W-51), hover behaviour and the native
-checklist. The manifests are already 0.3.0 "Crown"; the release is tagged and published only when the owner says so.
+checklist. 0.3.0 "Crown" was tagged and published on 5 November 2026 at the owner's instruction, ahead of the native checks, which stay open.
 
 **What changes for the plan below:** M0, M1 and the Settings/navigation parts of M3 are the 0.3.0 work. M2 splits (the capsule is in,
 notifications and history are 0.3.x); 0.4.0 is live wallpapers (its own work order); taskbar placement (M3) is built in 0.3.0, while the customiser and all of M4

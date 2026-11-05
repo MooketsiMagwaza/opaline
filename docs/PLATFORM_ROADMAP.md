@@ -1,6 +1,6 @@
 # Platform roadmap
 
-These are planned work packages, not claims about the current `0.2.1` release or the `0.3.0` candidate. Each package must receive detailed acceptance criteria in
+These are planned work packages, not claims about the current `0.3.0` release. Each package must receive detailed acceptance criteria in
 the main work order before implementation. The release-by-release plan (0.3.0 experience, 0.4.0 live wallpapers, 0.5.0 layout customiser and restart cache,
 0.6.0 Activity Center) is in [V0_3_WORKORDER.md](V0_3_WORKORDER.md) and [V0_4_WORKORDER.md](V0_4_WORKORDER.md); this page holds the larger platform ideas behind it.
 

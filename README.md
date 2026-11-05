@@ -17,18 +17,15 @@
   <a href="docs/NAMING.md">Naming</a>
 </p>
 
-> **Latest release: [`v0.2.1` "Borosilicate"](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1).** Windows 11 first; Linux is planned.
+> **Latest release: [`v0.3.0` "Crown"](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0).** Windows 11 first; Linux is planned.
 >
-> **This branch is `v0.3.0` "Crown"**, built and waiting on the owner's native acceptance; it is not tagged or published, and the v0.2.1 download does not
-> include everything described below.
->
-> The TypeScript build, 64 frontend tests, 18 Rust unit tests, the size budget and a browser UI suite on demo data are clean locally. Real Windows
+> The TypeScript build, 64 frontend tests, 18 Rust unit tests, the size budget and a browser UI suite on demo data are clean. Real Windows
 > interaction checks remain open for trackpad gestures, light bending on the target GPU, the taskbar at each edge, grid reordering and persistence,
 > tray/single-instance, installer and multi-monitor behaviour. The
 > [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done
 > once it has been seen working.
 
-Two-finger swipe and pinch navigation may still feel laggy or miss a short gesture on some trackpads. 0.3.0 reworks the gesture motion, but a physical trackpad has not confirmed the fix, so this remains an open [known issue](WORKORDER.md#13-known-issues); Tab and the Home dots move between Home screens, and Alt+1–5 opens the main pages.
+Two-finger swipe and pinch navigation may still feel laggy or miss a short gesture on some trackpads. 0.3.0 reworks the gesture motion, but a physical trackpad has not yet confirmed the fix, so this remains an open [known issue](WORKORDER.md#13-known-issues); Tab and the Home dots move between Home screens, and Alt+1–5 opens the main pages.
 
 ## What it is
 
@@ -208,7 +205,7 @@ AGENTS.md            Guide for coding agents (also a good orientation for people
 
 ## Roadmap
 
-**0.3.0 "Crown"** (this branch, awaiting native acceptance) → 0.3.x completion feedback → **0.4.0 live wallpapers** (GIF, video and sandboxed HTML/JavaScript
+**0.3.0 "Crown"** (released; native acceptance still open) → 0.3.x completion feedback → **0.4.0 live wallpapers** (GIF, video and sandboxed HTML/JavaScript
 backgrounds, reading Lively packages) → 0.5.0 live layout customiser and faster restarts → 0.6.0 Activity Center. Each is scoped in
 [docs/V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md) and [docs/V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md); see also [WORKORDER.md](WORKORDER.md) §12.
 Widgets, calendar and an opt-in Start-style surface remain future work in [docs/PLATFORM_ROADMAP.md](docs/PLATFORM_ROADMAP.md). The current visual target is the single acrylic system described in

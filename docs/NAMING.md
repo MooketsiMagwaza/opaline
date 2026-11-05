@@ -57,7 +57,7 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 | 0.9 | Iridescent |
 | 1.0 | Jewel |
 
-Git tags follow `vX.Y.Z`; release titles use the version and codename. [`v0.2.1 "Borosilicate"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) is the latest patch release in the 0.2 series. `v0.3.0 "Crown"` is built on `feat/v0.3-experience` and awaits the owner's acceptance; it is not tagged or published.
+Git tags follow `vX.Y.Z`; release titles use the version and codename. [`v0.2.1 "Borosilicate"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) is the latest patch release in the 0.2 series. [`v0.3.0 "Crown"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0) is the latest release.
 
 ## Commits and branches
 

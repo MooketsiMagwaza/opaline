@@ -84,7 +84,7 @@ from the screen. Mark your capture script DPI-aware first (`SetProcessDPIAware`)
 
 ## 5. Checks to run before a pull request
 
-Everything automated below runs against demo data and mocked native calls; none of it replaces the owner's checks on real Windows. For the 0.3.0 candidate,
+Everything automated below runs against demo data and mocked native calls; none of it replaces the owner's checks on real Windows. For 0.3.0,
 use the native acceptance list in [§11 of V0_3_WORKORDER.md](V0_3_WORKORDER.md#11-verification-matrix) and the owner checklist in
 [SESSION_WORKORDER.md](SESSION_WORKORDER.md) (a historical record of the 0.2 intake whose remaining Windows checks still apply). W-51 records swipe and pinch lag on the
 owner's trackpad; keep it open until a physical retest passes.

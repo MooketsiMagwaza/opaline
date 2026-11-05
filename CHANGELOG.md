@@ -6,7 +6,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
-## [0.3.0] — 2026-11-04 "Crown"
+## [0.3.0] — 2026-11-05 "Crown"
 
 ### Added
 - Added taskbar placement: the taskbar (Home, the app mirror and the navigation group) docks to the bottom, top, left or right edge and sits at the start, centre or end of it. Window previews, magnification, scrolling, the Taskbar ends and Sidebar arrangements and the page layout follow the edge.
@@ -66,6 +66,10 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Presets in an imported file that reuse an id now get their own, so removing one no longer removes the others.
 - A failed save (full or blocked browser storage) is now reported: Settings show that changes will be lost on restart and preset actions show the error, instead of appearing to succeed.
 - Removed the empty glass capsule left in the header when every destination in a split-navigation group is hidden.
+
+### Known issues
+- Swipe and pinch navigation can still feel laggy or miss a short gesture on the owner's trackpad (W-51); the gesture motion was reworked in this release, but a physical trackpad has not confirmed the fix.
+- The MSI installer creates an all-users Desktop shortcut (the NSIS installer removes its own). Light bending is untested on the target GPU and is off by default.
 
 ## [0.2.2] — 2026-11-01 "Borosilicate"
 
