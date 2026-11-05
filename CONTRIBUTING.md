@@ -35,30 +35,44 @@ Useful while developing:
 | Screen & window capture | `src-tauri/src/capture.rs` |
 | Desktop scan | `src-tauri/src/desktop.rs` |
 | Icons (one STA worker) | `src-tauri/src/icons.rs` |
-| Taskbar mirror | `src-tauri/src/taskbar.rs` |
+| App names and icons as Windows shows them (package family, Start menu, file details) | `src-tauri/src/identity.rs` |
+| Installed apps, screen time, idle, workspaces, pickers, Windows key | `src-tauri/src/apps.rs`, `usage.rs`, `idle.rs`, `workspace.rs`, `picker.rs`, `start_menu.rs` |
+| Taskbar mirror (native side) | `src-tauri/src/taskbar.rs` |
 | Persistent files | `src-tauri/src/store.rs` |
-| UI entry, open/close lifecycle, keyboard | `src/launcher.ts` |
-| Tile grid, pane popup, drag & drop | `src/grid.ts` |
-| Rail and hover previews | `src/rail.ts` |
-| Panes (state) and auto-organise rules | `src/groups.ts`, `src/organize.ts` |
-| Glass and lens | `src/glass.ts`, `src/launcher.css` |
-| Settings (state) and the full Settings page | `src/settings.ts`, `src/panel.ts` |
-| Home additions and shared app/folder picker | `src/home.ts`, `src/item-picker.ts` |
-| Context menu · icon cache · Rust commands · DOM helpers | `src/menu.ts`, `src/icons.ts`, `src/api.ts`, `src/dom.ts` |
+| UI entry, open/close lifecycle, keyboard | `src/app/launcher.ts` |
+| Tile grid and pane popup | `src/grid/index.ts` |
+| Grid drag/drop and folder/pane peeks | `src/grid/drag.ts`, `src/grid/peek.ts` |
+| Taskbar mirror, hover previews and edge placement | `src/taskbar/index.ts`, `src/taskbar/taskbar.css` |
+| Pages, navigation arrangements, gestures and their motion | `src/navigation/pages.ts`, `tray.ts`, `gestures.ts`, `gesture-motion.ts` |
+| Panes (state) and data-driven auto-organise rules | `src/grid/groups.ts`, `src/grid/organize.ts`, `src/grid/organize-rules.ts` |
+| Focus controller, ambient modes and timer rules | `src/focus/index.ts`, `src/focus/ambient.ts`, `src/focus/timer.ts` |
+| Shell styles | `src/app/launcher.css` |
+| Light-bending glass (physics and the per-element SVG filter) | `src/core/refraction.ts`, `src/core/glass.ts` |
+| Page fades and hover intent | `src/core/motion.ts`, `src/core/hover-intent.ts` |
+| Feature styles | `src/focus/focus.css`, `src/grid/grid.css`, `src/appearance/appearance.css`, `src/navigation/navigation.css`, `src/settings/settings.css` |
+| Settings state, staged draft and the Settings panel | `src/settings/store.ts`, `src/settings/draft.ts`, `src/settings/panel.ts` |
+| Live Settings preview and the Shortcuts & help page | `src/settings/launcher-preview.ts`, `src/settings/help.ts`, `src/data/shortcuts.ts` |
+| Built-in and user visual presets, backgrounds | `src/appearance/presets.ts`, `src/appearance/user-presets.ts`, `src/appearance/background.ts` |
+| Screen-time page and charts | `src/activity/index.ts`, `src/activity/charts.ts` |
+| Home additions and shared app/folder picker | `src/grid/workspaces.ts`, `src/grid/item-picker.ts` |
+| Context menu · icon cache · Rust commands · DOM helpers | `src/core/menu.ts`, `src/core/icons.ts`, `src/core/api.ts`, `src/core/dom.ts` |
 | Logo and generated icons | `assets/logo.svg`, `npm run icons` |
 
 ## Checks that must pass
 
 ```bash
 npm run build                                   # type-check + production bundle
-npm test                                        # frontend/store unit tests
+npm test                                        # frontend/store unit tests (Vitest, in tests/)
+npm run size                                    # production size budgets (220 KiB raw / 62 KiB gzip)
+npm run docs:check                              # docs agree with the code: links, paths, versions, test counts, budgets
 cargo fmt --manifest-path src-tauri/Cargo.toml  # formatting
 cargo clippy --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml --locked
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
-CI runs the same on every pull request. Then run through the relevant lines of the
+CI runs the same on every pull request. For anything that changes the UI, also run the browser suite (`scripts/verify-ui.mjs`, demo data only; Playwright is
+not a dependency, see [docs/TESTING.md](docs/TESTING.md) for how to point it at a browser). Then run through the relevant lines of the
 [acceptance checklist](WORKORDER.md#9-acceptance-checklist-run-before-every-release) by hand — the overlay is a visual,
 interactive app and not everything can be tested automatically.
 
@@ -71,7 +85,7 @@ interactive app and not everything can be tested automatically.
 - **Shell icon calls go through the single icon worker.** Do not extract icons from several threads at once — it loses icons (this sank the first beta, see [DEVLOG.md](DEVLOG.md)).
 - **Keep the glass cheap.** `backdrop-filter` is expensive on integrated GPUs. Use it on large panes, not on every tile, and make sure *Clear* and *Frost* still look right.
 - Respect `prefers-reduced-motion`, keep everything reachable by keyboard, and keep text readable over any wallpaper.
-- Tune with the settings, not magic numbers: new visual parameters should become a setting with a default and a place in the Settings page.
+- Tune with the settings, not magic numbers: new visual parameters should become a setting with a default in `src/settings/store.ts` and a control in the Settings panel.
 
 ## Commits and pull requests
 
@@ -89,7 +103,7 @@ Security issues: **don't** open a public issue — see [SECURITY.md](SECURITY.md
 
 ## Releases (maintainers)
 
-1. Update `CHANGELOG.md`, bump the version in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`.
+1. Update `CHANGELOG.md` and bump the version everywhere it lives (the manifests, both lockfiles, the codename in `lib.rs`, the README's latest-release line and the UI suite's status fixture); the full list is step 3 of [docs/RELEASING.md](docs/RELEASING.md).
 2. Run the full acceptance checklist.
 3. Tag `vX.Y.Z` and title the release `Opaline X.Y "Codename"` (codenames in [docs/NAMING.md](docs/NAMING.md)).
 

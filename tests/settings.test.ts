@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULTS, materialSettings, normalizeGlassStyle, normalizeSettings } from "../src/settings";
+import { DEFAULTS, materialSettings, normalizeGlassStyle, normalizeSettings } from "../src/settings/store";
 
 describe("theme migration", () => {
   it("rejects corrupt enums, invalid colours and out-of-range or non-finite values", () => {
-    const result = normalizeSettings({ iconSize: "huge", sortBy: "random", tintColor: "javascript:bad", backdropBlur: -100, tintStrength: Infinity, pageShortcut: "alt-tab", compactBar: "yes", paneMotionMs: 900 });
+    const result = normalizeSettings({ iconSize: "huge", sortBy: "random", defaultPage: "settings", tintColor: "javascript:bad", backdropBlur: -100, tintStrength: Infinity, pageShortcut: "alt-tab", compactBar: "yes", paneMotionMs: 900 });
     expect(result.iconSize).toBe(DEFAULTS.iconSize);
     expect(result.sortBy).toBe("name");
+    expect(result.defaultPage).toBe("home");
     expect(result.tintColor).toBe(DEFAULTS.tintColor);
     expect(result.backdropBlur).toBe(0);
     expect(result.tintStrength).toBe(DEFAULTS.tintStrength);
@@ -14,6 +15,15 @@ describe("theme migration", () => {
     expect(result.paneMotionMs).toBe(500);
     expect(normalizeSettings({ taskbarIconSize: 44 }).taskbarIconSize).toBe(36);
     expect(normalizeSettings(null)).toEqual(DEFAULTS);
+  });
+  it("accepts All apps as the normal opening page", () => {
+    expect(normalizeSettings({ defaultPage: "all-apps" }).defaultPage).toBe("all-apps");
+  });
+  it("validates local background choices and bounded image data", () => {
+    expect(normalizeSettings({ backgroundMode: "aero" }).backgroundMode).toBe("aero");
+    expect(normalizeSettings({ backgroundMode: "remote", customBackground: "https://example.com/image.jpg" }).backgroundMode).toBe("desktop");
+    expect(normalizeSettings({ customBackground: "https://example.com/image.jpg" }).customBackground).toBe("");
+    expect(normalizeSettings({ customBackground: "data:image/jpeg;base64,AAAA" }).customBackground).toBe("data:image/jpeg;base64,AAAA");
   });
   it("keeps current themes and migrates prototype names", () => {
     expect(normalizeGlassStyle("solid")).toBe("solid");

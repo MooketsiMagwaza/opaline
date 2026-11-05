@@ -12,7 +12,7 @@
 
 ## Checklist
 
-- [ ] `npm run build` passes
+- [ ] `npm test`, `npm run build` and `npm run size` pass, and the browser UI suite (`scripts/verify-ui.mjs`, demo data only) for UI changes
 - [ ] `cargo fmt`, `cargo clippy` and `cargo check` are clean
 - [ ] Relevant lines of the acceptance checklist (WORKORDER §9) checked by hand
 - [ ] `WORKORDER.md` statuses and `CHANGELOG.md` (Unreleased) updated — `[x]` only for things I verified

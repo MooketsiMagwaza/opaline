@@ -30,17 +30,23 @@ never photographs itself.
 
 ## Surfaces and themes
 
-Search is an independent floating surface. The retained taskbar rail in `rail.ts` is active at the bottom; refreshes and thumbnail warming run only while the overlay and taskbar option are active. No rail lens runs. One rounded apps surface contains the centred grid. Loose apps and folders are
+Search is an independent floating surface. The taskbar mirror (the rail, `src/taskbar/`) docks to the bottom, top, left or right edge at the start, centre or end of it (`railEdge`, `railAlign`, applied as `data-rail-edge` and `data-rail-align` on `body` and handled in `taskbar.css`); refreshes and thumbnail warming run only while the overlay and taskbar option are active, and no lens runs on the rail. One rounded apps surface contains the centred grid. Loose apps and folders are
 plain icon + name with no per-item bubble. A pane uses one rounded mini-icon bubble and places its name below. The pane popup, preview,
-item picker and context menu are transient surfaces; Settings is a full page. This keeps hierarchy legible and bounds compositing work.
+item picker and context menu are transient surfaces; Settings is a panel like any other page, with a corner button that expands it to the whole window (`settingsExpanded`). This keeps hierarchy legible and bounds compositing work.
 
-The side arrows and Tab cycle the read-only Desktop Home and custom screens. Ctrl+Tab and Alt+1–5 select Home, All apps, Screen time, Focus and Settings. Screen-time history keeps local per-app daily totals for 90 days; `usage.ts` renders 7/30-day graphs without fetching data from a service. `timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session. `focus.ts` owns the Zen and screen-saver surfaces, while `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
-the overlay is visible, covering classic Start-menu entries and packaged apps without adding work to the opening path. `pages.ts` owns
-top-level page state and the Home-screen pager. `item-picker.ts` owns the shared searchable app/folder add flow for Home and named screens; `picker.rs` opens an owned Windows folder/file dialog on a worker and returns only the chosen path for metadata storage. Widgets were removed from the current UI and remain a roadmap item.
+The side arrows and Tab cycle the read-only Desktop Home and custom screens. Ctrl+Tab and Alt+1–5 select Home, All apps, Screen time, Focus and Settings. Screen-time history keeps local per-app daily totals for 90 days; `activity/index.ts` and `activity/charts.ts` render 7/30-day graphs with labelled axes without fetching data from a service. `focus/timer.ts` stores a wall-clock deadline so hiding the overlay does not pause a session; `focus/index.ts` owns the Focus page and `focus/ambient.ts` owns immersive and quiet-clock presentation. `idle.rs` may open the saver after the selected idle interval. The saver never changes Windows lock or system screen-saver policy. `apps.rs` enumerates Windows AppsFolder on a worker after
+the overlay is visible, covering classic Start-menu entries and packaged apps without adding work to the opening path. `navigation/pages.ts` owns
+top-level page state and the Home-screen pager (a fresh profile has Desktop and a plus page that adds a screen), and `navigation/tray.ts` and `gesture-motion.ts` own the dropdown tray and the swipe and pinch motion. The destinations can sit in a split header, a navigation taskbar, a tray, either side of Home in the taskbar, or a sidebar. Page changes ease in through `core/motion.ts`, which respects the Animations setting, the Fade between pages toggle and the system's reduced-motion preference. `item-picker.ts` owns the shared searchable app/folder add flow for Home and named screens; `picker.rs` opens an owned Windows folder/file dialog on a worker and returns only the chosen path for metadata storage. Widgets were removed from the current UI and remain a roadmap item.
 
-The active material engine is deliberately narrow: one dark acrylic surface vocabulary with user-controlled backdrop blur, tint strength
-and tint colour. This keeps search, Home, All Apps and transient panels visually consistent. Older theme fields remain readable for settings
-migration but are normalized to acrylic at load time. See [THEME_WORKORDER.md](THEME_WORKORDER.md) for acceptance criteria.
+The material engine is one surface vocabulary driven by CSS variables: backdrop blur, saturation and brightness, tint strength and colour, panel colour and opacity, and corner
+radius. Five named presets (Opaline Original, Windows Mica, One UI Glass, Frutiger Aero, Deep Night) and the user's own set them together. Surfaces are flat translucent
+fills with a hairline border and a lit rim; there are no sheen gradients. This keeps search, Home, All Apps and transient panels visually consistent. Older theme fields remain
+readable for settings migration but are normalized at load time. See [THEME_WORKORDER.md](THEME_WORKORDER.md) for acceptance criteria.
+
+**Light bending** is the opt-in exception that goes beyond frosting. `core/refraction.ts` is pure physics: a convex-squircle bezel, Snell's law at an index of 1.5 and a slightly different
+bend per colour channel produce a displacement map. `core/glass.ts` renders that map per large surface as an SVG filter (an `feImage` map and three `feDisplacementMap` passes, scaled by twice the
+maximum shift because the primitive moves pixels by scale × (value − 0.5)) and applies it through `backdrop-filter: url(#…)`. It works only in Chromium/WebView2, is GPU-heavy, and is absent
+when Light bending is 0%, which is the default and the value of every built-in preset.
 
 Backdrop filtering is limited to the large floating/transient surfaces. App and pane cards use ordinary fills and borders—never a
 backdrop filter per card—so adding Desktop items does not add one expensive compositor pass each.
@@ -50,9 +56,17 @@ backdrop filter per card—so adding Desktop items does not add one expensive co
 - `groups.json`: virtual panes, normalized grid-order ranks and launch counts.
 - `config.json`: the hotkey needed before the UI exists.
 - `opaline.settings`: webview local storage for visual and behavioural settings.
-- `workspaces.json`: up to eight named app/file/folder collections shown as Home screens after the Desktop-based first screen.
-- `screen-time.json`: foreground/maximised executable totals, current local-day totals and the pause preference. No window titles are saved.
+- `opaline.appearance.profiles`: up to 24 named local visual/layout profiles; export files use the versioned `opaline-visual-presets` JSON schema.
+- `workspaces.json`: up to eight named app/file/folder collections shown as Home screens after the Desktop-based first screen (none by default; empty placeholder screens saved by older versions are dropped on load).
+- `screen-time.json`: foreground/maximised per-app totals keyed by app identity (see below), current local-day totals and the pause preference. No window titles are saved.
 - `shell.json`: the opt-in Windows-key preference.
+
+`identity.rs` gives every executable one key, one human name and one icon source, shared by screen time and the taskbar. A packaged app (a
+folder under `WindowsApps`) is keyed by its package family, so it stays one entry across updates, and takes the name and icon of its
+Start-menu entry (its own executable is unreadable); other programs use the name in their file details, then the file name. A Store app
+shown through `ApplicationFrameHost.exe` is resolved through the `Windows.UI.Core.CoreWindow` inside the frame, and time that cannot be
+attributed is not charged. Lookups are cached; a guess made while the Start-menu catalogue lacked an app is retried after ten minutes.
+History recorded before this existed is merged and renamed on the sampler thread when Opaline starts, never on the path to the first frame.
 
 Changing a pane or grid order only changes metadata. Desktop files are never moved, renamed or deleted. The public identifier migration
 reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.github.mooketsimagwaza.opaline` without deleting the old copy.
@@ -65,6 +79,22 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 - Desktop and AppsFolder refreshes happen after presentation. Taskbar enumeration and bounded thumbnail warming run after presentation and stop when hidden.
 - The UI keeps up to 32 decoded thumbnails in memory, shares concurrent requests per window and shows stale pixels while refreshing. A cached hover avoids capture entirely; cold PrintWindow can take longer than 50 ms.
 - Native usage sampling runs once a second while the app is alive, excluding idle periods and sleep gaps. It saves every 30 seconds and on normal exit; an abrupt process kill can lose the most recent interval.
+- `npm run size` fails when the production frontend exceeds 220 KiB raw or 62 KiB gzip (raw was 180 KiB until the gesture motion and hover-intent systems, 190 KiB until the help, Home-screen, chart and navigation work, 200 KiB until the refraction lens and 210 KiB until taskbar placement, panel-sized Settings and page fades; gzip was 60 KiB; see `scripts/measure-build.mjs`). New UI data remains static TypeScript unless runtime editing actually requires a file or service.
+
+## Frontend module boundaries
+
+- `src/app/`: the shell (`launcher.ts`: open/close lifecycle, keyboard wiring) and the shared surfaces and tokens in `launcher.css`.
+- `src/core/`: Rust command wrappers, DOM helpers, the icon cache, the context menu, hover intent, motion, and the refraction and glass lens.
+- `src/focus/`: timer state transitions, ambient presentation and the Focus page controller.
+- `src/grid/`: Home rendering, pane/group state, workspaces, drag/drop ordering and delayed folder/pane peeks; `index.ts` is the feature coordinator.
+- `src/navigation/`: pages and the pager, navigation arrangements, the tray, and swipe and pinch gestures with their motion.
+- `src/taskbar/`: the Windows app mirror, its previews and its placement on any edge.
+- `src/settings/`: persisted settings, the staged draft, the panel and its live preview, and the Shortcuts & help page.
+- `src/activity/`: the screen-time page and its charts.
+- `src/appearance/`: material presets, backgrounds, local user-preset persistence, and versioned import/export and validation.
+- `src/data/`: typed product data shared across features (the shortcut and help list). Feature-specific data lives with its feature, such as organise rules in `grid/` and Focus copy in `focus/`. Keeping it static makes lists editable without runtime fetches.
+- Feature-owned CSS lives beside its feature (`focus/focus.css`, `grid/grid.css`, `appearance/appearance.css`, `navigation/navigation.css`, `settings/settings.css`, `taskbar/taskbar.css`, `activity/activity.css`) and is imported by `launcher.css`. Shared surfaces and tokens remain in the root stylesheet.
+- Settings edits are staged in memory. Done validates and writes the complete draft; Cancel restores persisted settings. Preview thumbnails may reuse the current in-memory backdrop but never persist it in a preset or export.
 
 ## Processes on Windows
 

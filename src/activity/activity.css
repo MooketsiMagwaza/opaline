@@ -1,0 +1,38 @@
+.usage-insights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 8px 0 12px; border-bottom: 1px solid rgba(255,255,255,.14); }
+.insight { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 4px 20px; border-right: 1px solid rgba(255,255,255,.12); }
+.insight:first-child { padding-left: 0; }
+.insight:last-child { border-right: 0; }
+.insight strong { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.daily-chart { margin: 0; padding: 12px 0 6px; border-bottom: 1px solid rgba(255,255,255,.14); }
+.chart-title { margin: 0 0 10px; font-size: 14px; font-weight: 550; }
+/* The plot is an axis column beside the bars. The rules sit behind the bar tracks and share their height. */
+.chart-plot { --track: 112px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; width: min(100%, calc(var(--chart-days) * 52px + 44px)); margin-inline: auto; }
+.chart-axis { display: flex; flex-direction: column; justify-content: space-between; height: var(--track); margin-top: -6px; padding-bottom: 0; color: var(--dim); font-size: 10px; font-variant-numeric: tabular-nums; line-height: 12px; text-align: right; }
+.chart-area { position: relative; }
+.chart-rules { position: absolute; inset: 0 0 auto 0; height: var(--track); pointer-events: none; }
+.chart-rules span { position: absolute; left: 0; right: 0; height: 1px; background: color-mix(in srgb, var(--text) 12%, transparent); }
+.chart-rules span:first-child { background: color-mix(in srgb, var(--text) 30%, transparent); }
+.chart-bars { position: relative; display: grid; grid-template-columns: repeat(var(--chart-days), minmax(0, 1fr)); align-items: start; gap: 3px; }
+.chart-day { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.chart-track { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: var(--track); }
+.chart-bar { display: block; width: min(28px, 70%); height: var(--bar-height); min-height: 0; border-radius: 5px 5px 2px 2px; background: linear-gradient(var(--bar-top, #b3d4fd), var(--bar-bottom, #668bbf)); }
+.chart-day[data-today="true"] { --bar-top: #e3f0ff; --bar-bottom: #8db4e6; }
+body[data-surface-tone="light"] .chart-day { --bar-top: #6f9fdc; --bar-bottom: #3f6fae; }
+body[data-surface-tone="light"] .chart-day[data-today="true"] { --bar-top: #4f86d1; --bar-bottom: #2d5a9c; }
+body[data-surface-tone="light"] .usage-fill::before { background: #4f86d1; }
+.chart-day:hover .chart-bar, .chart-day:focus-visible .chart-bar { background: #cee3ff; }
+.chart-day-label { display: flex; flex-direction: column; align-items: center; min-height: 26px; color: var(--dim); font-size: 10px; line-height: 13px; }
+.chart-day-label small { font-size: 9px; opacity: .8; }
+.chart-day[data-today="true"] .chart-day-label { color: var(--text); }
+.chart-caption { margin-top: 8px; min-height: 16px; color: var(--dim); font-size: 11px; text-align: center; }
+.usage-fill { height: 6px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+.usage-fill::before { content: ""; display: block; width: var(--usage); height: 100%; background: #9abfe9; border-radius: inherit; }
+.usage-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.usage-list { min-height: 0; }
+.usage-row { display: grid; grid-template-columns: 36px minmax(100px, 1fr) minmax(60px, 2fr) 110px; align-items: center; gap: 18px; width: 100%; padding: 14px 0; border: 0; border-bottom: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
+.usage-row:hover, .usage-row[aria-pressed="true"] { background: rgba(255,255,255,.05); }
+.usage-row .ico { width: 32px; height: 32px; }
+.usage-meter { width: 100%; height: 9px; accent-color: #9bc8ff; }
+.usage-total { font-size: 28px; font-variant-numeric: tabular-nums; }
+.usage-duration { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 800px) { .usage-row { gap: 8px; grid-template-columns: 28px minmax(70px, 1fr) minmax(40px, 1fr) 90px; } }

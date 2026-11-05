@@ -1,0 +1,148 @@
+.navigation-styles { margin: 0 0 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.navigation-style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.navigation-style-card { display: flex; min-width: 0; flex-direction: column; gap: 5px; padding: 8px; border: 1px solid rgba(255,255,255,.13); border-radius: 14px; background: rgba(255,255,255,.035); color: var(--text); text-align: left; cursor: pointer; }
+.navigation-style-card:hover { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.075); }
+.navigation-style-card[aria-pressed="true"] { border-color: rgba(191,219,255,.72); background: rgba(191,219,255,.11); box-shadow: 0 0 0 2px rgba(126,175,231,.14); }
+.navigation-style-card strong { padding-inline: 3px; font-size: 11px; }
+.navigation-style-card small { min-height: 28px; padding-inline: 3px; color: var(--dim); font-size: 9px; line-height: 1.35; }
+@media (max-width: 700px) { .navigation-style-grid { grid-template-columns: 1fr; } }
+
+/* Applied launcher arrangements. Hidden primary shortcuts remain in the overflow tray. */
+#navigation-dock, #navigation-overflow { display: none; }
+body[data-navigation="taskbar"] #header-left,
+body[data-navigation="taskbar"] #header-right,
+body[data-navigation="tray"] #header-left,
+body[data-navigation="tray"] #header-right { display: none; }
+body[data-navigation="taskbar"] #search-wrap,
+body[data-navigation="tray"] #search-wrap { grid-column: 2; }
+/* Destination icons share one size and a light stroke with the Home icon, so the whole bar reads as one set in every arrangement. */
+.header-nav .orb svg { width: 22px; height: 22px; stroke-width: 1.7; }
+/* Taskbar ends: the destination groups flank the taskbar in its own bar, one beside Home and one after the app mirror. The sidebar is
+   one tall bar of every destination on a chosen edge; the header groups give way to either, and the page keeps clear of the sidebar. */
+body[data-navigation="ends"] #search-wrap, body[data-navigation="sidebar"] #search-wrap { grid-column: 2; }
+body[data-navigation="ends"] #header-left, body[data-navigation="ends"] #header-right { display: none; }
+body:not([data-navigation="ends"]) .navigation-ends { display: none; }
+body[data-navigation="ends"] #rail { max-width: calc(100vw - 330px); } /* the two groups share the bar with the mirror */
+body[data-navigation="sidebar"] #header-left, body[data-navigation="sidebar"] #header-right { display: none; }
+body:not([data-navigation="sidebar"]) .navigation-sidebar { display: none; }
+body[data-navigation="sidebar"] .navigation-sidebar { position: fixed; z-index: 4; top: 50%; display: flex; width: 52px; height: auto; flex-direction: column; align-items: center; gap: 3px; padding: 4px 3px; transform: translateY(-50%); }
+body[data-navigation-side="left"] .navigation-sidebar { left: 12px; }
+body[data-navigation-side="right"] .navigation-sidebar { right: 12px; }
+body[data-rail="true"][data-navigation-side="left"][data-rail-edge="left"] .navigation-sidebar { left: 72px; }
+body[data-rail="true"][data-navigation-side="right"][data-rail-edge="right"] .navigation-sidebar { right: 72px; }
+body[data-navigation="sidebar"] .page-surface { width: min(var(--surface-width, 960px), calc(100% - 176px)); }
+/* A header pill whose destinations are all hidden would render as an empty glass capsule: remove it and
+   keep the remaining items in their own columns (a hidden grid item lets the others auto-flow). */
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-left,
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #navigation-ends-start,
+body[data-shortcut-focus="false"][data-shortcut-settings="false"] #header-right,
+body[data-shortcut-focus="false"][data-shortcut-settings="false"] #navigation-ends-end { display: none; }
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #search-wrap { grid-column: 2; }
+body[data-shortcut-all-apps="false"][data-shortcut-screen-time="false"] #header-right { grid-column: 3; }
+body[data-navigation="taskbar"] #navigation-dock { display: flex; }
+body[data-navigation="tray"] #navigation-overflow,
+body:not([data-navigation="tray"])[data-navigation-overflow="true"] #navigation-overflow { display: block; }
+
+body[data-shortcut-all-apps="false"] #header-left [data-nav-shortcut="all-apps"],
+body[data-shortcut-all-apps="false"] #navigation-dock [data-nav-shortcut="all-apps"],
+body[data-shortcut-all-apps="false"] #navigation-sidebar [data-nav-shortcut="all-apps"],
+body[data-shortcut-all-apps="false"] .navigation-ends [data-nav-shortcut="all-apps"],
+body[data-shortcut-screen-time="false"] #header-left [data-nav-shortcut="screen-time"],
+body[data-shortcut-screen-time="false"] #navigation-dock [data-nav-shortcut="screen-time"],
+body[data-shortcut-screen-time="false"] #navigation-sidebar [data-nav-shortcut="screen-time"],
+body[data-shortcut-screen-time="false"] .navigation-ends [data-nav-shortcut="screen-time"],
+body[data-shortcut-focus="false"] #header-right [data-nav-shortcut="focus"],
+body[data-shortcut-focus="false"] #navigation-dock [data-nav-shortcut="focus"],
+body[data-shortcut-focus="false"] #navigation-sidebar [data-nav-shortcut="focus"],
+body[data-shortcut-focus="false"] .navigation-ends [data-nav-shortcut="focus"],
+body[data-shortcut-settings="false"] #header-right [data-nav-shortcut="settings"],
+body[data-shortcut-settings="false"] #navigation-dock [data-nav-shortcut="settings"],
+body[data-shortcut-settings="false"] #navigation-sidebar [data-nav-shortcut="settings"],
+body[data-shortcut-settings="false"] .navigation-ends [data-nav-shortcut="settings"] { display: none; }
+
+body:not([data-navigation="tray"])[data-shortcut-all-apps="true"] .navigation-tray [data-nav-shortcut="all-apps"],
+body:not([data-navigation="tray"])[data-shortcut-screen-time="true"] .navigation-tray [data-nav-shortcut="screen-time"],
+body:not([data-navigation="tray"])[data-shortcut-focus="true"] .navigation-tray [data-nav-shortcut="focus"],
+body:not([data-navigation="tray"])[data-shortcut-settings="true"] .navigation-tray [data-nav-shortcut="settings"] { display: none; }
+
+.navigation-dock, .navigation-ends { flex: none; height: 52px; padding: 4px; }
+.navigation-overflow { position: relative; flex: none; }
+.navigation-overflow[open] { z-index: 12; }
+.navigation-overflow > summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 17px; color: var(--text); cursor: pointer; list-style: none; letter-spacing: 2px; }
+.navigation-overflow > summary::-webkit-details-marker { display: none; }
+.navigation-overflow[open] > summary { border-color: rgba(191,219,255,.52); background: rgba(191,219,255,.12); }
+.navigation-overflow > .navigation-tray { position: absolute; right: 0; bottom: 60px; display: flex; width: 156px; height: auto; flex-direction: column; align-items: stretch; padding: 6px; border-radius: 16px; box-shadow: 0 16px 42px rgba(2,7,19,.38); }
+.navigation-tray button { min-height: 34px; padding: 7px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.navigation-tray button:hover, .navigation-tray button:focus-visible, .navigation-tray button[aria-current="page"] { background: rgba(255,255,255,.12); }
+body[data-navigation="tray"] .navigation-tray { right: 50%; transform: translateX(50%); }
+body[data-compact-bar="true"] #navigation-dock,
+body[data-compact-bar="true"] #navigation-overflow { display: none; }
+
+/* ---------- gesture motion ----------
+   pages.ts drives a live preview through three custom properties and nothing else: --gesture-dir (+1 next, -1 previous),
+   --gesture-p (0..1, eased, drives movement) and --gesture-fade (drives opacity). The commit animation is then played with the
+   Web Animations API on the same elements and starts from the state painted here, so the hand-off has no jump. Only transform
+   and opacity ever change, so nothing re-lays out and nothing leaves the panel that clips it. */
+.home-motion { transition: transform .36s var(--ease), opacity .3s var(--ease); } /* spring back when a gesture is released */
+.page-surface[data-gesture-preview], .home-motion[data-gesture-preview], [data-gesture-committing] { transition: none !important; will-change: transform, opacity; }
+/* Home screens: content follows the finger and fades, so what reaches the panel edge is already faint instead of sliced. */
+.home-motion[data-gesture-preview][data-gesture-mode="swipe"] {
+  transform: translate3d(calc(var(--gesture-dir) * var(--gesture-p) * -56px), 0, 0);
+  opacity: calc(1 - var(--gesture-fade) * .62);
+}
+/* Pages: pinching out zooms into the current page and pinching in pulls back from it, while the next page builds up behind. */
+.page-surface[data-gesture-preview][data-gesture-mode="pinch"] {
+  transform: scale(calc(1 + var(--gesture-dir) * var(--gesture-p) * .075));
+  opacity: calc(1 - var(--gesture-fade) * .5);
+}
+/* The cue is a ghost of what is coming, a .glass element like the panels it leads to, so every theme styles it the same way. For a pinch it is the destination
+   page, the size of the panel, growing into place; for a swipe it is a small pill at the edge the next screen comes from. */
+#gesture-cue {
+  position: absolute; z-index: 5; left: var(--cue-x, 50%); top: var(--cue-y, 50%); width: var(--cue-w, auto); height: var(--cue-h, auto);
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box; pointer-events: none; color: var(--text);
+}
+#gesture-cue .cue-arrow { display: grid; flex: none; place-items: center; border: 1px solid color-mix(in srgb, var(--text) 26%, transparent); border-radius: 50%; background: color-mix(in srgb, var(--text) 10%, transparent); }
+#gesture-cue .cue-arrow svg { width: 55%; height: 55%; }
+#gesture-cue .cue-label { font-weight: 620; letter-spacing: -.01em; }
+#gesture-cue[data-mode="pinch"] {
+  flex-direction: column; gap: 6px; border-radius: var(--radius);
+  opacity: calc(var(--gesture-p) * var(--gesture-p) * 1.15);
+  transform: scale(calc(.88 + var(--gesture-p) * .12));
+}
+#gesture-cue[data-mode="pinch"] .cue-arrow { width: 52px; height: 52px; margin-bottom: 6px; }
+#gesture-cue[data-mode="pinch"] .cue-label { font-size: 26px; }
+#gesture-cue[data-mode="pinch"]::after { content: attr(data-kicker); color: var(--dim); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+#gesture-cue[data-mode="swipe"] {
+  width: auto; height: auto; gap: 9px; padding: 6px 15px 6px 7px; border-radius: 999px; font-size: 13px;
+  top: calc(var(--cue-y) + var(--cue-h) / 2);
+  opacity: calc(var(--gesture-p) * 1.2);
+}
+#gesture-cue[data-mode="swipe"][data-direction="next"] { flex-direction: row-reverse; padding: 6px 7px 6px 15px; }
+#gesture-cue[data-mode="swipe"] .cue-arrow { width: 26px; height: 26px; }
+#gesture-cue[data-mode="swipe"][data-direction="next"] { left: calc(var(--cue-x) + var(--cue-w) - 22px); transform: translate(calc(-100% + (1 - var(--gesture-p)) * 22px), -50%); }
+#gesture-cue[data-mode="swipe"][data-direction="previous"] { left: calc(var(--cue-x) + 22px); transform: translate(calc((var(--gesture-p) - 1) * 22px), -50%); }
+/* Quiet reminders of the keys that steer a page. They sit in the panel's bottom corner so they take no layout space. */
+.page-surface > .key-hints { position: absolute; right: 18px; bottom: 8px; z-index: 3; display: flex; gap: 14px; margin: 0; color: var(--dim); font-size: 10.5px; pointer-events: none; }
+.key-hints span { display: inline-flex; align-items: center; gap: 4px; }
+.key-hints kbd { min-width: 17px; padding: 0 4px; font-size: 10px; line-height: 1.5; border-bottom-width: 1px; }
+.key-hints kbd { border-color: color-mix(in srgb, var(--text) 28%, transparent); background: color-mix(in srgb, var(--text) 8%, transparent); }
+body[data-compact-bar="true"] .key-hints { display: none; }
+@media (max-width: 860px) { .key-hints { display: none; } }
+#gesture-cue[data-leaving="true"] { opacity: 0 !important; transition: opacity .16s linear; }
+/* The copy of the page that is leaving. For a swipe it is only the clipping frame, so its glass is hidden rather than doubled. */
+[data-gesture-ghost] { pointer-events: none; will-change: transform, opacity; transition: none !important; }
+[data-gesture-ghost="swipe"] { background: none !important; border-color: transparent !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+[data-gesture-ghost="swipe"]::before, [data-gesture-ghost="swipe"]::after { display: none !important; }
+/* Without motion the preview keeps only the cue: no movement, no scaling, and the swipe pill keeps its centring. */
+body[data-anim="false"] [data-gesture-preview] { transform: none !important; opacity: 1 !important; transition: none !important; }
+body[data-anim="false"] #gesture-cue { transition: none !important; }
+body[data-anim="false"] #gesture-cue[data-mode="pinch"] { transform: none !important; }
+body[data-anim="false"] #gesture-cue[data-mode="swipe"][data-direction="next"] { transform: translate(-100%, -50%) !important; }
+body[data-anim="false"] #gesture-cue[data-mode="swipe"][data-direction="previous"] { transform: translate(0, -50%) !important; }
+@media (prefers-reduced-motion: reduce) {
+  .page-surface[data-gesture-preview], .home-motion[data-gesture-preview] { transform: none !important; opacity: 1 !important; }
+  #gesture-cue { transition: none !important; }
+  #gesture-cue[data-mode="pinch"] { transform: none !important; }
+  #gesture-cue[data-mode="swipe"][data-direction="next"] { transform: translate(-100%, -50%) !important; }
+  #gesture-cue[data-mode="swipe"][data-direction="previous"] { transform: translate(0, -50%) !important; }
+}

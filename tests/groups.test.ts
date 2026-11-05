@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../src/api", () => ({
+vi.mock("../src/core/api", () => ({
   api: {
     loadStore: vi.fn(),
     saveStore: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
-import { api } from "../src/api";
+import { api } from "../src/core/api";
 import {
   addToGroup,
   createGroup,
@@ -21,12 +21,13 @@ import {
   positionOf,
   prune,
   removeFromGroup,
+  reorderGroupItem,
   resetLayout,
   renameGroup,
   setPosition,
   setLayoutOrder,
   ungroup,
-} from "../src/groups";
+} from "../src/grid/groups";
 
 const emptyStore = () => JSON.stringify({ version: 1, organized: false, groups: [], launches: {} });
 const mockedApi = vi.mocked(api);
@@ -72,6 +73,22 @@ describe("pane store", () => {
 
     removeFromGroup("b");
     expect(groups().some((group) => group.id === "first")).toBe(false);
+  });
+
+  it("reorders pane members without changing membership", async () => {
+    createGroup("Tools", ["a", "b", "c", "d"], "tools");
+
+    expect(reorderGroupItem("tools", "d", 1)).toBe(true);
+    expect(groups()[0].items).toEqual(["a", "d", "b", "c"]);
+    expect(reorderGroupItem("tools", "a", 3)).toBe(true);
+    expect(groups()[0].items).toEqual(["d", "b", "c", "a"]);
+    expect(reorderGroupItem("missing", "a", 0)).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mockedApi.saveStore).toHaveBeenLastCalledWith(
+      "groups.json",
+      expect.stringContaining('"items":["d","b","c","a"]'),
+    );
   });
 
   it("renames, prunes, ungroups and persists changes", async () => {

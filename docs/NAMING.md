@@ -33,10 +33,11 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 |---|---|---|
 | **Overlay** | The full-screen launcher window | `main` window |
 | **Pane** | A named group of items (Start-menu / iPad folder) | `Group` in `groups.ts` |
-| **Rail** | The horizontal taskbar mirror along the bottom | `rail.ts`, `taskbar.rs` |
-| **Home screen** | A page within Home; the first reads Desktop files, later screens contain saved app/folder shortcuts | `pages.ts`, `workspaces.ts`, `home.ts` |
-| **Lens** | The refraction applied to a glass pane's backdrop | `glass.ts` |
-| **Glass** | The material settings: style, blur, tint, saturation | `Settings` |
+| **Rail** | The taskbar mirror of running and pinned Windows apps, docked to a screen edge | `taskbar/`, `taskbar.rs` |
+| **Home screen** | A page within Home; the first reads Desktop files, later screens contain saved app/folder shortcuts | `navigation/pages.ts`, `grid/workspaces.ts` |
+| **Lens** | The light bending applied to a glass pane's backdrop (the Light bending setting) | `core/refraction.ts`, `core/glass.ts` |
+| **Glass** | The material settings: preset, blur, tint, saturation, corner radius | `Settings` |
+| **Taskbar ends**, **Sidebar** | Navigation arrangements: destinations either side of Home in the taskbar, or in a compact bar down one screen edge | `navigationMode` |
 | **Backdrop** | The blurred snapshot behind everything | `#backdrop` |
 
 ## Versions and codenames
@@ -56,14 +57,14 @@ Use these words in the UI, code and docs, and nothing else for the same thing.
 | 0.9 | Iridescent |
 | 1.0 | Jewel |
 
-Git tags follow `vX.Y.Z`; release titles use the version and codename. [`v0.2.1 "Borosilicate"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) is the latest patch release in the 0.2 series.
+Git tags follow `vX.Y.Z`; release titles use the version and codename. [`v0.2.1 "Borosilicate"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) is the latest patch release in the 0.2 series. [`v0.3.0 "Crown"`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0) is the latest release.
 
 ## Commits and branches
 
 [Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`.
 
 - **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`.
-- **Scopes:** `overlay`, `capture`, `icons`, `panes`, `rail`, `glass`, `settings`, `search`, `tray`, `platform-win`, `platform-linux`, `repo`.
+- **Scopes:** `overlay`, `capture`, `icons`, `panes`, `rail`, `glass`, `settings`, `search`, `tray`, `ui`, `usage`, `platform-win`, `platform-linux`, `repo`.
 - **Branches:** `main` is always releasable. Work happens on `feat/<topic>`, `fix/<topic>`, `docs/<topic>`.
 - Reference work-order IDs in the body, e.g. `Refs: R-05, WP3`.
 

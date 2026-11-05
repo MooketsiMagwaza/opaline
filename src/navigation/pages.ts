@@ -1,0 +1,277 @@
+import { api, type AppEntry, type Item } from "../core/api";
+import { byId, el } from "../core/dom";
+import * as grid from "../grid";
+import { iconElement } from "../core/icons";
+import { closeMenu, showMenu } from "../core/menu";
+import { settings, updateSettings } from "../settings/store";
+import { MAX_WORKSPACES, createWorkspace, nextScreenName, onWorkspacesChange, removeWorkspace, reportWorkspaceError, unpinItem, workspaceMenu, workspaces } from "../grid/workspaces";
+import { initUsage, refreshUsage, renderUsage, setUsageQuery } from "../activity";
+import { refreshFocus } from "../focus";
+import { refreshPanel } from "../settings/panel";
+import { setPreviewApps } from "../settings/launcher-preview";
+import { itemPicker } from "../grid/item-picker";
+import { initTray } from "./tray";
+import { clearPreview, endTransition, isCommitting, motionAllowed, playCommit, showPreview, type GestureMode, type GestureSource } from "./gesture-motion";
+import { fadeIn } from "../core/motion";
+
+let current = "desktop";
+let homeScreen = 0;
+let apps: AppEntry[] = [];
+let appsReady = false;
+let appListRendered = false;
+let query = "";
+let usageTimer: number | undefined;
+
+const pages = () => [
+  { id: "desktop", label: "Home", surface: "apps-surface" },
+  { id: "all-apps", label: "All apps", surface: "app-list-surface" },
+  { id: "screen-time", label: "Screen time", surface: "screen-time-surface" },
+  { id: "focus", label: "Focus", surface: "focus-surface" },
+  { id: "settings", label: "Settings", surface: "settings-surface" },
+];
+const activeWorkspace = () => workspaces()[homeScreen - 1];
+/** Home screens in swipe order: Desktop, the custom screens, then (as on Android) one empty page that creates the next. */
+const canAddScreen = () => workspaces().length < MAX_WORKSPACES;
+const homeScreenCount = () => workspaces().length + 1 + (canAddScreen() ? 1 : 0);
+const wrapHomeScreen = (index: number) => (index + homeScreenCount()) % homeScreenCount();
+const isNewScreenPage = () => homeScreen > workspaces().length;
+
+function renderHomePages() {
+  const pages = ["Desktop", ...workspaces().map(space => space.name)].map((name, index) => ({ name, label: `Home screen ${index + 1}: ${name}`, add: false }));
+  if (canAddScreen()) pages.push({ name: "New screen", label: "Add a Home screen", add: true });
+  for (const host of [byId("home-pages"), byId("workspace-pages")]) {
+    host.replaceChildren(...pages.map(({ name, label, add }, index) => {
+      const button = el("button", add ? "home-page-button add" : "home-page-button");
+      button.type = "button";
+      button.title = name;
+      button.setAttribute("aria-label", label);
+      button.setAttribute("aria-current", homeScreen === index ? "page" : "false");
+      button.addEventListener("click", () => { homeScreen = index; show("desktop"); });
+      return button;
+    }));
+  }
+}
+
+function appButton(item: AppEntry & Partial<Pick<Item, "isFolder">>, spaceId?: string): HTMLElement {
+  const open = el("button", "app-list-item", [iconElement(item.path, item.name), el("span", "app-list-name", [item.name])]);
+  open.type = "button";
+  open.title = item.name;
+  if (item.isFolder) { open.removeAttribute("title"); grid.wirePeek(open, item.name, () => api.folderPreview(item.path)); }
+  open.addEventListener("click", () => grid.launchItem(item.path));
+  const menu = spaceId ? [{ label: "Remove from screen", action: () => { void unpinItem(spaceId, item.path).catch(reportWorkspaceError); } }]
+    : [workspaceMenu({ ...item, isFolder: false })];
+  const more = el("button", "item-more", ["•••"]);
+  more.type = "button";
+  more.setAttribute("aria-label", `Options for ${item.name}`);
+  const options = (event: MouseEvent) => { event.preventDefault(); showMenu(event.clientX, event.clientY, menu); };
+  more.addEventListener("click", options);
+  open.addEventListener("contextmenu", options);
+  return el("div", "library-row", [open, more]);
+}
+
+function renderList() {
+  const needle = query.trim().toLocaleLowerCase();
+  const matches = apps.filter((item) => item.name.toLocaleLowerCase().includes(needle))
+    .sort((a, b) => Number(!a.name.toLocaleLowerCase().startsWith(needle)) - Number(!b.name.toLocaleLowerCase().startsWith(needle)) || a.name.localeCompare(b.name));
+  const empty = appsReady ? (query ? `Nothing matches “${query}”` : "No applications found") : "Loading installed applications…";
+  byId("app-list").replaceChildren(...(matches.length ? matches.map((item) => appButton(item)) : [el("p", "page-empty", [empty])]));
+  byId("app-list-count").textContent = appsReady ? `${matches.length} apps` : "Loading";
+  appListRendered = true;
+}
+
+function renderWorkspace() {
+  const space = activeWorkspace();
+  disarmRemove();
+  byId("workspace-remove").hidden = !space;
+  if (!space) {
+    byId("workspace-title").textContent = "New screen";
+    byId("workspace-add-trigger").hidden = true;
+    byId("workspace-items").replaceChildren(newScreenPrompt());
+    return;
+  }
+  byId("workspace-title").textContent = space.name;
+  byId("workspace-add-trigger").hidden = space.items.length === 0;
+  const matches = space.items.filter((item) => item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+  byId("workspace-items").replaceChildren(...(matches.length ? matches.map((item) => appButton(item, space.id)) : [
+    query ? el("p", "page-empty", [`Nothing matches “${query}”`]) : emptyWorkspace(space.id),
+  ]));
+}
+
+/** A large plus is the whole call to action on an empty page, so it is a real button rather than a decoration. */
+function plusButton(label: string, action: () => void): HTMLButtonElement {
+  const button = el("button", "workspace-empty-mark", ["+"]);
+  button.type = "button";
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", action);
+  return button;
+}
+
+function emptyWorkspace(workspaceId: string) {
+  const open = () => itemPicker.open(workspaceId);
+  const add = el("button", "chip", ["Add an app or folder"]);
+  add.type = "button";
+  add.addEventListener("click", open);
+  return el("div", "workspace-empty", [plusButton("Add an app or folder", open), el("strong", "", ["Make this screen yours"]), el("p", "", ["Search installed Windows apps or choose a folder or file."]), add]);
+}
+
+function newScreenPrompt() {
+  return el("div", "workspace-empty", [plusButton("Add a Home screen", () => { void addScreen(); }), el("strong", "", ["Add a Home screen"]), el("p", "", ["A new place for the apps, files and folders you use together. Press Enter to create it."])]);
+}
+
+async function addScreen() {
+  try { await createWorkspace(nextScreenName()); } catch (error) { reportWorkspaceError(error); return; }
+  // The new page took this page's place at the end, so the screen being viewed is already the new one.
+  show("desktop");
+}
+
+/** Removing a screen that holds items asks first; an empty one has nothing to lose. */
+let removeArmedTimer: number | undefined;
+function disarmRemove() {
+  window.clearTimeout(removeArmedTimer);
+  removeArmedTimer = undefined;
+  byId("workspace-remove").textContent = "Remove screen";
+}
+async function removeScreen() {
+  const space = activeWorkspace();
+  if (!space) return;
+  if (space.items.length && removeArmedTimer === undefined) {
+    byId("workspace-remove").textContent = "Confirm removal";
+    removeArmedTimer = window.setTimeout(disarmRemove, 4000);
+    return;
+  }
+  disarmRemove();
+  const viewing = homeScreen;
+  homeScreen = viewing - 1; // land on the screen before it, not on the new-screen page that takes its place
+  try { await removeWorkspace(space.id); } catch (error) { homeScreen = viewing; reportWorkspaceError(error); }
+}
+
+function renderNav() {
+  byId("page-edges").setAttribute("aria-label", "Home screen navigation");
+  document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => {
+    button.setAttribute("aria-current", button.dataset.page === current ? "page" : "false");
+  });
+  byId("home-dock").setAttribute("aria-current", current === "desktop" ? "page" : "false");
+  renderHomePages();
+}
+
+export function show(id: string) {
+  endTransition();
+  clearGesturePreview();
+  const next = pages().find((page) => page.id === id) ?? pages()[0];
+  closeMenu(); grid.reset();
+  current = next.id;
+  document.body.dataset.page = current === "desktop" && homeScreen > 0 ? "custom-screen" : current;
+  itemPicker.close();
+  const surface = current === "desktop" && homeScreen > 0 ? "workspace-surface" : next.surface;
+  for (const id of ["apps-surface", "workspace-surface", "app-list-surface", "screen-time-surface", "focus-surface", "settings-surface"]) byId(id).hidden = surface !== id;
+  renderNav();
+  if (current === "desktop" && homeScreen > 0) renderWorkspace();
+  if (current === "desktop" && homeScreen === 0) grid.setQuery(query);
+  if (current === "all-apps" && !appListRendered) renderList();
+  if (current === "screen-time") { renderUsage(); void refreshUsage(); }
+  if (current === "focus") refreshFocus();
+  if (current === "settings") refreshPanel();
+  byId<HTMLInputElement>("search").placeholder = `Search ${next.label.toLocaleLowerCase()}`;
+  // Opening the overlay and a gesture commit have their own motion; everything else eases in rather than flicking over.
+  if (!isCommitting() && !byId("stage").classList.contains("pre")) fadeIn(byId(surface));
+  byId("shell").focus({ preventScroll: true });
+  // On the new-screen page the plus is the one thing to act on, so Enter and Space work straight away.
+  if (current === "desktop" && isNewScreenPage()) byId("workspace-items").querySelector<HTMLElement>("button")?.focus();
+}
+
+export function cycle(direction = 1) {
+  const list = pages();
+  const next = list[(list.findIndex((page) => page.id === current) + direction + list.length) % list.length].id;
+  if (next === "desktop") homeScreen = 0;
+  show(next);
+}
+export function selectPage(index: number): boolean {
+  const id = pages()[index]?.id;
+  if (!id) return false;
+  if (id === "desktop") homeScreen = 0;
+  show(id); return true;
+}
+export function isHome() { return current === "desktop"; }
+export function cycleHome(direction = 1) {
+  homeScreen = wrapHomeScreen(homeScreen + direction);
+  show("desktop");
+}
+
+const gestureSource: GestureSource = {
+  locate: (mode) => document.querySelector<HTMLElement>(isHome() && mode === "swipe" ? ".page-surface:not([hidden]) > .home-motion" : ".page-surface:not([hidden])"),
+  panel: () => document.querySelector<HTMLElement>(".page-surface:not([hidden])"),
+  destination(direction, mode) {
+    if (isHome() && mode === "swipe") {
+      const index = wrapHomeScreen(homeScreen + direction);
+      return index === 0 ? "Desktop" : workspaces()[index - 1]?.name ?? "New screen";
+    }
+    const list = pages();
+    return list[(list.findIndex(page => page.id === current) + direction + list.length) % list.length].label;
+  },
+};
+
+export function previewGesture(direction: number, progress: number, mode: GestureMode) {
+  if (!direction) return;
+  showPreview(gestureSource, direction, progress, mode);
+}
+export function clearGesturePreview() { clearPreview(); }
+export function completeGesture(direction: number, mode: GestureMode) {
+  if (!direction) return;
+  if (mode === "swipe" && !isHome()) { clearGesturePreview(); return; }
+  const navigate = () => { if (isHome() && mode === "swipe") cycleHome(direction); else cycle(direction); };
+  if (!motionAllowed()) { navigate(); return; }
+  void playCommit(gestureSource, direction, mode, navigate);
+}
+export function toggleBar() {
+  if (!settings().rail) { byId("navigation-note").textContent = "Compact navigation needs the taskbar mirror. Turn it on in Settings, under Taskbar."; return; }
+  updateSettings({ compactBar: !settings().compactBar });
+}
+export function setApps(next: AppEntry[]) { apps = [...next]; setPreviewApps(apps); appsReady = true; appListRendered = false; itemPicker.setApps(next); if (current === "all-apps") renderList(); }
+export function setQuery(next: string) { if (query !== next) appListRendered = false; query = next; if (current === "desktop" && homeScreen === 0) grid.setQuery(next); if (current === "all-apps") renderList(); if (current === "desktop" && homeScreen > 0) renderWorkspace(); setUsageQuery(next); }
+export function reset() { query = ""; homeScreen = 0; show("desktop"); }
+export function activateFirst(): boolean {
+  if (current === "desktop" && homeScreen === 0) return false;
+  if (current === "all-apps" || (current === "desktop" && homeScreen > 0)) byId(current === "all-apps" ? "app-list" : "workspace-items").querySelector<HTMLButtonElement>(".app-list-item")?.click();
+  return true;
+}
+export function handleArrow(event: KeyboardEvent): boolean {
+  if (current === "desktop" && homeScreen === 0 || current === "screen-time" || current === "focus" || current === "settings") return false;
+  const holder = byId(current === "all-apps" ? "app-list" : "workspace-items");
+  const buttons = [...holder.querySelectorAll<HTMLButtonElement>(".app-list-item")];
+  const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  if (document.activeElement === byId("search") && event.key === "ArrowDown") { buttons[0]?.focus(); return buttons.length > 0; }
+  if (index < 0) return false;
+  const columns = Math.max(1, [...holder.children].filter((row) => (row as HTMLElement).offsetTop === (holder.firstElementChild as HTMLElement)?.offsetTop).length);
+  const delta = ({ ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns } as Record<string, number>)[event.key];
+  if (!delta) return false;
+  if (index + delta >= 0) buttons[Math.min(buttons.length - 1, index + delta)]?.focus();
+  return true;
+}
+export function startPages() {
+  stopPages();
+  usageTimer = window.setInterval(() => { if (current === "screen-time") void refreshUsage(); }, 5000);
+}
+export function stopPages() { window.clearInterval(usageTimer); usageTimer = undefined; }
+export function initPages() {
+  itemPicker.init();
+  byId("workspace-add-trigger").addEventListener("click", () => { const space = activeWorkspace(); if (space) itemPicker.open(space.id); });
+  byId("workspace-remove").addEventListener("click", () => { void removeScreen(); });
+  byId("page-prev").addEventListener("click", () => cycleHome(-1));
+  byId("page-next").addEventListener("click", () => cycleHome(1));
+  document.querySelectorAll<HTMLButtonElement>(".header-nav [data-page]").forEach(button => button.addEventListener("click", () => {
+    show(button.dataset.page!);
+    const tray = button.closest<HTMLDetailsElement>("details");
+    if (tray) tray.open = false;
+  }));
+  byId("home-dock").addEventListener("click", () => { homeScreen = 0; show("desktop"); });
+  initTray();
+  initUsage();
+  onWorkspacesChange(() => {
+    if (homeScreen >= homeScreenCount()) homeScreen = 0;
+    // If the screen being viewed was removed, move to the one now showing; otherwise only refresh what is on screen.
+    if (current === "desktop" && (homeScreen === 0) !== !byId("apps-surface").hidden) { show("desktop"); return; }
+    renderNav();
+    if (homeScreen > 0) renderWorkspace();
+  });
+  show("desktop");
+}

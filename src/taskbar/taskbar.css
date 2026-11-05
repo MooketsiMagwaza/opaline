@@ -1,0 +1,68 @@
+#rail { --r: 22px; position: relative; display: flex; flex-direction: row; align-items: center; gap: 10px; height: 52px; max-width: calc(100vw - 110px); padding: 7px 14px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+#rail::-webkit-scrollbar { display: none; }
+.dock-expand { display: grid; flex: none; place-items: center; width: 25px; height: 30px; padding: 0; border: 0; border-right: 1px solid rgba(255,255,255,.18); background: transparent; color: var(--dim); font-size: 20px; cursor: pointer; }
+.dock-expand:hover, .dock-expand:focus-visible { color: var(--text); }
+body[data-rail="true"] #navigation-note { bottom: 82px; }
+body[data-rail="false"] #rail { display: none !important; }
+.dock-item { position: relative; display: grid; place-items: center; width: var(--dock); height: var(--dock); flex-shrink: 0; padding: 0; border: 0; background: none; cursor: pointer; transform: translate(var(--push-x, 0), var(--push-y, 0)) scale(var(--s, 1)); transform-origin: bottom center; transition: transform .14s var(--ease); }
+.dock-item:focus-visible { border-radius: calc(var(--dock) * .24); outline: 2px solid rgba(255,255,255,.9); outline-offset: 5px; }
+body[data-anim="true"] .dock-item { animation: none; }
+.dock-item .ico { width: 100%; height: 100%; }
+.dock-item .ico img { filter: none; }
+.dock-item .fallback { font-size: calc(var(--dock) * .5); }
+.dock-item.running::after { content: ""; position: absolute; bottom: -1px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(255,255,255,.95); box-shadow: 0 0 6px rgba(255,255,255,.8); }
+.badge { position: absolute; top: -4px; left: -4px; display: grid; place-items: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: rgba(255,255,255,.92); color: #10162a; font-size: 10.5px; font-weight: 700; }
+#preview { --r: 26px; position: absolute; z-index: 6; max-width: min(760px, 70vw); padding: 14px 16px 16px; }
+.preview-title { display: flex; align-items: baseline; gap: 8px; margin: 0 2px 10px; font-size: 13.5px; font-weight: 600; }
+.preview-sub { color: var(--dim); font-size: 12px; font-weight: 400; }
+.preview-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.preview-empty { margin: 4px 2px; color: var(--dim); font-size: 13px; }
+.thumb { width: 220px; padding: 0; border: 0; border-radius: 16px; background: none; text-align: left; cursor: pointer; }
+.thumb-image { display: grid; place-items: center; width: 220px; height: 138px; overflow: hidden; border-radius: 12px; background: rgba(255,255,255,.1) center top / cover no-repeat; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); transition: box-shadow .15s; }
+.thumb:hover .thumb-image { box-shadow: inset 0 0 0 2px rgba(255,255,255,.85); }
+.thumb-note { color: var(--dim); font-size: 12px; }
+.thumb-title { margin-top: 7px; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- placement ----------
+   The taskbar bar (#bottom-bar: Home, the Focus capsule, the navigation dock and the app mirror) docks to the edge chosen in
+   Settings (data-rail-edge) and sits at the start, centre or end of it (data-rail-align). Bottom and centre are the base rules in
+   launcher.css; everything below only moves, turns or re-spaces them. */
+
+/* Top: the bar takes the top row and the page content moves down to make room for it. */
+body[data-rail-edge="top"] #bottom-bar { top: 12px; bottom: auto; }
+body[data-rail="true"][data-rail-edge="top"] #shell { padding-top: 94px; padding-bottom: 16px; }
+body[data-rail-edge="top"] .dock-item { transform-origin: top center; }
+body[data-rail-edge="top"] .dock-item.running::after { top: -1px; bottom: auto; }
+body[data-rail-edge="top"] .dock-expand { transform: rotate(180deg); }
+body[data-rail-edge="top"][data-rail="true"] #navigation-note { top: 82px; bottom: auto; }
+
+/* Left and right: the bar stands on its side, centred on the edge, and the page keeps clear of it. */
+body[data-rail-edge="left"] #bottom-bar, body[data-rail-edge="right"] #bottom-bar { top: 50%; bottom: auto; left: 12px; width: 52px; height: auto; flex-direction: column; transform: translateY(-50%); }
+body[data-rail-edge="right"] #bottom-bar { left: auto; right: 12px; }
+body[data-rail="true"][data-rail-edge="left"] #shell { padding-bottom: 16px; padding-left: 88px; }
+body[data-rail="true"][data-rail-edge="right"] #shell { padding-bottom: 16px; padding-right: 88px; }
+body[data-rail-edge="left"] #rail, body[data-rail-edge="right"] #rail { flex-direction: column; width: 52px; height: auto; max-width: none; max-height: calc(100vh - 280px); padding: 14px 7px; overflow-x: hidden; overflow-y: auto; }
+body[data-rail-edge="left"] .navigation-dock, body[data-rail-edge="right"] .navigation-dock, body[data-rail-edge="left"] .navigation-ends, body[data-rail-edge="right"] .navigation-ends { flex-direction: column; width: 52px; height: auto; }
+body[data-navigation="ends"][data-rail-edge="left"] #rail, body[data-navigation="ends"][data-rail-edge="right"] #rail { max-height: calc(100vh - 500px); }
+body[data-rail-edge="left"] .dock-expand, body[data-rail-edge="right"] .dock-expand { width: 30px; height: 25px; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.18); }
+body[data-rail-edge="left"] .dock-expand { transform: rotate(-90deg); }
+body[data-rail-edge="right"] .dock-expand { transform: rotate(90deg); }
+body[data-rail-edge="left"] .dock-item { transform-origin: left center; }
+body[data-rail-edge="right"] .dock-item { transform-origin: right center; }
+body[data-rail-edge="left"] .dock-item.running::after { top: 50%; bottom: auto; left: -1px; margin: -2px 0 0; }
+body[data-rail-edge="right"] .dock-item.running::after { top: 50%; bottom: auto; left: auto; right: -1px; margin: -2px 0 0; }
+body[data-rail-edge="left"] #focus-capsule, body[data-rail-edge="right"] #focus-capsule { flex-direction: column; gap: 2px; width: 52px; height: auto; padding: 6px 4px; }
+body[data-rail-edge="left"] #focus-capsule span, body[data-rail-edge="right"] #focus-capsule span { max-width: 44px; }
+/* The navigation tray opens away from the edge it sits on. */
+body[data-rail-edge="top"] .navigation-overflow > .navigation-tray { top: 60px; bottom: auto; }
+body[data-rail-edge="left"] .navigation-overflow > .navigation-tray, body[data-rail-edge="right"] .navigation-overflow > .navigation-tray { bottom: 0; transform: none; }
+body[data-rail-edge="left"] .navigation-overflow > .navigation-tray { left: 60px; right: auto; }
+body[data-rail-edge="right"] .navigation-overflow > .navigation-tray { right: 60px; left: auto; }
+body[data-rail="true"][data-rail-edge="left"] #navigation-note { left: 110px; }
+body[data-rail="true"][data-rail-edge="right"] #navigation-note { right: 110px; }
+
+/* Alignment along the edge. */
+body[data-rail-align="start"][data-rail-edge="bottom"] #bottom-bar, body[data-rail-align="start"][data-rail-edge="top"] #bottom-bar { left: 24px; transform: none; }
+body[data-rail-align="end"][data-rail-edge="bottom"] #bottom-bar, body[data-rail-align="end"][data-rail-edge="top"] #bottom-bar { left: auto; right: 24px; transform: none; }
+body[data-rail-align="start"][data-rail-edge="left"] #bottom-bar, body[data-rail-align="start"][data-rail-edge="right"] #bottom-bar { top: 24px; transform: none; }
+body[data-rail-align="end"][data-rail-edge="left"] #bottom-bar, body[data-rail-align="end"][data-rail-edge="right"] #bottom-bar { top: auto; bottom: 24px; transform: none; }

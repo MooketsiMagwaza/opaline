@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../src/api", () => ({
+vi.mock("../src/core/api", () => ({
   api: {
     loadStore: vi.fn(),
     saveStore: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
-import type { Item } from "../src/api";
-import { api } from "../src/api";
-import { createGroup, groups, loadGroups } from "../src/groups";
-import { organize } from "../src/organize";
+import type { Item } from "../src/core/api";
+import { api } from "../src/core/api";
+import { createGroup, groups, loadGroups } from "../src/grid/groups";
+import { organize } from "../src/grid/organize";
 
 const mockedApi = vi.mocked(api);
 const item = (name: string, isFolder = false): Item => ({ name, path: `C:\\Desktop\\${name}`, isFolder });

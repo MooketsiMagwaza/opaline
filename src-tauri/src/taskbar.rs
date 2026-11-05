@@ -32,7 +32,7 @@ pub fn focus_window(hwnd: i64) {
     imp::focus_window(hwnd);
 }
 
-pub fn foreground_maximized() -> Option<(String, String)> {
+pub fn foreground_maximized() -> Option<crate::identity::Identity> {
     imp::foreground_maximized()
 }
 
@@ -66,7 +66,7 @@ mod imp {
             UI::{
                 Shell::{IShellLinkW, ShellLink},
                 WindowsAndMessaging::{
-                    EnumWindows, GW_OWNER, GWL_EXSTYLE, GetClassNameW, GetWindow,
+                    EnumChildWindows, EnumWindows, GW_OWNER, GWL_EXSTYLE, GetClassNameW, GetWindow,
                     GetWindowLongPtrW, GetWindowRect, GetWindowTextLengthW, GetWindowTextW,
                     GetWindowThreadProcessId, IsIconic, IsWindowVisible, SW_RESTORE,
                     SetForegroundWindow, ShowWindow, WS_EX_APPWINDOW, WS_EX_TOOLWINDOW,
@@ -77,8 +77,9 @@ mod imp {
     };
 
     use super::{RailItem, WindowInfo};
+    use crate::identity::{self, Identity, is_frame_host};
 
-    pub fn foreground_maximized() -> Option<(String, String)> {
+    pub fn foreground_maximized() -> Option<Identity> {
         use windows::Win32::{
             System::SystemInformation::GetTickCount,
             UI::{
@@ -101,8 +102,43 @@ mod imp {
                 return None;
             }
             let window = inspect(hwnd)?;
+            // Store apps are drawn by ApplicationFrameHost; the app is whoever owns the window inside it. If that
+            // cannot be found the time belongs to nothing we can name, so it is not charged.
+            let exe = if is_frame_host(&window.exe) {
+                hosted_application(hwnd)?
+            } else {
+                window.exe
+            };
             // Executable identity avoids retaining document/window titles in usage history.
-            Some((window.exe.to_lowercase(), display_name(&window.exe)))
+            Some(identity::resolve(&exe))
+        }
+    }
+
+    unsafe extern "system" fn find_core_window(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let found = unsafe { &mut *(lparam.0 as *mut Option<u32>) };
+        let mut class = [0u16; 64];
+        let length = unsafe { GetClassNameW(hwnd, &mut class) };
+        if wide_to_string(&class, length.max(0) as usize) != "Windows.UI.Core.CoreWindow" {
+            return TRUE;
+        }
+        let mut pid = 0u32;
+        unsafe { GetWindowThreadProcessId(hwnd, Some(&mut pid)) };
+        *found = Some(pid);
+        BOOL(0)
+    }
+
+    /// The executable of the Store app inside an ApplicationFrameHost window.
+    unsafe fn hosted_application(frame: HWND) -> Option<String> {
+        unsafe {
+            let mut host = 0u32;
+            GetWindowThreadProcessId(frame, Some(&mut host));
+            let mut found: Option<u32> = None;
+            let _ = EnumChildWindows(
+                Some(frame),
+                Some(find_core_window),
+                LPARAM(&mut found as *mut Option<u32> as isize),
+            );
+            process_image(found.filter(|pid| *pid != host && *pid != 0)?)
         }
     }
 
@@ -162,18 +198,6 @@ mod imp {
             .is_ok();
             let _ = CloseHandle(handle);
             queried.then(|| wide_to_string(&buffer, length as usize))
-        }
-    }
-
-    fn display_name(exe: &str) -> String {
-        let stem = Path::new(exe)
-            .file_stem()
-            .map(|stem| stem.to_string_lossy().into_owned())
-            .unwrap_or_else(|| exe.to_string());
-        let mut chars = stem.chars();
-        match chars.next() {
-            Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-            None => stem,
         }
     }
 
@@ -285,7 +309,7 @@ mod imp {
             let (key, name) = if shared_host {
                 (format!("{exe_lower}|{handle}"), title.clone())
             } else {
-                (application_key(&exe), display_name(&exe))
+                (application_key(&exe), identity::resolve(&exe).name)
             };
 
             Some(RawWindow {
@@ -646,7 +670,7 @@ mod imp {
     }
 
     pub fn focus_window(_hwnd: i64) {}
-    pub fn foreground_maximized() -> Option<(String, String)> {
+    pub fn foreground_maximized() -> Option<crate::identity::Identity> {
         None
     }
 }
