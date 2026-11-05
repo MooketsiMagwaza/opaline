@@ -13,6 +13,8 @@ they touch.
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
 The superseding 0.3.0 experience scope and new requirements R-52–R-85 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 
+**Repository note:** the GitHub repository was re-created on 5 November 2026 with its full history and tags; pull request numbers in these records (#3–#7) refer to the previous repository.
+
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.
 

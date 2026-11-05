@@ -8,6 +8,8 @@ The owner asked for the build to be installed properly, to start at login, and f
 
 One thing surfaced: the MSI creates an all-users Desktop shortcut, although the release checklist says the installers create none; only the NSIS installer removes its own. It is recorded in the work order and changelog, not fixed.
 
+The release followed `docs/RELEASING.md` (documents updated, pull request, Windows CI, merge, tag, release workflow). The GitHub repository was then re-created the same day: the full history and the four tags were pushed unchanged, the three earlier releases were re-published from their original files and notes, and `v0.3.0` was built fresh. Pull requests, issues and release pages were not carried over, so pull request numbers in these records refer to the previous repository.
+
 ## 2026-11-04 · Review pass, gesture motion, hover intent and the settled 0.3.0 scope
 
 The unreleased 0.3 work was reviewed end to end on branch `feat/v0.3-experience`: five confirmed bugs (Focus Space handling, a never-started session being recordable as finished, Done reverting live edits, preset id collisions, silent save failures) and several smaller ones were fixed and are covered by the UI suite and unit tests.
