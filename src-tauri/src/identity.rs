@@ -136,7 +136,8 @@ mod imp {
             }
             let pairs =
                 std::slice::from_raw_parts(translations as *const u16, (length / 2) as usize);
-            for pair in pairs.chunks_exact(2) {
+            let (language_pairs, _) = pairs.as_chunks::<2>();
+            for pair in language_pairs {
                 let query = HSTRING::from(format!(
                     "\\StringFileInfo\\{:04x}{:04x}\\{field}",
                     pair[0], pair[1]
