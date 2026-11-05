@@ -1,22 +1,24 @@
 # AGENTS.md — guide for coding agents working on Opaline
 
 Opaline is a Windows-first desktop launcher built with **Tauri v2** (Rust backend, plain TypeScript + CSS UI). It opens a
-full-screen frosted-glass overlay on a hotkey, showing the user's Desktop items grouped into panes, a taskbar-mirror rail with
-window previews, and a full Settings page. Read these, in order, before changing anything:
+full-screen frosted-glass overlay on a hotkey, showing the user's Desktop items grouped into panes, a taskbar-mirror rail (docked to any screen edge)
+with window previews, and a Settings panel with staged Done/Cancel. Read these, in order, before changing anything:
 
 1. [WORKORDER.md](WORKORDER.md) — §0 what is verified, §2 requirements, §12 **next actions**, §13 known issues.
 2. [DEVLOG.md](DEVLOG.md) — why decisions were made, including the failed WinUI 3 beta and what was learned.
-3. [docs/TESTING.md](docs/TESTING.md) — how to run and drive the app without touching the user's mouse.
+3. [docs/TESTING.md](docs/TESTING.md) — how to run and drive the app without touching the user's mouse, and the browser UI suite.
 4. [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/NAMING.md](docs/NAMING.md) — conventions, vocabulary, commit format.
+5. [docs/V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md) (the 0.3.0 scope and native acceptance list) and [docs/V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md) (planned live wallpapers).
 
 ## Commands
 
 ```bash
 npm install
-npm test                   # Vitest: pane store, layout and organise rules
+npm test                   # 64 Vitest unit tests in tests/: panes, layout, settings drafts, focus, charts, hover intent, refraction
 npm run tauri dev          # app with hot-reloading UI; Rust changes rebuild automatically
 npm run build              # tsc + vite production bundle (the type-check)
 npm run size               # production frontend + native artifact sizes; enforces frontend budgets
+npm run docs:check         # fails when a Markdown file disagrees with the code (links, paths, versions, test counts, budgets)
 npm run icons              # re-rasterise assets/logo.svg and regenerate src-tauri/icons
 cargo fmt   --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
@@ -72,7 +74,8 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 ```
 src/            app/ (entry and shell styles) · core/ (shared helpers) · feature folders activity/ appearance/ focus/ grid/ navigation/ settings/ taskbar/,
                 each co-locating its logic, CSS and README (see src/README.md)
-src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs
+src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs
+tests/          Vitest unit tests for the frontend
 scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol) · verify-ui.mjs (browser UI suite on demo data)
                 · verify-native.mjs (checks against the running app) · measure-build.mjs (npm run size)
 assets/         logo.svg (+ generated PNG)
@@ -82,5 +85,5 @@ docs/           architecture · testing · releasing · spatial and platform wor
 
 ## Definition of done for a change
 
-`npm test`, `npm run build`, `cargo fmt --check`, `cargo clippy`, `cargo test` and `cargo check` are clean · the relevant lines of WORKORDER §9 were exercised
-for real · statuses and changelog updated · no personal data in the diff · the PR/commit says what was and wasn't tested.
+`npm test`, `npm run build`, `npm run size`, `npm run docs:check`, `cargo fmt --check`, `cargo clippy`, `cargo test` and `cargo check` are clean (and the browser UI suite for UI changes) · the relevant lines of WORKORDER §9 were exercised
+for real · statuses, changelog and every Markdown file the change touches updated · no personal data in the diff · the PR/commit says what was and wasn't tested.

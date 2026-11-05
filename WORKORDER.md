@@ -11,7 +11,7 @@ they touch.
 **Last updated:** 2026-11-04 — v0.3.0 "Crown" built, version-bumped locally and awaiting owner acceptance; taskbar placement, panel-sized Settings and page fades pulled into it.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
-The superseding 0.3.0 experience scope and new requirements R-52–R-75 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
+The superseding 0.3.0 experience scope and new requirements R-52–R-85 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 
 **Status legend** — `[x]` verified working on a real machine (how is noted) · `[~]` implemented, not yet verified or only partly
 verified · `[ ]` not started. **Priority:** P0 targets the current preview · P1 next · P2 later. Mark `[x]` only for things you have seen work.
@@ -20,15 +20,17 @@ verified · `[ ]` not started. **Priority:** P0 targets the current preview · P
 
 ## 0. Current status
 
-**28 October candidate:** named workspaces, local screen time with daily graphs, centered side-arrow navigation, compact mode, the reactivated bottom taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
+**0.3.0 "Crown" candidate (4 November):** the experience release is built on `feat/v0.3-experience` and its release build launches and reports 0.3.0. It adds light-bending glass and material presets (R-75), staged Settings as a panel with an expand button and six sections (R-84), taskbar placement on any edge (R-56), Taskbar ends and Sidebar arrangements (R-74), gesture motion and hover intent (R-68, R-69), real app names and icons (R-70), Android-style Home screens (R-71), a help page (R-72), chart axes (R-73) and page fades (R-85). It has been verified in headless Chrome against demo fixtures with mocked IPC: 64 unit tests, 18 Rust tests, the UI suite and the size budget (220 KiB raw / 62 KiB gzip) pass. The physical trackpad (W-51), WebView2 light bending on the target GPU, the taskbar at each edge and the native checklist are still the owner's to confirm. The two sections below record the 28 October candidate and the first real-app pass; they are kept as evidence, not as a description of 0.3.0.
 
-**Latest navigation revision:** Home is a read-only view of the Windows Desktop. Tab/Shift+Tab and the side arrows move through Home and two default custom screens, shown as three small dots. Alt+1–5 selects Home, All apps, Screen time, Focus and full-page Settings. A shared picker adds apps, folders or files only to custom screens. Side arrows appear on Home screens and move through those screens, while Ctrl+Tab changes the main page. The fabric entrance was removed for a short grid pop. Isolated browser screenshots cover each main screen and each Settings section. The owner authorized the PR, merge and v0.2.0 release on 28 October 2026; unverified real Windows interactions remain recorded below.
+**28 October candidate (historical):** named workspaces, local screen time with daily graphs, centered side-arrow navigation, compact mode, the reactivated taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
+
+**28 October navigation revision (0.3.0 changed the screens and Settings described here):** Home is a read-only view of the Windows Desktop. Tab/Shift+Tab and the side arrows move through Home and its custom screens, shown as small dots (0.3.0 starts with Desktop and a plus page instead of seeding two empty screens). Alt+1–5 selects Home, All apps, Screen time, Focus and Settings (a panel with an expand button since 0.3.0). A shared picker adds apps, folders or files only to custom screens. Side arrows appear on Home screens and move through those screens, while Ctrl+Tab changes the main page. The fabric entrance was removed for a short grid pop. Isolated browser screenshots cover each main screen and each Settings section. The owner authorized the PR, merge and v0.2.0 release on 28 October 2026; unverified real Windows interactions remain recorded below.
 
 The app **builds and runs**. It was started with `npm run tauri dev`, and its page was driven and screenshotted through
 WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/TESTING.md)) on the target laptop
 (Windows 11, Intel Iris Xe, 1920×1200 at 150 % scaling).
 
-**Seen working**
+**Seen working** (first real-app pass, v0.1–0.2; kept as evidence. Later work is covered by the browser suite and still needs the native pass)
 
 - Full-screen overlay opens both through the snapshot path and through the transparent, capture-free clear-canvas path; no flash of an empty window.
 - All 45 Desktop items (user + shared Desktop) listed with their **real icons**, including `.lnk` shortcuts, folders and an `.exe`.
@@ -37,7 +39,7 @@ WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/T
 - **Pane popup** opens from its tile with the pane's name and members; **Esc** closes it.
 - The current **acrylic styling** gives search, Home, All Apps, settings, popup and menus one consistent fill, rim and shadow; the earlier
   lens treatment was removed from the active path.
-- **Settings pane** opens with five active sections (Appearance, Layout, Behaviour, Panes, About); Appearance exposes blur and tint, launch at login was observed off, and rail settings are feature-flagged out.
+- **Settings pane** opened with five sections at the time (Appearance, Layout, Behaviour, Panes, About; 0.3.0 has six, see §5); Appearance exposes blur and tint, launch at login was observed off, and rail settings are feature-flagged out.
 - **Context menu** renders with Open / Open file location / Copy path / Add to pane ▸.
 - **Search** filters the grid ("dis" → Discord).
 - **Rail** lists the pinned File Explorer entry and the running Claude window with a running dot; hovering opens the preview card.
@@ -45,7 +47,7 @@ WebView2's local debugging port (`scripts/cdp.mjs`, see [docs/TESTING.md](docs/T
 - Transparent request-to-visible measurements on the target laptop were 9.2–49.2 ms across stable warm opens; one 57.1 ms open and 72–84 ms rebuild/jitter outliers were also recorded.
 - UI type-checks (`tsc --noEmit` clean); Rust compiles with no errors.
 - The logo rasterises and the full icon set is generated from it (`npm run icons`).
-- Frontend/store/theme tests (10) and Rust unit tests (9) pass locally; production UI bundle and NSIS release installer are clean.
+- Frontend/store/theme tests (10) and Rust unit tests (9) passed locally then (the 0.3.0 candidate runs 64 and 18); production UI bundle and NSIS release installer are clean.
 
 **Not yet verified** (do these first — §12 step 2)
 
@@ -70,8 +72,8 @@ snapshot of whatever is on screen. On it:
 - every item from your Desktop folders, as glass tiles with their real icons;
 - named **panes** (groups) like Start-menu or iPad folders, organised automatically and editable by hand;
 - a search bar that finds anything instantly;
-- a compact **taskbar mirror** along the bottom (pinned and running apps) with cached window previews on hover;
-- a full Settings page controlling the glass and launcher behaviour.
+- a compact **taskbar mirror** (pinned and running apps) that docks to any screen edge, with cached window previews on hover;
+- a Settings panel, expandable to the whole window, controlling the glass and launcher behaviour with Done and Cancel.
 
 Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **Opaline only reads them.**
 
@@ -91,7 +93,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-10 | Closes on **Esc**, empty-space click, focus loss, and the hotkey | P0 | `[~]` | Whole-overlay Esc and hotkey close observed; empty-space click and focus loss not exercised |
 | R-11 | Settings pane: acrylic blur/tint, layout, behaviour, hotkey, launch at login, about | P0 | `[~]` | Focused Appearance controls render; per-control persistence pass remains |
 | R-12 | Rename / ungroup / remove / add to pane via right-click as well as dragging | P0 | `[~]` | Menu renders; actions not exercised |
-| R-13 | **Rail**: bottom taskbar mirror (pinned + running); click focuses or launches | P0 | `[~]` | Retained implementation reactivated; native enumeration checked; full parity/focus/launch pass pending |
+| R-13 | **Rail**: taskbar mirror (pinned + running) docked to the bottom, top, left or right edge; click focuses or launches | P0 | `[~]` | Retained implementation reactivated; native enumeration checked; 0.3.0 adds edge and alignment placement (R-56), covered by the browser suite; full parity/focus/launch pass pending |
 | R-14 | Cached rail hover previews, click to focus, optional magnification | P0 | `[~]` | Decoded bounded cache, shared requests, background refresh and GDI downsampling; owner hover/focus pass pending |
 | R-15 | Identity & repo: logo, naming, README, contributing, license, changelog, CI, templates | P0 | `[~]` | v0.2.1 CI/tag release and synthetic screenshots published; downloads match checksums. Installer smoke testing and unsigned-artifact hardening remain |
 | R-16 | Convenience: usage ordering, open file location, copy path, tray, launch at login | P0 | `[~]` | Implemented; none exercised |
@@ -111,7 +113,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-30 | Opt-in Windows-key tap opens All apps; Windows chords retained | P0 | `[~]` | Hook available, off by default; real key/chord acceptance required; W-08 |
 | R-31 | Current Windows desktop receives Opaline; desktop-aware backdrop cache | P0 | `[~]` | Documented COM interface; real desktop/PowerToys pass remains; W-04 |
 | R-32 | Group-origin popup motion and readable two-line labels | P0 | `[~]` | Browser origin/reduced-motion checks; native pointer pass remains; W-15/W-18 |
-| R-33 | Custom scrollbar and a larger centre surface with a compact bottom taskbar | P0 | `[~]` | Browser layout screenshots and narrow bounds; W-19/W-21 |
+| R-33 | Custom scrollbar and a larger centre surface with a compact taskbar | P0 | `[~]` | Browser layout screenshots and narrow bounds; W-19/W-21 |
 | R-34 | Running app icons match their Windows taskbar identity | P0 | `[~]` | Window-icon path precedes shortcut fallback; real ChatGPT comparison remains; W-20 |
 | R-35 | Period menu, 7/30-day usage graphs, per-app progression | P0 | `[~]` | Browser chart/menu checks; daily native history tests; W-23/W-24 |
 | R-36 | Pomodoro timer with configurable breaks, progress and persistence | P0 | `[~]` | Deadline/transition unit tests and browser UI check; native/restart pass remains; W-25 |
@@ -119,7 +121,7 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-38 | Faster hidden startup and clear launch-at-login state | P0 | `[~]` | Concurrent boot, deferred UI work, bounded icon cache; next-sign-in test remains; W-27 |
 | R-39 | Use Opaline navigation glyphs rather than a Windows logo | P0 | `[~]` | Header app-grid glyph and bottom Home outline in demo screenshot; native pass remains; W-22 |
 | R-40 | Keep Home identical to the Windows Desktop | P0 | `[~]` | Desktop remains read-only; custom screens own added apps/folders/files; browser and native owner checks remain; W-43 |
-| R-41 | Settings as a full page with live changes | P0 | `[~]` | Browser section screenshots and responsive check; native persistence pass remains; W-44 |
+| R-41 | Settings with live previews; changes stage and apply on Done | P0 | `[~]` | A full page in 0.2; since 0.3.0 a panel with an expand button, six sections and Cancel/Done that grey out when nothing is staged (R-84). The browser suite covers it; native persistence pass remains; W-44 |
 | R-42 | Complete public demo gallery, including blank desktop illustration | P0 | `[~]` | Isolated screenshots and original vector/PNG; owner review remains; W-46 |
 | R-40 | Adopt owner coding rules from the supplied screenshot | P0 | `[~]` | Added to AGENTS.md and applied to touched code; W-28 |
 | R-41 | Demo groups reflect realistic app/folder relationships | P0 | `[~]` | Browser screenshot and fixture assertions; W-29 |
@@ -132,21 +134,27 @@ Desktop icons stay hidden in Explorer. The files stay in the Desktop folder. **O
 | R-47 | Add workspace items through Windows app search and native pickers | P0 | `[~]` | Browser app search/save check and native compile; owner picker pass pending; W-39 |
 | R-48 | Compact grouped charts and Focus/Zen visual pass | P1 | `[~]` | Browser chart geometry and screenshots; owner visual pass pending; W-40/W-41 |
 | R-50 | Make trackpad gestures consistently responsive and smooth | P1 | `[~]` | 2026-11-04: swipe and pinch motion reworked (R-68 in the 0.3 work order); headless Chrome still sometimes ignores a pinch for about a second after a committed one, which may be the W-51 symptom. Owner isolated consecutive-swipe failure: the 350 ms wheel-burst lock was extended by inertial events, while pinch reset its separate mode. Candidate rearms after 120 ms silence/160 ms burst gap; browser test performs consecutive same-direction swipes without mouse movement. Physical owner retest required; W-51. |
-| R-51 | Distinguish between-item insertion from grouping, manually reorder pane contents and provide one-shot Home sorting | P0 | `[x]` | Owner accepted the native v0.2.2 pointer preview on 1 November; stable marker, persistence tests, 21 frontend tests, production build and isolated UI suite pass ([grid work order](docs/SPATIAL_WORKORDER.md)) |
+| R-51 | Distinguish between-item insertion from grouping, manually reorder pane contents and provide one-shot Home sorting | P0 | `[x]` | Owner accepted the native v0.2.2 pointer preview on 1 November; stable marker, persistence tests, the unit suite of that day, production build and isolated UI suite pass ([grid work order](docs/SPATIAL_WORKORDER.md)) |
+
+R-52 onward belong to the 0.3.0 and later plans: R-52–R-75 and R-84–R-85 are in [docs/V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md), R-76–R-83 (live wallpapers) in [docs/V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md). R-40, R-41 and R-42 each appear twice above because two intake rounds reused the numbers; the W-numbers in the notes tell them apart.
 
 ## 3. Architecture
 
 ```
-┌─ Rust (src-tauri/src) ───────────────────────────┐   ┌─ UI (src/, TypeScript + CSS) ─────────────┐
-│ lib.rs      hotkey · tray · window lifecycle ·    │   │ launcher.ts  open/close, keyboard, wiring │
-│             commands                              │   │ grid.ts      tiles, panes, popup, drag    │
-│ capture.rs  screen snapshot, window thumbnails    │◄─►│ rail.ts      taskbar strip + previews     │
-│ desktop.rs  scan Desktop folders                  │   │ panel.ts     Settings page               │
-│ icons.rs    one STA worker, shell icons → PNG     │   │ groups.ts / organize.ts  panes + rules    │
-│ taskbar.rs  running windows + pinned items        │   │ settings.ts  settings state → CSS vars    │
-│ store.rs    groups.json / config.json             │   │ glass.ts     lens (SVG displacement maps) │
-└───────────────────────────────────────────────────┘   │ menu.ts · icons.ts · api.ts · dom.ts      │
-                                                        └───────────────────────────────────────────┘
+┌─ Rust (src-tauri/src) ───────────────────────────┐   ┌─ UI (src/, TypeScript + CSS) ─────────────────┐
+│ lib.rs        hotkey · tray · window lifecycle ·  │   │ app/        launcher.ts shell, keys, wiring   │
+│               commands                            │   │ grid/       tiles, panes, popup, drag, screens│
+│ capture.rs    screen snapshot, window thumbnails  │◄─►│ navigation/ pages, tray, gestures, motion     │
+│ desktop.rs    scan Desktop folders                │   │ taskbar/    mirror on any edge + previews     │
+│ icons.rs      one STA worker, shell icons → PNG   │   │ settings/   staged panel, store, previews,    │
+│ identity.rs   app names and icons (package family,│   │             help                              │
+│               Start menu, file details)           │   │ appearance/ presets, backgrounds              │
+│ taskbar.rs    running windows + pinned items      │   │ activity/ focus/  screen time, charts, Focus  │
+│ apps.rs · usage.rs · idle.rs · workspace.rs ·     │   │ core/       api, dom, icons, menu, glass lens,│
+│ picker.rs · start_menu.rs   installed apps,       │   │             refraction, motion, hover intent  │
+│               screen time, idle, screens, pickers │   │ data/       shortcut and help data            │
+│ store.rs      groups.json / config.json / …       │   └───────────────────────────────────────────────┘
+└───────────────────────────────────────────────────┘
 ```
 
 **Show sequence** (why there is no OS blur material any more):
@@ -197,21 +205,23 @@ blur, tint and lensing.
 
 ### WP5 — Acrylic surfaces (R-08, R-09, R-23, R-24, R-25)
 - [x] Backdrop: snapshot with CSS blur/saturation/brightness + tint, oversized to hide blur edges
-- [x] Large floating/transient surfaces: translucent gradient, `backdrop-filter`, inner highlights, specular rim and shadow
-- [x] One acrylic token set with direct blur, tint-strength and tint-colour controls; dormant refraction code is not on the render path
+- [x] Large floating/transient surfaces: flat translucent fill (no white-to-colour sheen since 0.3.0), `backdrop-filter`, hairline border, lit rim and shadow
+- [x] One acrylic token set with direct blur, tint-strength and tint-colour controls, plus named material presets (Opaline Original, Windows Mica, One UI Glass, Frutiger Aero, Deep Night) and your own saved ones
+- [~] Light bending (R-75): `core/refraction.ts` computes a convex-squircle displacement map with Snell's law and `core/glass.ts` applies it per element as an SVG filter inside `backdrop-filter`. Chromium/WebView2 only, absent at 0%, GPU-heavy. A pixel-diff test proves it displaces; the cost on the target Intel GPU is unmeasured
 - [~] One rounded apps surface · centred grid with left-aligned sparse rows · plain app/folder icon + label · pane mini-icon bubble + label below · independently floating search
 - **Accept:** complete the bright/dark, card-clipping, persistence, migration, reduced-motion and integrated-GPU matrix in
   `docs/THEME_WORKORDER.md`; no per-card backdrop filters.
 
-### WP6 — Bottom taskbar mirror (R-13, R-14) · reactivated
+### WP6 — Taskbar mirror (R-13, R-14, R-56) · reactivated
 - [x] `taskbar`: enumerate windows with Alt-Tab rules; group by executable; read the pinned-taskbar folder; resolve link targets
 - [x] Rail UI renders (pinned + running, running dot, window-count badge)
+- [~] Placement (0.3.0): bottom, top, left or right edge with start, centre or end alignment; previews, magnification, scrolling and the page's clearance follow the edge. Browser suite verified; the native look is pending
 - [~] Hover preview card opens; thumbnails (`PrintWindow`, `PW_RENDERFULLCONTENT`) — re-test speed; click to focus; magnification; click to launch
 - [~] Decoded cache hits render immediately; stale images refresh in background; requests deduplicate; closed handles are evicted and cache is bounded to 32. Cached target ≤50 ms; cold captures measured separately.
 - **Accept:** rail matches the real taskbar apart from the system tray and documented Store-app edge cases; previews within ~300 ms.
 
-### WP7 — Settings pane (R-11)
-- [x] Sections and controls render from a schema (`panel.ts`)
+### WP7 — Settings panel (R-11, R-84)
+- [x] Six sections with headings render from a schema (`settings/panel.ts`). Changes stage in a draft and apply on Done; Cancel restores; both grey out while nothing is staged; a corner button expands the panel to the whole window
 - [~] Every control applies live and persists · hotkey recorder · launch-at-login switch · reset
 - **Accept:** each setting in §5 reachable, persists across restarts, does what its label says.
 
@@ -234,8 +244,9 @@ blur, tint and lensing.
 - [ ] CI job on `ubuntu-latest`
 
 ### WP11 — Quality
-- [x] Frontend unit tests: organisation, groups, drag ordering, settings validation, workspace writes and focus deadline/phase transitions (21 tests passed locally, 1 November)
-- [x] Rust unit tests: display names, pixels, Taskband matching and usage/date/sleep attribution (11 tests passed locally, 29 October)
+- [x] Frontend unit tests (64 Vitest tests on 5 November): organisation, groups, drag ordering, settings validation and drafts, workspace writes, focus deadline/phase transitions, chart axes, hover intent, refraction and user presets
+- [x] Rust unit tests (18 on 4 November): display names, pixels, Taskband matching, app identity and usage/date/sleep attribution
+- [x] Browser UI suite (`scripts/verify-ui.mjs`, Playwright, demo fixtures, mocked IPC) covers navigation, Settings, the taskbar at every edge, gestures, fades and Home screens; `npm run size` enforces 220 KiB raw / 62 KiB gzip
 - [ ] Manual pass of §9 before each release
 - [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement
 
@@ -256,25 +267,29 @@ blur, tint and lensing.
 
 ## 5. Settings inventory
 
+Six sections in the panel, with headings inside them. Settings are staged: Done applies them, Cancel restores the saved values, Reset stages the defaults, and
+Cancel and Done are both disabled while nothing is staged. The corner expand button (`settingsExpanded`) is the one setting that applies at once.
+
 | Section | Setting | Default |
 |---|---|---|
-| Appearance | Acrylic blur · tint colour · tint strength | New profiles: 22 px · `#0b1226` · 20%; saved values preserved |
-| Layout | Icon size S / M / L · show names | M · on |
-| | Panes first · sort loose items by name / most used | on · name |
-| | Reset grid order (keeps panes) | action |
-| Layout | Compact navigation (Ctrl+B) | off |
-| | Surface width · taskbar icon size · scrollbar width | 960 px · 30 px · 8 px |
-| Taskbar | Show mirror · magnify · previews | on · off · on |
-| Behaviour | Close on empty-space click · close on focus loss · animations | on · on · on |
-| | Hotkey · launch at login | Ctrl+Alt+Space · off |
-| | Page cycling · Home screens · pane opening duration | Ctrl+Tab · Tab/Shift+Tab · 320 ms |
-| | Use Opaline for the Windows key | off; native Start-button click / Ctrl+Esc retained |
-| Workspaces | Add / rename / remove up to eight custom screens | Screen 2 and Screen 3 initially; Home always Alt+1 |
-| Screen time | Pause / resume · clear history | tracking on while Opaline runs; local only |
-| Focus | Session · short break · long break · quote interval | 25 min · 5 min · 15 min · 25 sec |
-| | Automatic screen saver · idle time | off · 5 min |
-| Panes | Organise for me · Ungroup all | actions |
-| About | Version, codename, quit, reset all settings | |
+| Appearance | Material preset (five named presets and your own) · background (Current screen, Opaline Aero, a custom image) | Opaline Original · Current screen |
+| | Acrylic blur · panel opacity · light bending · corner radius · panel colour | 22 px · 72% (custom materials) · 0% · 24 px · `#496f9d` |
+| | Backdrop colour · brightness · acrylic tint strength · tint colour | 135% · 96% · 20% · `#0b1226` |
+| | Home icon size · show names · scrollbar width | Medium · on · 8 px |
+| Home | App area width · panes first · automatic loose-item order | 960 px · on · name |
+| | Quick sort Home (A–Z, Z–A, Most used) · Reset grid order (keeps panes) | actions |
+| | Pane opening duration (with a looping demo) · Organise for me · Ungroup everything | 320 ms · actions |
+| | Home screens: add, rename or remove up to eight custom screens | none at first (Desktop and the plus page); Home is always Alt+1 |
+| Navigation & taskbar | Destination arrangement (Split, Taskbar, Tray, Taskbar ends, Sidebar) · sidebar edge | Split · Left (shown only for Sidebar) |
+| | Default opening page · compact navigation (Ctrl+B, needs the taskbar) · show All apps / Screen time / Focus / Settings | Home · off · on |
+| | Show taskbar · edge · alignment · icon size · magnify on hover · window previews | on · Bottom · Centre · 30 px · off · on |
+| Behaviour | Hotkey · launch at login · use Opaline for the Windows key | Ctrl+Alt+Space · off · off; native Start-button click and Ctrl+Esc retained |
+| | Close on empty-space click · close on focus loss · animations · fade between pages (needs animations) | on · on · on · on |
+| | Screen time: pause/resume · clear history | tracking on while Opaline runs; local only |
+| Shortcuts & help | Every keyboard shortcut and gesture (F1 or ?) | read-only |
+| About | Version, codename, links, quit · reset all settings | |
+
+Focus timings (session, short and long break, quote interval) and the optional screen saver (off, 5 min idle) are set on the Focus page itself: 25 min · 5 min · 15 min · 25 sec.
 
 ## 6. Auto-organise rules (first match wins; a new pane needs ≥ 2 members)
 
@@ -308,13 +323,13 @@ Rules live in `src/grid/organize-rules.ts` as plain data. Anything that matches 
 }
 ```
 
-`config.json`: `{ "hotkey": "ctrl+alt+space" }`. `workspaces.json` stores custom screens and their items; the first Home screen reads the Windows Desktop. `screen-time.json` stores executable/current-day totals and pause state; `shell.json` stores Windows-key routing. Visual/layout settings live in webview local storage under `opaline.settings`.
+`config.json`: `{ "hotkey": "ctrl+alt+space" }`. `workspaces.json` stores custom screens and their items (none until you add one); the first Home screen reads the Windows Desktop. `screen-time.json` stores daily totals per app and pause state, keyed by app identity (the package family for Store apps, the executable otherwise; older history is migrated on first run); `shell.json` stores Windows-key routing. Visual/layout settings live in webview local storage under `opaline.settings`.
 
 ## 8. Rust ↔ UI contract
 
-Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(path)` · `reveal(path)` · `rail_items` · `thumbnail(hwnd)` ·
+Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `get_window_icon` · `launch(path)` · `reveal(path)` · `rail_items` · `thumbnail(hwnd)` ·
 `focus_window(hwnd)` · `hide_launcher` · `quit` · `status` · `set_hotkey(combo)` · `set_behavior(closeOnBlur)` · `set_backdrop_capture(enabled)` · `load_store(name)` ·
-`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `start_menu_status` · `set_start_menu(enabled)`. Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
+`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `pick_workspace_item` · `folder_preview` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `set_screen_saver` · `start_menu_status` · `set_start_menu(enabled)`. Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
 
 ## 9. Acceptance checklist (run before every release)
 
@@ -334,6 +349,7 @@ Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `launch(pa
 14. Move a loose item, folder and pane; restart and confirm their positions persist (full pass in `docs/SPATIAL_WORKORDER.md`).
 15. Complete `docs/THEME_WORKORDER.md`: consistent acrylic, centred app surface, pane bubbles, left-aligned sparse rows, persistence, contrast and no clipping.
 16. Complete `docs/SESSION_WORKORDER.md`: workspace shortcuts/persistence, compact mode, cached previews, Win-key opt-in/chords, real usage/idle/sleep, virtual-desktop/PowerToys compatibility. The owner authorized v0.2.1 while those checks and W-51 remain open.
+17. Walk the "0.3.0 native acceptance" list in §11 of `docs/V0_3_WORKORDER.md` on the native build: physical trackpad swipe and pinch (W-51), the taskbar at each edge, the Settings panel, light bending on the target GPU, Home screens, and real app names and icons in Screen time.
 
 ## 10. Risks & decisions
 
@@ -378,15 +394,19 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 5. **Spatial pass.** Complete every acceptance step in `docs/SPATIAL_WORKORDER.md` without moving a real Desktop file.
 6. **Theme pass.** Complete `docs/THEME_WORKORDER.md` on bright/dark imagery and the target Intel GPU; fix clipping before screenshots.
 7. **Release follow-up.** The v0.2.1 NSIS, MSI, portable ZIP and checksums are published and hash-verified. Record installer smoke-test evidence separately; profile the gesture bug in W-51 on the owner's trackpad when that work resumes.
-8. **Finish and accept the settled 0.3.0 scope.** §0 of `docs/V0_3_WORKORDER.md` lists what ships (Focus, navigation, presets, staged Settings,
-   gesture motion, hover intent) and what moved to 0.3.x, 0.4.0 and 0.5.0. Remaining: owner testing of the built 0.3 preview on the physical
-   trackpad (W-51) and the native checklist, then the version bump, tag and publish when the owner says so. Existing native acceptance gaps
-   remain regression gates; the narrower scope does not silently mark them complete.
+8. **Accept 0.3.0 "Crown".** §0 of `docs/V0_3_WORKORDER.md` lists what ships and what moved to 0.3.x, 0.4.0 and 0.5.0. The manifests are bumped and the
+   release build launches and reports 0.3.0. Remaining: the owner's native pass (physical trackpad W-51, the taskbar at each edge, the Settings panel,
+   light bending on the target GPU, and §9), then tag and publish when the owner says so. Existing native acceptance gaps remain regression gates;
+   the narrower scope does not silently mark them complete.
+9. **Then 0.4.0 live wallpapers** ([docs/V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md)); 0.3.x completion feedback (R-55) can interleave. 0.5.0 (live layout customiser, restart cache) and 0.6.0 (Activity Center) follow.
 
 ## 13. Known issues
 
-- **Persistent in v0.2.1; candidate fix in progress:** the owner isolated consecutive horizontal swipes failing until a mouse move, while pinch works. The current candidate shortens wheel-burst rearm and browser checks consecutive swipes without pointer movement. Real-device responsiveness is not accepted until the owner retests W-51; use Tab/Home dots or Alt+1–5 meanwhile.
-- Fabric motion and real pointer grid reordering have not had their full real-app pass yet.
+- **Open in the 0.3.0 candidate (W-51):** the owner saw consecutive horizontal swipes fail until a mouse move, and lag, while pinch works. The candidate reworks gesture motion, rearms the swipe lock after 120 ms of silence and the browser suite swipes repeatedly without pointer movement, but headless Chrome is not a physical trackpad. It is not accepted until the owner retests on the device; use Tab/Home dots or Alt+1–5 meanwhile.
+- Real pointer grid reordering has not had its full real-app pass yet (the fabric opening was replaced by a short pop in 0.2.0).
+- Light bending (R-75) is an SVG displacement filter inside `backdrop-filter`: Chromium/WebView2 only, GPU-heavy and unmeasured on the target Intel GPU. It is off by default and falls back to plain frost where unsupported.
+- Everything new in 0.3.0 was verified in headless Chrome with demo fixtures and mocked IPC, plus a release build that launches and reports 0.3.0. The physical trackpad, WebView2 rendering and the native checklist are the owner's to confirm.
+- The Focus page follows the chosen material less closely than the rest of the UI; the owner accepted that for now.
 - Taskband parsing deliberately consumes only self-describing link names/AppUserModelIDs from the undocumented blob and falls back safely.
 - Native cold thumbnails measured 66.5–131.6 ms after GDI downsampling. Cached demo presentation measured 13–17 ms; owner cached-hover parity remains open.
 - `Esc` in the pane-name field both closes the popup and bubbles to the global handler; confirm the intended order.
@@ -395,7 +415,7 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 ## 14. Out of scope (external tools)
 
-- **Live wallpaper:** Wallpaper Engine (paid, largest library) or Lively Wallpaper (free, open source). Opaline snapshots whatever is on screen.
+- **Live wallpaper (today):** Wallpaper Engine (paid, largest library) or Lively Wallpaper (free, open source). Opaline snapshots whatever is on screen, so a live wallpaper is frozen while the overlay is open. Opaline's own live backgrounds (GIF, video, sandboxed HTML/JavaScript, Lively packages) are planned for 0.4.0 in [docs/V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md).
 - **Taskbar background:** a tool such as TranslucentTB. Opaline does not modify the taskbar.
 - Hiding Explorer's desktop icons: the Windows setting *View → Show desktop icons* (Opaline never changes it).
 

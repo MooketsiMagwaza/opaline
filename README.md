@@ -19,19 +19,23 @@
 
 > **Latest release: [`v0.2.1` "Borosilicate"](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1).** Windows 11 first; Linux is planned.
 >
-> The TypeScript build, frontend tests and Rust unit tests are clean locally. Real Windows interaction checks remain open for
-> grid reordering and persistence, tray/single-instance, installer and multi-monitor behaviour. The
+> **This branch is `v0.3.0` "Crown"**, built and waiting on the owner's native acceptance; it is not tagged or published, and the v0.2.1 download does not
+> include everything described below.
+>
+> The TypeScript build, 64 frontend tests, 18 Rust unit tests, the size budget and a browser UI suite on demo data are clean locally. Real Windows
+> interaction checks remain open for trackpad gestures, light bending on the target GPU, the taskbar at each edge, grid reordering and persistence,
+> tray/single-instance, installer and multi-monitor behaviour. The
 > [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done
 > once it has been seen working.
 
-Two-finger swipe and pinch navigation may still feel laggy or miss a short gesture on some trackpads. This remains an open [known issue](WORKORDER.md#13-known-issues); Tab and the Home dots move between Home screens, and Alt+1–5 opens the main pages.
+Two-finger swipe and pinch navigation may still feel laggy or miss a short gesture on some trackpads. 0.3.0 reworks the gesture motion, but a physical trackpad has not confirmed the fix, so this remains an open [known issue](WORKORDER.md#13-known-issues); Tab and the Home dots move between Home screens, and Alt+1–5 opens the main pages.
 
 ## What it is
 
 You hide the icons on your Windows desktop and keep the files where they are. Opaline reads your Desktop folders and, on
 a hotkey, lays them out over a blurred snapshot — your wallpaper, your live wallpaper, your
-windows — like a centred home screen. Items are grouped into named **panes**, and a focused Appearance panel controls the acrylic blur and tint.
-The bottom taskbar mirror shows pinned and running apps, with cached window previews. A Home button sits beside it; Tab moves between Home screens.
+windows — like a centred home screen. Items are grouped into named **panes**, and Settings controls the glass: blur, tint, material presets and optional light bending.
+A taskbar mirror, which can dock to any screen edge, shows pinned and running apps with cached window previews. A Home button sits beside it; Tab moves between Home screens.
 
 Opaline only **reads** your Desktop. It never moves, renames or deletes your files, and it makes no network requests.
 
@@ -39,18 +43,22 @@ Opaline only **reads** your Desktop. It never moves, renames or deletes your fil
 
 | | |
 |---|---|
-| **Consistent acrylic** | One material system covers the launcher, search and transient panels; Appearance exposes direct blur, tint-strength and tint-colour controls. |
+| **Consistent acrylic** | One material system covers the launcher, search and transient panels. Five presets (Opaline Original, Windows Mica, One UI Glass, Frutiger Aero, Deep Night) and your own saved ones sit on top of direct blur, tint and colour controls. Surfaces are flat translucent fills with a hairline border. |
+| **Light bending** | A Settings slider (off by default) bends the desktop behind panel edges like thick glass instead of only frosting it (a physically based lens, not a library). It works with any material, is heavier on the GPU, and needs WebView2/Chromium. |
 | **Centred app grid** | One rounded surface holds the app grid. Drag apps, folders and panes to reorder snapped grid cells; sparse final rows remain left-aligned to the same columns. Loose apps remain plain icon + name, while panes use one rounded mini-icon bubble with the name below. |
-| **Paged launcher** | Side arrows, Tab and two-finger left/right swipe move through the Home screens with wraparound. Pinch moves through the Alt+1–5 pages. Both gestures show a live slide preview. The header opens a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
+| **Paged launcher** | Side arrows, Tab and two-finger left/right swipe move through the Home screens with wraparound. Pinch moves through the Alt+1–5 pages. Both gestures show a live slide preview, and pages ease in (a Settings toggle turns that off). All apps is a searchable alphabetical catalogue sourced from Windows AppsFolder, including classic Start-menu and packaged apps. |
+| **Your navigation, your way** | Put the destinations in a split header, a navigation taskbar, a dropdown tray, either side of Home in the taskbar (Taskbar ends) or a sidebar on the left or right edge. Compact mode collapses them. |
 | **Your Desktop, organised** | Items come straight from the Desktop folders with their real icons. Panes are virtual — drag a tile onto another to make one, rename it, ungroup it. |
 | **Organised for you** | First run sorts IDEs, AI and code agents, dev tools, notes, browsers, chat, creative apps, games, utilities, university folders and code projects into panes. |
 | **Search** | Press <kbd>S</kbd> or click search to focus it. Prefix matches first; <kbd>Enter</kbd> launches and arrow keys move around. |
-| **Home screens** | Alt+1 opens a read-only view of your Windows Desktop. Tab and Shift+Tab move through simple custom screens. Each custom screen can hold apps, folders and files chosen through Windows app search or a native picker. |
-| **Taskbar mirror** | The retained rail now sits at the bottom, with running indicators, focus/restore/launch and cached previews. Ctrl+B collapses page navigation. |
-| **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, with charts, per-app detail and pause/clear controls. |
+| **Home screens** | Alt+1 opens a read-only view of your Windows Desktop. Home starts with just that screen and a plus page; the plus adds a custom screen (up to eight), and each can be renamed, removed and filled with apps, folders and files chosen through Windows app search or a native picker. Tab and Shift+Tab move between them. |
+| **Taskbar mirror** | Pinned and running apps with running indicators, focus/restore/launch and cached previews. Dock it to the bottom, top, left or right, at the start, centre or end of that edge; previews, magnification and scrolling follow. Ctrl+B collapses page navigation. |
+| **Screen time** | Local Today / 7 days / 30 days / All time for foreground maximised apps, named and iconed the way Windows shows them, with labelled charts, per-app detail and pause/clear controls. |
 | **Focus** | Configurable Pomodoro timer, daily progression, shared-acrylic Zen and screen saver views, and rotating break reminders. Automatic saver is opt-in. |
 | **Windows key** | Opt-in Windows-key tap opens All apps while Opaline runs. Windows chords and the native Start-button click remain available. |
-| **Settings** | A full page for acrylic blur/tint, icon size, behaviour, hotkey and opt-in launch at login. Changes apply as you make them. |
+| **Settings** | A panel like every other page, with a corner button that expands it to the whole window. Six sections: Appearance, Home, Navigation & taskbar, Behaviour, Shortcuts & help and About. A live preview shows each change; Done applies and Cancel restores, and both grey out while nothing is staged. |
+| **Shortcuts & help** | Press <kbd>F1</kbd> or <kbd>?</kbd> for every keyboard shortcut and gesture, grouped. |
+| **Polite popups** | Hover menus open after a short delay and stay open while the pointer travels toward them, so crossing a neighbouring item does not close them. |
 | **Easy to leave** | <kbd>Esc</kbd>, click empty space, click away, or press the hotkey again. A tray icon is always there. |
 
 Feature status lives in the [work order](WORKORDER.md#4-work-packages).
@@ -61,7 +69,7 @@ Rendered examples use familiar app names and icons with synthetic folders, windo
 
 | Desktop with icons hidden | Opaline Home |
 |---|---|
-| ![Illustrative blank desktop with taskbar and no desktop icons](docs/images/blank-desktop.png) | ![Opaline Home with side arrows and the bottom taskbar mirror](docs/images/desktop.png) |
+| ![Illustrative blank desktop with taskbar and no desktop icons](docs/images/blank-desktop.png) | ![Opaline Home with side arrows, the Home dots and the taskbar mirror](docs/images/desktop.png) |
 
 The blank desktop is an original illustration based on the owner's example, with no personal wallpaper, notifications or app data.
 
@@ -69,7 +77,7 @@ The blank desktop is an original illustration based on the owner's example, with
 |---|---|
 | ![Searchable Windows app catalogue](docs/images/all-apps.png) | ![Apps and folders on a Dev tools Home screen](docs/images/workspaces.png) |
 
-![Fresh empty Screen 3 with a dot pager and one Add action](docs/images/screen-3.png)
+![A custom Home screen with the dot pager; the last dot is a plus that adds another](docs/images/screen-3.png)
 
 ![An empty named custom screen offers a direct Add app or folder action](docs/images/empty-home-screen.png)
 
@@ -81,13 +89,21 @@ The blank desktop is an original illustration based on the owner's example, with
 
 | Zen | Screen saver | Settings |
 |---|---|---|
-| ![Zen quotes](docs/images/zen.png) | ![Quiet screen saver](docs/images/screen-saver.png) | ![Full-page settings](docs/images/settings.png) |
+| ![Zen quotes](docs/images/zen.png) | ![Quiet screen saver](docs/images/screen-saver.png) | ![Settings as a panel with an expand button and material presets](docs/images/settings-appearance.png) |
 
-[Settings](docs/images/settings-appearance.png): [Home layout](docs/images/settings-home-layout.png) · [Navigation](docs/images/settings-navigation.png) · [Taskbar](docs/images/settings-rail.png) · [Home screens](docs/images/settings-workspaces.png) · [Screen time](docs/images/settings-screen-time.png) · [Panes](docs/images/settings-panes.png) · [About](docs/images/settings-about.png). Focus preferences live on the Focus screen itself.
+Settings sections: [Appearance](docs/images/settings-appearance.png) · [Home](docs/images/settings-home.png) · [Navigation & taskbar](docs/images/settings-navigation.png) · [Behaviour](docs/images/settings-behaviour.png) · [Shortcuts & help](docs/images/settings-help.png) · [About](docs/images/settings-about.png). Also: [material presets](docs/images/settings-appearance-presets.png) · [Windows Mica](docs/images/settings-windows-mica.png) · [navigation arrangements](docs/images/settings-navigation-variants.png) · [Home screens](docs/images/settings-workspaces.png). Focus preferences live on the Focus screen itself.
+
+| Taskbar on the left | Taskbar on the right | Taskbar on top |
+|---|---|---|
+| ![The taskbar docked to the left edge with a window preview opening toward the screen](docs/images/taskbar-left.png) | ![The taskbar docked to the right edge](docs/images/taskbar-right.png) | ![The taskbar docked to the top edge](docs/images/taskbar-top.png) |
+
+| Taskbar ends | Sidebar |
+|---|---|
+| ![Destinations either side of Home and the app mirror in the taskbar](docs/images/navigation-taskbar-ends.png) | ![Every destination in a compact sidebar on the left edge](docs/images/navigation-sidebar.png) |
 
 ![A pane peek showing its member names after a short hover](docs/images/folder-peek.png)
 
-![Compact navigation leaving the bottom taskbar with an expand control](docs/images/compact-taskbar.png)
+![Compact navigation leaving the taskbar with an expand control](docs/images/compact-taskbar.png)
 
 ![How workspace navigation fits together](docs/images/workspace-flow.svg)
 
@@ -142,21 +158,22 @@ The release process and artifact list are documented in [docs/RELEASING.md](docs
 | Search, then <kbd>↓</kbd> | Move from search into tiles |
 | <kbd>Esc</kbd> | Clear search → close pane/menu/settings → close Opaline |
 | Click empty space | Close |
-| Right-click a tile | Open · file location · copy path · add to / remove from pane · rename · ungroup |
+| Right-click a tile | Open · file location · copy path · add to a Home screen · add to / remove from pane · rename · ungroup |
 | <kbd>Ctrl</kbd>+<kbd>Q</kbd> | Quit |
 | <kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>5</kbd> | Home / All apps / Screen time / Focus / Settings |
 | <kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> | Next / previous Home screen |
 | <kbd>Ctrl</kbd>+<kbd>Tab</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Tab</kbd> | Next / previous top-level page |
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>T</kbd> / <kbd>F</kbd> | All apps / Screen time / Focus |
 | <kbd>Ctrl</kbd>+<kbd>B</kbd> | Collapse / expand navigation |
+| <kbd>F1</kbd> or <kbd>?</kbd> | Shortcuts & help: every key and gesture, grouped |
 
-Use the side arrows, Tab or a two-finger horizontal swipe on Home to move between the Desktop and custom screens. Home swipes wrap in both directions and have no page-navigation action outside Home. Pinch inward to go to the previous Alt+1–5 screen; spread outward to go to the next. Ctrl+Tab also cycles the five main screens. The header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right. **Home** sits beside the bottom taskbar, which shows only pinned and running apps. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
+Use the side arrows, Tab or a two-finger horizontal swipe on Home to move between the Desktop and custom screens. Home swipes wrap in both directions and have no page-navigation action outside Home. Pinch inward to go to the previous Alt+1–5 screen; spread outward to go to the next. Ctrl+Tab also cycles the five main screens. By default the header puts **All apps** and **Screen time** left of search, with **Focus** and **Settings** on the right; Settings → Navigation & taskbar moves them into the taskbar, a tray or a sidebar instead. **Home** sits beside the taskbar, which shows only pinned and running apps and can dock to any screen edge. Hover a pane or folder for half a second to peek at its icon grid. The Windows AppsFolder catalogue begins loading in the background after startup; the first visible frame does not wait for it.
 
 ## Works well with
 
 - **Live wallpapers** — [Wallpaper Engine](https://www.wallpaperengine.io) (paid, biggest library) or
   [Lively Wallpaper](https://github.com/rocksdanister/lively) (free, open source). Opaline snapshots what is on
-  screen, so both just work. The wallpaper is frozen in the snapshot while the overlay is open.
+  screen, so both just work. The wallpaper is frozen in the snapshot while the overlay is open. Live backgrounds built into Opaline (GIF, video and Lively-style HTML wallpapers) are planned for 0.4.0.
 - **A transparent taskbar** — a tool such as TranslucentTB. Opaline does not modify the taskbar.
 - **Hidden desktop icons** — Windows: right-click the desktop → *View* → untick *Show desktop icons*.
 
@@ -172,16 +189,17 @@ Use the side arrows, Tab or a two-finger horizontal swipe on Home to move betwee
 
 Delete `groups.json` to start over; Opaline will organise your desktop again on the next open.
 
-Screen time starts while Opaline runs. Only the foreground maximised app counts; background/minimised windows, idle periods after 60 seconds and sleep gaps do not. Apps sharing a legacy Windows host can be combined under that executable. Screen time stores app identity and totals, not window titles or browsing history.
+Screen time starts while Opaline runs. Only the foreground maximised app counts; background/minimised windows, idle periods after 60 seconds and sleep gaps do not. Packaged Store apps are recognised by their package rather than the shared host process (so WhatsApp or Claude is not lumped under ApplicationFrameHost), and older history is merged into the same names the first time 0.3.0 runs. Screen time stores app identity and totals, not window titles or browsing history.
 
 WebView2 is the Windows UI engine used by Tauri. Its processes are children of Opaline even when Task Manager groups them separately under Microsoft Edge WebView2. See [architecture](docs/ARCHITECTURE.md#processes-on-windows).
 
 ## Project layout
 
 ```
-src/                 TypeScript + CSS UI (overlay, panes, All Apps, settings, acrylic)
-src-tauri/src/       Rust: hotkey, window lifecycle, capture, AppsFolder, icons, taskbar, store
-scripts/             make-icons.mjs (logo → app icons) · cdp.mjs (drive the running app for testing)
+src/                 TypeScript + CSS UI, one folder per feature: app, core, grid, navigation, taskbar, settings, appearance, activity, focus (see src/README.md)
+src-tauri/src/       Rust: hotkey, window lifecycle, capture, AppsFolder, app identity, icons, taskbar, screen time, store
+tests/               Vitest unit tests (npm test)
+scripts/             make-icons.mjs (logo → app icons) · cdp.mjs (drive the running app) · verify-ui.mjs (browser UI suite on demo data) · verify-native.mjs · measure-build.mjs (npm run size)
 archive/winui3-beta  The failed first attempt, kept for reference (see DEVLOG.md)
 assets/              Logo
 docs/                Architecture, testing, releasing, roadmaps and agent handoff
@@ -190,8 +208,10 @@ AGENTS.md            Guide for coding agents (also a good orientation for people
 
 ## Roadmap
 
-See [WORKORDER.md](WORKORDER.md) §4 and §11. Widgets, calendar and an opt-in Start-style surface remain future work in
-[docs/PLATFORM_ROADMAP.md](docs/PLATFORM_ROADMAP.md). The current visual target is the single acrylic system described in
+**0.3.0 "Crown"** (this branch, awaiting native acceptance) → 0.3.x completion feedback → **0.4.0 live wallpapers** (GIF, video and sandboxed HTML/JavaScript
+backgrounds, reading Lively packages) → 0.5.0 live layout customiser and faster restarts → 0.6.0 Activity Center. Each is scoped in
+[docs/V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md) and [docs/V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md); see also [WORKORDER.md](WORKORDER.md) §12.
+Widgets, calendar and an opt-in Start-style surface remain future work in [docs/PLATFORM_ROADMAP.md](docs/PLATFORM_ROADMAP.md). The current visual target is the single acrylic system described in
 [docs/THEME_WORKORDER.md](docs/THEME_WORKORDER.md).
 
 ## Contributing

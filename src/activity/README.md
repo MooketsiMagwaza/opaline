@@ -21,6 +21,6 @@ flowchart LR
   Rows --> Menu[period/detail menu]
 ```
 
-The frontend does not infer activity by polling windows. Native collection and persistence policy stay behind `core/api.ts`; this feature
+The frontend does not infer activity by polling windows. App names and icons arrive already resolved by the native `identity.rs` (see `docs/ARCHITECTURE.md`), so this feature never maps executables or package hosts itself. Native collection and persistence policy stay behind `core/api.ts`; this feature
 only renders the returned report. Refresh errors must preserve the last valid report and show status rather than clearing the page.
 

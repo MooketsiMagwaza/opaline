@@ -12,7 +12,7 @@ Core contains the smallest reusable layer beneath features.
   Settings sections.
 - `refraction.ts` is the pure physics of a glass edge: a convex squircle surface, Snell's law (glass index 1.5) and the sideways shift it
   gives a ray, sampled across the bezel. Unit-tested.
-- `glass.ts` is the lens. When a material asks for refraction (Apple Glass, or the Light bending setting) it gives each large panel and
+- `glass.ts` is the lens. When a material asks for refraction (the Light bending setting) it gives each large panel and
   control an SVG filter whose displacement map comes from `refraction.ts`, applied once per colour channel with a slightly different
   strength (dispersion) through `backdrop-filter: url(#…)`, so the desktop is bent at the edges instead of only blurred. Chromium (WebView2)
   only, GPU-heavy, and absent entirely, not merely idle, when refraction is 0.

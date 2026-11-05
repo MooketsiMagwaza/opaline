@@ -23,7 +23,7 @@ overlap one another or become stranded off-screen. Search and the rail remain in
 | S-08 | Order metadata is validated and never changes Desktop files | `[x]` | Unit-tested store clamping/order; only `groups.json` is written |
 | S-09 | Centered side arrows stay inside the viewport and clear of search and taskbar | `[~]` | Responsive browser check; full native scaling matrix pending; see W-03/W-32 |
 | S-10 | Full two-line labels fit; overflowing grids scroll to the final row without faded/clipped names | `[~]` | Fixed flex shrinking and removed the unconditional edge mask; dense-grid verification required |
-| S-11 | A smaller bottom taskbar leaves the app surface taller, including when navigation is collapsed | `[~]` | Browser geometry checked at 1280, 1024, 800 and 600 CSS px; Windows scaling pass pending |
+| S-11 | A smaller taskbar (bottom by default; on any edge since 0.3.0, where the page keeps clear of it) leaves the app surface taller, including when navigation is collapsed | `[~]` | Browser geometry checked at 1280, 1024, 800 and 600 CSS px; Windows scaling pass pending |
 | S-12 | Pane members can be reordered and retain that order | `[x]` | Owner accepted native pane reordering; ordered-store persistence is unit-tested |
 | S-13 | Insertion and grouping have separate hit targets and feedback | `[x]` | Owner accepted the stable themed edge/gap marker and centre grouping target in the native preview |
 | S-14 | Home can be sorted A–Z, Z–A or by usage without disabling later manual reordering | `[x]` | One-shot Settings actions pass isolated UI checks; pane contents intentionally remain manual-only |

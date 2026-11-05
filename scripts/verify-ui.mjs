@@ -517,10 +517,10 @@ try {
   // Settings is six sections, not ten, grouped by headings rather than split into ever smaller pages.
   assert.deepEqual(await page.locator(".settings-nav .nav-item").allTextContents(), ["Appearance", "Home", "Navigation & taskbar", "Behaviour", "Shortcuts & help", "About"]);
   await page.locator('.nav-item[data-id="appearance"]').click();
-  assert.equal(await page.locator(".appearance-preset-grid").first().locator(".appearance-preset").count(), 6);
+  assert.equal(await page.locator(".appearance-preset-grid").first().locator(".appearance-preset").count(), 5);
   await page.waitForFunction(() => [...document.querySelectorAll(".appearance-preview iframe")].every(frame => frame.contentDocument?.querySelector("#grid .tile")));
   const materialPreviews = await page.locator(".appearance-preset-grid").first().locator(".appearance-preview").evaluateAll(nodes => nodes.map(node => { const root = node.querySelector("iframe")?.contentDocument?.documentElement; return { profile: node.dataset.profile, radius: root?.style.getPropertyValue("--radius"), fill: root?.style.getPropertyValue("--custom-rgb"), opacity: root?.style.getPropertyValue("--custom-opacity"), blur: root?.style.getPropertyValue("--pane-blur"), ghost: getComputedStyle(node, "::after").content }; }));
-  assert.equal(new Set(materialPreviews.map(preview => JSON.stringify(preview))).size, 6);
+  assert.equal(new Set(materialPreviews.map(preview => JSON.stringify(preview))).size, 5);
   assert(materialPreviews.every(preview => preview.ghost === "none"));
   assert.equal(await page.locator(".appearance-preview svg").count(), 0);
   assert(await page.locator(".appearance-preview iframe").first().evaluate(frame => frame.contentDocument.querySelectorAll("#grid .tile").length >= 8));
@@ -571,9 +571,14 @@ try {
   assert.equal(await page.locator("html").evaluate(node => node.style.getPropertyValue("--radius")), "12px");
   assert.equal(await page.locator("html").evaluate(node => node.style.getPropertyValue("--custom-opacity")), "0.9");
   await shot("settings-windows-mica.png");
-  // A light preset must not leave light-on-light controls: the pager dots follow the text colour and the gesture cue is made of
-  // the same glass as the panels, so both read on Apple Glass.
-  await page.getByRole("button", { name: /^Apple Glass/ }).click();
+  // A light material must not leave light-on-light controls: the pager dots follow the text colour and the gesture cue is made of
+  // the same glass as the panels, so both read on it. There is no built-in light preset, so a light custom material is staged
+  // with the same controls a person would use, with Light bending on so the lens check below has something to measure.
+  await page.getByRole("button", { name: /^Opaline Original/ }).click();
+  await page.evaluate(() => {
+    const set = (label, value) => { const input = document.querySelector(`.settings-body input[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event("input", { bubbles: true })); };
+    set("Panel surface colour", "#dce8f5"); set("Panel opacity", "0.56"); set("Light bending", "1");
+  });
   await page.getByRole("button", { name: "Done", exact: true }).click();
   assert.equal(await page.locator("body").getAttribute("data-surface-tone"), "light");
   const ink = await page.evaluate(() => {
@@ -584,8 +589,8 @@ try {
   });
   assert(ink.dotLuminance < 0.55, JSON.stringify(ink));
   assert(ink.cueLuminance > 0.6, JSON.stringify(ink));
-  // Apple Glass bends light rather than only frosting it: the panels run a displacement filter (one per colour channel), and behind
-  // a sharp grid that filter visibly moves the pixels in the panel's edge band. The other presets run no filter at all.
+  // Light bending bends light rather than only frosting it: the panels run a displacement filter (one per colour channel), and behind
+  // a sharp grid that filter visibly moves the pixels in the panel's edge band. A material with it at 0% runs no filter at all.
   await page.keyboard.press("Alt+1");
   await page.waitForSelector("#apps-surface:visible");
   await wait(900);
@@ -603,9 +608,13 @@ try {
   });
   await wait(700);
   const corner = { x: 160, y: 106, width: 330, height: 200 };
-  const bent = await page.screenshot({ clip: corner });
+  // The panel's own blur would smear the 40 px squares the lens is measured against, so it is taken out of both renders.
   const lensFilter = await page.locator("#apps-surface").evaluate(node => node.style.backdropFilter);
-  await page.locator("#apps-surface").evaluate(node => node.style.setProperty("backdrop-filter", node.style.backdropFilter.replace(/url\([^)]*\)/, "")));
+  const unblurred = lensFilter.replace(/blur\([^)]*\)/, "blur(0px)");
+  await page.locator("#apps-surface").evaluate((node, value) => node.style.setProperty("backdrop-filter", value), unblurred);
+  await wait(500);
+  const bent = await page.screenshot({ clip: corner });
+  await page.locator("#apps-surface").evaluate((node, value) => node.style.setProperty("backdrop-filter", value), unblurred.replace(/url\([^)]*\)/, ""));
   await wait(500);
   const flat = await page.screenshot({ clip: corner });
   await page.locator("#apps-surface").evaluate((node, value) => node.style.setProperty("backdrop-filter", value), lensFilter);

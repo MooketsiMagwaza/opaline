@@ -84,9 +84,31 @@ from the screen. Mark your capture script DPI-aware first (`SetProcessDPIAware`)
 
 ## 5. Checks to run before a pull request
 
-For v0.2.1, use the owner checklist in [SESSION_WORKORDER.md](SESSION_WORKORDER.md) to complete the remaining real Windows checks. Browser/demo checks do not replace the Windows-key, virtual-desktop, pointer, installer and CI gates. W-51 records persistent swipe/pinch lag and missed gestures on the owner's trackpad; keep it open until a physical retest passes.
+Everything automated below runs against demo data and mocked native calls; none of it replaces the owner's checks on real Windows. For the 0.3.0 candidate,
+use the native acceptance list in [§11 of V0_3_WORKORDER.md](V0_3_WORKORDER.md#11-verification-matrix) and the owner checklist in
+[SESSION_WORKORDER.md](SESSION_WORKORDER.md) (a historical record of the 0.2 intake whose remaining Windows checks still apply). W-51 records swipe and pinch lag on the
+owner's trackpad; keep it open until a physical retest passes.
 
-`scripts/verify-ui.mjs` uses an isolated browser context and mocked native calls to check four-icon navigation, Alt+1–5, dot-only Home screens, read-only Desktop Home, custom-screen additions, pinch routing through Alt+1–5, two-finger left/right Home swipes with wraparound, partial slide preview and cancellation, S-to-search without automatic focus, Windows app search and simulated picker selection, workspace persistence, popup geometry, popup focus, full-page Settings, compact mode, 500 ms icon-grid pane/folder peeks, taskbar scrollbar and height, grouped screen-time and Focus charts, timer, Zen, saver, reduced motion and responsive layout. It regenerates public UI screenshots with saved appearance values and synthetic folder/preview/usage data. `scripts/capture-blank-desktop.mjs` renders a separate original blank-desktop illustration as PNG. Start Vite first; provide Playwright through Node resolution or `OPALINE_PLAYWRIGHT_MODULE`, and optionally `OPALINE_BROWSER_PATH` for an installed Chromium/Edge binary. See [UI_GUIDANCE.md](UI_GUIDANCE.md) for app-icon attribution. These checks cannot verify real Windows touch/trackpad events, taskbar icon parity, Win-key routing, virtual desktops, idle wake or login startup; use the owner test in `SESSION_WORKORDER.md` for those.
+**Unit tests.** `npm test` runs the Vitest suite in `tests/` (64 Vitest unit tests: organisation, groups, drag order, settings and staged drafts, workspaces, the Focus timer,
+chart axes, hover intent, refraction and user presets). `cargo test` runs the Rust tests (18: display names, pixels, Taskband matching, app identity and usage attribution).
+
+**Size budgets.** After `npm run build`, `npm run size` (`scripts/measure-build.mjs`) enforces 220 KiB raw and 62 KiB gzip for the frontend and reports the native artifact sizes.
+
+**Documentation.** `npm run docs:check` (`scripts/check-docs.mjs`, no dependencies) fails when a Markdown link, image or named path is broken, a version, test count or size budget quoted in prose disagrees with the code, or a Rust module, native command, source folder or Settings section is missing from the docs. Update the document it names, not the check.
+
+**Browser UI suite.** `scripts/verify-ui.mjs` drives the Vite page in an isolated headless browser with demo fixtures and mocked native calls. It covers: navigation by header,
+taskbar, tray, Taskbar ends and sidebar; Alt+1–5; Home screens with the plus page, add, rename and remove; the read-only Desktop Home; Windows app search and the simulated picker;
+pinch and two-finger swipe routing with wraparound, live preview and cancellation; consecutive swipes; hover intent for the tray, previews and pane peeks; the taskbar at every edge
+and alignment (preview direction, clearance, scrolling); Settings as a panel (staged Done and Cancel, grey-out, expand, six sections, previews, help); presets and light bending
+(a pixel-diff against the flat render); page fades and their toggle; compact mode; screen-time and Focus charts with axes; timer, Zen, screen saver, reduced motion and
+responsive layout. It regenerates the public screenshots in `docs/images/` from synthetic folder, preview and usage data, and writes `ui-verification.local.json`
+(git-ignored). `scripts/capture-blank-desktop.mjs` renders the separate blank-desktop illustration.
+
+To run it, start Vite (`npm run dev`, port 1420), then run `node scripts/verify-ui.mjs`. Playwright is not a dependency of the repo: provide it through Node resolution or
+`OPALINE_PLAYWRIGHT_MODULE`, point `OPALINE_BROWSER_PATH` at an installed Chromium, Chrome or Edge, and set `OPALINE_VERIFY_URL` if Vite is not on port 1420. A real run
+overwrites the tracked screenshots, so review `git status` afterwards. The suite retries its gesture-preview helper and prints a warning when it does; repeated failures are not
+expected. See [UI_GUIDANCE.md](UI_GUIDANCE.md) for app-icon attribution. Headless Chrome cannot verify real touch or trackpad events, WebView2 rendering, taskbar icon parity,
+Windows-key routing, virtual desktops, idle wake or login startup.
 
 For native checks, debug builds accept an absolute `OPALINE_TEST_DATA` directory. This isolates both the JSON stores and WebView2 profile, disables legacy-store migration, and is ignored in release builds. Seed `groups.json` with `organized: true` to avoid first-run grouping, and use `--hidden --pin` for API checks without occupying the screen. `scripts/verify-native.mjs` reads live app/catalogue/taskbar/usage/hook data and measures cold captures. Its optional `--isolated-persistence` mutations require `{ "testProfile": true }` in that isolated `config.json`; it refuses to run them without the marker. The optional `--export-demo-icons` exports only a fixed list of public app identities, with no install paths in the manifest. Stop the debug process when finished; never ship its remote-debugging switch.
 

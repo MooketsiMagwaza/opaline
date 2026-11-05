@@ -263,13 +263,6 @@ body[data-material="one-ui"] .glass {
   box-shadow: inset 0 1px rgba(255,255,255,.3), 0 22px 50px rgba(19,8,42,.42);
 }
 
-body[data-material="apple-glass"] .glass {
-  border-color: rgba(255,255,255,.62);
-  /* The fill is kept thin so the refracted desktop shows through it; the preset’s opacity still decides the text tone. */
-  background: rgba(var(--custom-rgb), calc(var(--custom-opacity) * .7));
-  box-shadow: inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.92), inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.5), inset 0 0 0 1px rgba(255,255,255,.22), 0 18px 42px rgba(30,42,58,.2);
-}
-
 body[data-material="aero"] .glass {
   border-color: rgba(187,245,255,.48);
   background: rgba(var(--custom-rgb), var(--custom-opacity));

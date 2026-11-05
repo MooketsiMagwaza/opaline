@@ -1,8 +1,8 @@
 # Opaline 0.3.0 experience work order
 
-**Status:** scope settled on 4 November 2026 (§0); partial slices are listed in §10.  
+**Status:** scope settled on 4 November 2026 (§0); built as 0.3.0 "Crown" and awaiting the owner's native acceptance (§11); partial slices are listed in §10.  
 **Release intent:** supersede the unpublished 0.2.2 candidate with a 0.3.0 that ships the scope in §0 after every acceptance gate there passes. The manifests were bumped to 0.3.0 "Crown" on 4 November 2026 at the owner's request; nothing is tagged, pushed or published until the owner has accepted it.  
-**Priority order:** Focus experience → navigation, presets and interaction polish → (later releases) layout customisation and taskbar placement → restart/startup performance → optional Activity Center integrations.
+**Priority order:** Focus experience → navigation, presets and interaction polish → taskbar placement (built in 0.3.0) → (later releases) layout customisation → restart/startup performance → optional Activity Center integrations.
 
 ## 0. Scope decision (settled 4 November 2026)
 
@@ -23,7 +23,7 @@ specification for those releases; only the release each requirement targets chan
 | R-72 Shortcuts & help, with key hints on pages steered by keyboard | **0.3.0** | `[~]` built; covered by the UI suite |
 | R-73 Chart axes on Screen time and Focus | **0.3.0** | `[~]` built; axis maths unit-tested, rendering covered by the UI suite |
 | R-74 More navigation arrangements (Taskbar ends, Sidebar) and compact navigation only with the taskbar mirror | **0.3.0** | `[~]` built; covered by the UI suite |
-| R-75 Apple Glass that bends light: physically-based refraction, dispersion and a lit rim, with a Light bending setting | **0.3.0** | `[~]` built; physics unit-tested, and the UI suite proves the filter moves pixels at the panel edge and that other materials run none; needs the owner's eyes and GPU on the native build |
+| R-75 Light bending: physically-based refraction and dispersion behind panel edges, as a setting for any material (an Apple Glass preset was built on it and removed) | **0.3.0** | `[~]` built; physics unit-tested, and the UI suite proves the filter moves pixels at the panel edge and that other materials run none; needs the owner's eyes and GPU on the native build |
 | R-55 Completion feedback and local session history | 0.3.x | `[ ]` not started; ships as a follow-up once 0.3.0 is accepted |
 | R-76–R-83 Live wallpapers: GIF, video and sandboxed HTML/JS backgrounds, reading Lively packages | 0.4.0 | `[ ]` scoped in [V0_4_WORKORDER.md](V0_4_WORKORDER.md); decided 4 Nov 2026 |
 | R-56 Four-edge taskbar placement with alignment | **0.3.0** | `[~]` built (bottom, top, left, right; start, centre, end); covered by the UI suite; needs the owner's look on the native build |
@@ -38,7 +38,7 @@ specification for those releases; only the release each requirement targets chan
 checklist. The manifests are already 0.3.0 "Crown"; the release is tagged and published only when the owner says so.
 
 **What changes for the plan below:** M0, M1 and the Settings/navigation parts of M3 are the 0.3.0 work. M2 splits (the capsule is in,
-notifications and history are 0.3.x); 0.4.0 is live wallpapers (its own work order); the placement and customiser parts of M3 and all of M4
+notifications and history are 0.3.x); 0.4.0 is live wallpapers (its own work order); taskbar placement (M3) is built in 0.3.0, while the customiser and all of M4
 are 0.5.0; M5 is 0.6.0; M6 applies to each release. The exclusions in §12 are unchanged.
 
 ## 1. Outcome
@@ -51,17 +51,18 @@ The update remains local-first. The core has no network dependency, telemetry or
 may make direct requests only after explicit user consent; the offline experience must remain complete when it is disabled. Opaline
 continues to read Desktop files without moving them. Pane contents remain manually ordered and do not gain internal sorting.
 
-## 2. Current baseline
+## 2. Baseline (as 0.3.0 now stands)
 
 - Focus now has intention, explicit timer states, finish/skip semantics, duration presets, summaries, a compact running capsule, Zen
   reminders and an optional idle screen saver. State survives hiding and process restarts through local storage.
 - The Focus controller, pure timer transitions, ambient modes and CSS now live in a feature folder; completion notifications and
   bounded clearable history remain unimplemented.
-- The taskbar mirror is fixed to the bottom and its preview geometry assumes a horizontal bottom edge.
-- Main destination shortcuts can use Split Header, Navigation Taskbar or Dropdown Tray arrangements, with per-destination pinning and
-  live Settings previews. This does not yet move the Windows-app mirror to other edges.
-- Layout settings expose app-area width, icon size and taskbar icon size, but there is no visual customisation workspace, panel-height
-  control or direct manipulation.
+- The taskbar mirror docks to the bottom, top, left or right edge at the start, centre or end of it (R-56); previews, magnification, scrolling and the
+  page's clearance follow the edge.
+- Main destination shortcuts can use Split Header, Navigation Taskbar, Dropdown Tray, Taskbar Ends or Sidebar arrangements, with per-destination pinning and
+  live Settings previews.
+- Layout settings expose app-area width, icon size, taskbar icon size, edge and alignment, but there is no visual customisation workspace, panel-height
+  control or direct manipulation (0.5.0).
 - Warm opens reuse the live DOM and an in-memory backdrop. A small seven-day frontend icon cache stores at most 96 data URLs under a
   two-megabyte limit. That helps some restarts, but unchanged items still require individual IPC/cache lookups, cache misses return to
   the serial Windows shell worker, and the Desktop/app manifests are rescanned.
@@ -95,7 +96,7 @@ continues to read Desktop files without moving them. Pane contents remain manual
 | R-72 | Make every shortcut and gesture discoverable | P0 | Settings has a Shortcuts & help section opened by F1 or ?; keyboard-steered pages show arrow, Enter and Tab hints |
 | R-73 | Make the charts readable | P0 | A labelled value axis with round steps, faint rules, dated and weekday-labelled days, today marked |
 | R-74 | Offer taskbar-like and sidebar navigation without stranding the controls | P0 | Taskbar ends and Sidebar (left or right) arrangements with live previews; compact navigation applies only while the taskbar mirror is on |
-| R-75 | Make Apple Glass bend light | P0 | The Apple Glass preset refracts the desktop at panel edges (not only blurs it), with a lit rim; Light bending sets the amount for any material and 0% runs no filter; unsupported engines fall back to frost |
+| R-75 | Let glass bend light | P0 | A Light bending setting makes panels refract the desktop at their edges (not only blur it); it applies to any material, 0% (the default) runs no filter, and unsupported engines fall back to frost. A saved Apple Glass preset migrates to a custom material |
 | R-84 | Keep Settings small, organised and honest | P0 | Settings opens as a panel with a corner button that expands it; six sections grouped by headings; Cancel and Done grey out when nothing is staged |
 | R-85 | Make page changes gentle | P0 | Pages, Home screens and Settings sections ease in; a Behaviour toggle turns it off; reduced motion and Animations off also disable it |
 | R-69 | Follow standard hover-intent rules for popups | P0 | A popup stays open while the pointer travels toward it on a diagonal path; once one popup is open its neighbours open at once; the tray opens on rest, closes on leaving, pins on click and dismisses on an outside press or Escape |
@@ -142,7 +143,7 @@ what happens next; the timer must not auto-start the next phase unless a later e
 
 ### 5.1 Customise screen
 
-Add a dedicated **Customise layout** experience launched from Settings → Home layout. Settings edits remain staged; “Done”
+Add a dedicated **Customise layout** experience launched from Settings → Home. Settings edits remain staged; “Done”
 ends the visual editing session rather than committing a separate draft.
 
 The screen contains a safe synthetic preview, not a capture of personal Desktop contents. It provides:
@@ -160,6 +161,10 @@ The first release keeps one global layout. Per-monitor profiles and arbitrary fr
 real need; responsive constraints are more predictable than saving coordinates that can become off-screen.
 
 ### 5.2 Taskbar geometry
+
+**Built in 0.3.0 (R-56):** every point below except the miniature monitor previews. The settings are `railEdge` and `railAlign` (not `railAlignment`),
+chosen with two segmented controls in Settings → Navigation & taskbar; `taskbar.css` handles the geometry through `data-rail-edge` and `data-rail-align`. The
+miniature position previews stay in the 0.5.0 customiser.
 
 Add `railEdge` (`bottom`, `top`, `left`, `right`) and `railAlignment` (`start`, `center`, `end`) to normalised settings. The taskbar and
 Home button remain one unit. Changing edge must update:
@@ -326,6 +331,9 @@ set the tightest honest budget. Do not delay the first frame to create a cosmeti
   exporting cached article bodies. Feed refresh metadata contains no browsing telemetry.
 - Cache schemas are disposable and separate from user data schemas. A cache migration failure clears the cache, never user data.
 - No pane, workspace, screen-time, hotkey or manual-order migration is required for taskbar positioning.
+- 0.3.0 does migrate two things at start-up: screen-time history is re-keyed by app identity and renamed (so `WhatsApp.Root` and `ApplicationFrameHost` entries merge into the
+  real apps), and the two empty placeholder screens older versions seeded ("Screen 2" and "Screen 3", nothing in them) are dropped when workspaces load. A screen with a name of
+  your own or any content is kept.
 
 ## 10. Delivery sequence
 
@@ -336,9 +344,12 @@ set the tightest honest budget. Do not delay the first frame to create a cosmeti
 - `[~]` R-70: `identity.rs` resolves executables to a stable key, a Start-menu or file-details name and a readable icon source; screen-time history is merged and renamed at start-up. Verified in unit tests; the real apps are checked in the native build.
 - `[~]` R-71, R-72, R-73, R-74: Android-style Home screens, the Shortcuts & help section and key hints, chart axes, and the Taskbar ends and Sidebar arrangements are built and covered by the UI suite and unit tests. The single-screen rubber band was removed because a swipe always has the new-screen page to go to.
 - Fixed in passing: the launcher stage was scrollable because of its oversize blurred backdrop, so a focus could shift the whole UI by a few pixels; it now clips.
-- Budget: the raw code budget is 190 KiB (was 180) and gzip stays at 60 KiB; the build measures 182.8 KiB raw / 52.2 KiB gzip.
+- `[~]` R-56, R-84, R-85 (later the same day): the taskbar docks to any edge with alignment; Settings is a panel with an expand button, six sections grouped by headings and Cancel/Done that grey out when nothing is staged; pages, Home screens and Settings sections ease in behind a Behaviour toggle; Taskbar ends moved into the taskbar's own bar; glass lost its white-to-colour sheen gradients; a fresh profile starts with Desktop and the plus page. The UI suite covers each, and each new check was shown to fail without its change.
+- Budget: the raw code budget is now 220 KiB and gzip 62 KiB (raised from 190 / 60 as gestures, presets, light bending, taskbar placement and the Settings panel landed); the build measures about 213.9 KiB raw / 59.8 KiB gzip. Live wallpapers (0.4.0) will have to load lazily.
 
 ### Earlier implementation evidence — 2026-11-02
+
+_A dated record; the 4 November entries above supersede it (four-edge placement has since been built, and the Apple Glass preset was removed on 5 November, leaving five)._
 
 - `[~]` M0: added dependency-free `npm run size` budgets; measured 162.0 KiB raw / 46.3 KiB gzip frontend, a 4.91 MiB release executable, 1.61 MiB NSIS and 2.38 MiB MSI.
 - `[~]` M1: redesigned Focus, corrected finish/skip accounting, added intention/durations/keyboard state and split timer/ambient/controller modules. Unit and production builds pass; final owner/native acceptance remains open.
@@ -369,7 +380,7 @@ set the tightest honest budget. Do not delay the first frame to create a cosmeti
 ### M3 — Customise and place
 
 - Build the live customisation screen with panel width/height handles and presets.
-- Implement all four taskbar edges and three alignments.
+- Implement all four taskbar edges and three alignments (built in 0.3.0).
 - Add Windows-style miniature position previews for the taskbar and Activity Center, rendered in Opaline's own visual system.
 - Verify preview cards, magnification, scrolling, Home and compact navigation at each edge.
 
@@ -394,9 +405,26 @@ set the tightest honest budget. Do not delay the first frame to create a cosmeti
 - Run visual, keyboard, reduced-motion, high-contrast, scaling and multi-monitor passes.
 - Run ten full restart cycles and ten open/hide cycles with no missing unchanged icons.
 - Update synthetic screenshots, public documentation, changelog and release notes.
-- Only then bump all synced manifests from 0.2.2 to 0.3.0, choose the 0.3 codename, tag and publish when explicitly authorised.
+- The synced manifests are already bumped to 0.3.0 "Crown" (4 November 2026); tag and publish only when explicitly authorised.
 
 ## 11. Verification matrix
+
+### 0.3.0 native acceptance (the owner's pass)
+
+The release build launches and reports 0.3.0, and the browser suite is green, but these need a real trackpad, WebView2 and the owner's apps:
+
+1. **Gestures (W-51):** several two-finger swipes in a row in the same direction, then pinch in and out; the preview follows the fingers, nothing clips, and no gesture is ignored or laggy.
+2. **Taskbar placement:** each edge (bottom, top, left, right) and alignment; previews open toward the screen, magnification and scrolling feel right, the page keeps clear, and a side taskbar is centred.
+3. **Navigation arrangements:** Split, Taskbar, Tray, Taskbar ends and Sidebar (left and right), with compact mode where it applies.
+4. **Settings panel:** opens at panel size, expands and collapses, six sections, staged Done and Cancel that grey out when clean, Reset, and a preview that matches the draft.
+5. **Materials:** all five presets, and Light bending at 100% on the target Intel GPU (smoothness while scrolling and switching pages); Light bending at 0% for the cost comparison.
+6. **Home screens:** a fresh profile shows Desktop and the plus page; add, rename and remove screens; an older profile loses only its empty placeholder screens.
+7. **Screen time and the taskbar:** WhatsApp, Claude, ChatGPT, Gemini and Firefox are named and iconed as Windows shows them, with no `ApplicationFrameHost` or `WhatsApp.Root` entries, and old history merged once.
+8. **Motion:** fade between pages and its toggle, and Animations off or reduced motion removing it.
+9. **Help and hover:** F1 and ? open Shortcuts & help and the list matches behaviour; menus, the tray and taskbar previews stay open while the pointer travels diagonally toward them.
+10. **Everything in WORKORDER §9** that 0.2.1 left open (installer, tray, single instance, multi-monitor, login start).
+
+The matrix below covers the whole plan, including releases after 0.3.0.
 
 - **Automated frontend:** timer transitions, finish/skip accounting, local history bounds, settings normalisation, rail-edge geometry,
   panel constraints, cached-bootstrap reconciliation and keyboard behaviour.

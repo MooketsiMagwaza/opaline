@@ -15,7 +15,7 @@ Today the background is one still image (the captured Desktop, the bundled Opali
 - an HTML page with JavaScript (canvas, WebGL, CSS animation, anything a web page can draw).
 
 The panels, the glass materials and the refraction lens sit on top of it exactly as they do on a still image, so a live background is
-bent and blurred by Apple Glass like any other backdrop. Porting a GIF or video wallpaper then needs nothing more than dropping the file in.
+bent and blurred by the glass (with Light bending on) like any other backdrop. Porting a GIF or video wallpaper then needs nothing more than dropping the file in.
 
 ## 2. What "use all the Lively wallpapers" can and cannot mean
 
@@ -84,7 +84,7 @@ original files plus a record of where they came from.
 - A frame-rate cap (default 30) and a pause on blur; a "calm" mode that shows the still thumbnail only.
 - The refraction lens recomputes its backdrop every frame a live wallpaper changes; measure it, and offer to hold the lens off over a
   moving background if it costs too much.
-- The frontend size budget (210 KiB raw, 60 KiB gzip, 58.4 used at 0.3.0) must be reconsidered: the engine ships as a separate lazy
+- The frontend size budget (220 KiB raw, 62 KiB gzip; about 213.9 KiB raw and 59.8 KiB gzip used at 0.3.0) must be reconsidered: the engine ships as a separate lazy
   chunk, and `npm run size` needs to account for it.
 
 ## 5. Data and migration

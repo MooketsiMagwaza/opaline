@@ -16,6 +16,8 @@ The owner then tested the native build and sent a second round. Screen time name
 
 A final list of complaints followed. Settings was the entire window with every section a page of its own, so it became a panel with an expand button, six sections grouped by headings and Cancel/Done that grey out when nothing is staged; page changes ease in behind a toggle; the "Desktop" background became "Current screen"; a fresh profile starts with one screen and the plus page; the taskbar can dock to any edge (the previous plan had deferred it); Taskbar ends moved into the taskbar's own bar; and the white-to-colour sheen gradients were removed from glass. The manifests were bumped to 0.3.0 "Crown" locally. Size budgets are now 220 KiB raw and 62 KiB gzip; live wallpapers will have to lazy-load.
 
+The owner then asked for every Markdown file to be brought up to date. That pass rewrote the stale parts of the README, the work orders, the architecture, testing and release pages, the source READMEs, the security policy and the agent guide for 0.3.0; marked the 0.2.x session work order as a historical record; replaced the settings inventory and architecture diagram in the main work order; added a native acceptance list for the owner; refreshed the public screenshots from the demo-data suite; and added `npm run docs:check`, which fails when a documented file, image, test count, size budget or version no longer matches the code. The owner then asked for the Codex prompt and the Apple Glass preset to go. The preset, its material profile and its CSS were removed; the Light bending setting stays as an option for any material, and a saved Apple Glass choice loads as a custom material with the same colours and bending.
+
 ## 2026-11-02 · Settings and input quality pass
 
 The owner asked for the 0.3 bootstrap to stop treating one full Home simulation as the answer to every Settings task. Settings now takes
@@ -267,7 +269,7 @@ script (evaluate, screenshot, key events), which also shows console errors.
 context menu and rail all render correctly. The hotkey toggle, close paths (Esc / click-off / focus loss), drag and drop,
 persistence, rail interactions, `cargo fmt`/`clippy` and CI have not been verified. The dev dependency optimisation and the rail's
 thumbnail pre-loading were added after the last visual check. Everything outstanding, in order, is in
-[WORKORDER.md](WORKORDER.md) §0 and §12; a ready-made prompt for continuing in Codex is in [docs/CODEX_PROMPT.md](docs/CODEX_PROMPT.md).
+[WORKORDER.md](WORKORDER.md) §0 and §12. (A ready-made prompt for continuing in Codex lived in `docs/CODEX_PROMPT.md` until the owner had it removed on 5 November 2026; AGENTS.md is the entry point for any coding agent.)
 
 ## 2026-10-25 · Beta 0 — WinUI 3 (failed, superseded)
 

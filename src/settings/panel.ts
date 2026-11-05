@@ -474,7 +474,7 @@ function navigationStyleControl(): HTMLElement {
     { id: "split", name: "Split header", description: "Apps left, Focus and Settings right." },
     { id: "taskbar", name: "Navigation taskbar", description: "One compact dock beside Home." },
     { id: "tray", name: "Dropdown tray", description: "Minimise destinations into one menu." },
-    { id: "ends", name: "Taskbar ends", description: "Destinations at both ends of the bottom bar." },
+    { id: "ends", name: "Taskbar ends", description: "Destinations either side of Home and your apps, in the taskbar." },
     { id: "sidebar", name: "Sidebar", description: "Every destination in one bar down the left or right edge." },
   ] as const;
   const buttons = modes.map(mode => {

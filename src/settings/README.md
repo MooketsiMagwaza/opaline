@@ -54,7 +54,7 @@ Six sections, with headings inside them rather than more pages (`{ kind: "headin
   The previews, including each arrangement card, show the staged opening page (All apps is built from the installed-app list) and
   compact state. A control that needs another setting (compact navigation and the taskbar options need the taskbar) is disabled with the
   reason beside it (`requires`); a control that only applies to one choice (`onlyWhen`) is hidden otherwise.
-- **Behaviour:** hotkey, Windows key, launch at login, closing, animations and Fade between pages, then Screen time retention.
+- **Behaviour:** hotkey, Windows key, launch at login, closing, animations and Fade between pages, then the Screen time controls (pause and clear).
 - **Shortcuts & help:** every keyboard shortcut and gesture, grouped.
 - **About:** version, links and reset.
 

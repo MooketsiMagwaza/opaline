@@ -1,7 +1,7 @@
 import { api } from "../core/api";
 
 export type GlassStyle = "solid" | "liquid" | "frost" | "clear" | "custom";
-export type MaterialProfile = "opaline" | "mica" | "one-ui" | "apple-glass" | "aero" | "night" | "custom";
+export type MaterialProfile = "opaline" | "mica" | "one-ui" | "aero" | "night" | "custom";
 export type NavigationMode = "split" | "taskbar" | "tray" | "ends" | "sidebar";
 export type NavigationSide = "left" | "right";
 export type RailEdge = "bottom" | "top" | "left" | "right";
@@ -156,6 +156,8 @@ export function normalizeSettings(value: unknown): Settings {
       if (typeof saved[key] === typeof DEFAULTS[key]) (merged as Record<string, unknown>)[key] = saved[key];
     }
     merged.glassStyle = normalizeGlassStyle(saved.glassStyle);
+    // The Apple Glass preset was removed; someone who had chosen it keeps their colours, opacity and Light bending as a custom material.
+    if (saved.materialProfile === "apple-glass") merged.materialProfile = "custom";
     merged.clearCanvas = false;
     for (const key of ["tintColor", "customSurfaceColor"] as const) {
       if (!/^#[0-9a-f]{6}$/i.test(merged[key])) merged[key] = DEFAULTS[key];
@@ -166,7 +168,7 @@ export function normalizeSettings(value: unknown): Settings {
       const [min, max] = ranges[key];
       merged[key] = Number.isFinite(merged[key]) ? Math.min(max, Math.max(min, merged[key])) : DEFAULTS[key];
     }
-    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], navigationMode: ["split", "taskbar", "tray", "ends", "sidebar"], navigationSide: ["left", "right"], railEdge: ["bottom", "top", "left", "right"], railAlign: ["start", "center", "end"], defaultPage: ["home", "all-apps"], backgroundMode: ["desktop", "aero", "custom"], materialProfile: ["opaline", "mica", "one-ui", "apple-glass", "aero", "night", "custom"] })) {
+    for (const [key, values] of Object.entries({ iconSize: ["small", "medium", "large"], sortBy: ["name", "frequent"], navigationMode: ["split", "taskbar", "tray", "ends", "sidebar"], navigationSide: ["left", "right"], railEdge: ["bottom", "top", "left", "right"], railAlign: ["start", "center", "end"], defaultPage: ["home", "all-apps"], backgroundMode: ["desktop", "aero", "custom"], materialProfile: ["opaline", "mica", "one-ui", "aero", "night", "custom"] })) {
       if (!values.includes(String(merged[key as keyof Settings]))) (merged as Record<string, unknown>)[key] = DEFAULTS[key as keyof Settings];
     }
     return merged;

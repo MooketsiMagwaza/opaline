@@ -12,7 +12,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Added taskbar placement: the taskbar (Home, the app mirror and the navigation group) docks to the bottom, top, left or right edge and sits at the start, centre or end of it. Window previews, magnification, scrolling, the Taskbar ends and Sidebar arrangements and the page layout follow the edge.
 - Added a Fade between pages setting: pages, Home screens and Settings sections ease in instead of appearing at once. It follows Animations and the system's reduced-motion preference.
 - Rebuilt the Focus workflow around a clear intention, explicit ready/running/paused states, 25/50/custom durations, finish-versus-skip semantics, keyboard control, session summaries and a compact running-timer capsule.
-- Added six Opaline-native visual starting points—Opaline Original, Windows Mica, One UI Glass, Apple Glass, Frutiger Aero and Deep Night—plus named user visual/layout presets. User presets capture appearance, panel and icon sizing, rail/bar choices and motion settings, and support validated local JSON import/export.
+- Added five Opaline-native visual starting points—Opaline Original, Windows Mica, One UI Glass, Frutiger Aero and Deep Night—plus named user visual/layout presets. User presets capture appearance, panel and icon sizing, rail/bar choices and motion settings, and support validated local JSON import/export.
 - Added Split Header, Navigation Taskbar and Dropdown Tray arrangements with live previews. Individual destinations can stay pinned or move into the overflow tray.
 - Added staged Settings editing with a persistent bottom Done/Cancel bar. Navigation and appearance previews reuse the current in-memory backdrop and actual panel proportions without persisting the image.
 - Added task-specific Settings previews: Home simulations only where Home is being changed, plus a looping pane-origin motion preview for Panes.
@@ -20,7 +20,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Added a Navigation setting that lets a normal Opaline open start on Home or All apps; choosing All apps focuses Search on open.
 - Added Current screen (a capture of what is on screen), Opaline Aero and locally optimised custom Opaline backgrounds. Frutiger Aero includes its own original landscape.
 - Added hover-intent behaviour shared by submenus, the taskbar preview, the pane peek and the navigation tray: popups stay open while the pointer travels toward them along a diagonal path (a safe-triangle and distance test), and once one popup is open its neighbours open immediately instead of each waiting out the hover delay.
-- Made Apple Glass bend light instead of only frosting it. Its panels and controls now refract the desktop at their edges with a physically-based model (a convex glass edge and Snell's law), disperse the colours slightly like real glass, and carry a lit rim, over a thinner fill and lighter blur so the bending shows. A new Light bending setting (Appearance) sets the amount for any material; 0% removes the effect. It needs the Chromium-based WebView2 and costs GPU time. The previously unused in-repo lens was rebuilt rather than adding a third-party package: the npm "liquid glass" packages wrap this same SVG technique and are new and unvetted, and Opaline keeps its runtime dependencies minimal.
+- Added a Light bending setting (Appearance, off by default) that makes panels and controls refract the desktop at their edges, instead of only frosting it, with a physically-based model (a convex glass edge and Snell's law) that disperses the colours slightly like real glass. It applies to any material; 0% removes the effect. An Apple Glass preset built on it was tried and removed before release; a saved Apple Glass choice becomes a custom material with the same colours and bending. It needs the Chromium-based WebView2 and costs GPU time. The previously unused in-repo lens was rebuilt rather than adding a third-party package: the npm "liquid glass" packages wrap this same SVG technique and are new and unvetted, and Opaline keeps its runtime dependencies minimal.
 - Added Android-style Home screens: Home ends with an empty page showing a large plus that creates the next screen (Enter works too), the pager's last dot is a plus, an empty screen has a plus that opens the app picker, and every custom screen has a Remove screen button that asks first when it holds items.
 - Added a Shortcuts & help section to Settings listing every keyboard shortcut and gesture; F1, or ? when nothing is being typed, opens it. Pages steered with the keyboard also show small arrow, Enter and Tab hints in the panel corner.
 - Added value axes, faint rules and dated, weekday-labelled days to the Screen time and Focus charts, and marked today.
@@ -51,11 +51,11 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ### Fixed
 - Replaced ghosted generic preset thumbnails and dot-box diagrams with a shared miniature of the actual launcher layout using current memory-only backdrop, app names, loaded app/taskbar icons and real configuration state.
-- Expanded the six built-in presets into distinct complete material profiles. Windows Mica now uses a flatter, mostly opaque WinUI 3-inspired treatment instead of sharing Opaline Frost's material.
+- Expanded the built-in presets into distinct complete material profiles. Windows Mica now uses a flatter, mostly opaque WinUI 3-inspired treatment instead of sharing Opaline Frost's material.
 - Changed precision-touchpad recognition to commit once, consume the complete inertial tail and re-arm after a bounded quiet period. Page changes no longer use View Transitions (which could stall in WebView2 until the pointer moved); physical owner-device acceptance remains open.
 - Screen time now shows apps by the name people know instead of the file name, and no longer lists Store apps as "WhatsApp.Root" or "ApplicationFrameHost". Packaged apps use their Start-menu name and icon, one entry survives package updates, other programs use the name in their file details, and Store apps shown through ApplicationFrameHost are charged to the app inside the frame. Existing history is merged and renamed when Opaline starts; time that was charged to ApplicationFrameHost belongs to no nameable app and is dropped. The taskbar uses the same names.
 - Removing a Home screen in Settings no longer switches the launcher to Desktop behind the Settings page.
-- Made the pager dots, key hints, chart rules and bars, usage meter, help keys and the swipe and pinch cue follow the theme, so they stay readable on light presets such as Apple Glass; the cue is now a real glass panel and takes every preset’s material.
+- Made the pager dots, key hints, chart rules and bars, usage meter, help keys and the swipe and pinch cue follow the theme, so they stay readable on light materials; the cue is now a real glass panel and takes every preset’s material.
 - Fixed the launcher stage being scrollable: its oversize blurred backdrop let a focus or scroll-into-view slide the whole UI sideways by a few pixels. The stage now clips instead.
 - Inlined the already-loaded stylesheet into isolated Settings simulations, eliminating repeated preview stylesheet requests and transient black frames.
 - Fixed Space on a focused Focus button (Reset, Finish, duration presets, phase tabs) toggling the timer instead of activating that button.
@@ -68,6 +68,8 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - Removed the empty glass capsule left in the header when every destination in a split-navigation group is hidden.
 
 ## [0.2.2] — 2026-11-01 "Borosilicate"
+
+_Never tagged or published: these changes ship in 0.3.0._
 
 ### Added
 - Pane members can be reordered in place and keep their order after the pane closes or Opaline restarts.

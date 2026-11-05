@@ -1,6 +1,6 @@
 # Releasing Opaline
 
-The latest tagged release is [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1). Its known trackpad gesture issue is recorded in [WORKORDER §13](../WORKORDER.md#13-known-issues).
+The latest tagged release is [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1). Its known trackpad gesture issue is recorded in [WORKORDER §13](../WORKORDER.md#13-known-issues). `v0.3.0` "Crown" is built and version-bumped locally; its manifests already carry 0.3.0, and it is tagged and published only when the owner says so, after the native acceptance list in [§11 of the 0.3.0 work order](V0_3_WORKORDER.md#11-verification-matrix).
 
 Tagged releases are built on GitHub Actions and publish three Windows downloads: an NSIS installer, an MSI installer and a portable
 ZIP containing `opaline.exe`. A `SHA256SUMS.txt` file is published beside them.
@@ -8,8 +8,8 @@ ZIP containing `opaline.exe`. A `SHA256SUMS.txt` file is published beside them.
 ## Before tagging
 
 1. Complete the manual acceptance checklist in [WORKORDER.md](../WORKORDER.md#9-acceptance-checklist-run-before-every-release).
-2. Run `npm ci`, `npm test`, `npm run build`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
-   `cargo test --locked` and `cargo check --locked`.
+2. Run `npm ci`, `npm test`, `npm run build`, `npm run size`, `npm run docs:check`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
+   `cargo test --locked` and `cargo check --locked`, then the browser UI suite ([TESTING.md](TESTING.md) §5) and check that `git status` shows only demo-data changes in `docs/images/`.
 3. Update `CHANGELOG.md` (move `[Unreleased]` under the new version and remove any "Planning" notes for work that did not ship), then set
    the same version in `package.json`, `package-lock.json` (root `version` and `packages[""].version`), `src-tauri/Cargo.toml`,
    `src-tauri/Cargo.lock` (the `opaline` package; CI uses `--locked`, so a stale lock fails the build) and `src-tauri/tauri.conf.json`.
