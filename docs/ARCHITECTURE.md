@@ -73,6 +73,8 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 
 ## Performance rules
 
+- A login start can run before Explorer's taskbar exists, so the tray icon is retried instead of being fatal, and `startup_log.rs` records every start, tray retry and panic in `startup.log` beside the data files.
+- After the overlay has stayed hidden for 20 seconds, WebView2 is asked for a low memory target (about 430 MB to about 145 MB of working set across Opaline's processes); the request is lifted at the start of the next open so it never sits on the visible-frame path. Trimming immediately after every hide cost about 90 ms per open and was dropped.
 - Nothing except fit/capture/present belongs on the visible-frame path.
 - Shell icon extraction remains serialized on one STA worker.
 - Glass is applied to large floating surfaces, never as one backdrop filter per tile.

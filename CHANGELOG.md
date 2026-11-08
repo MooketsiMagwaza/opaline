@@ -6,6 +6,15 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+### Fixed
+- Start at login now works. Opaline's setup treated a tray icon that could not be added as fatal, and a login start can run before Explorer's taskbar exists, so the app quit silently every time. The tray is retried for about two minutes instead.
+
+### Added
+- A startup log (`startup.log` in the app data folder) records each start, any tray retry and any panic, so a login start that fails leaves evidence. It stays on the machine and is cut back after 64 KiB.
+
+### Changed
+- After 20 seconds hidden, Opaline asks WebView2 to keep its memory low, which takes the working set of its processes from about 430 MB to about 145 MB; the request is lifted when an open begins.
+
 ## [0.3.0] — 2026-11-05 "Crown"
 
 ### Added

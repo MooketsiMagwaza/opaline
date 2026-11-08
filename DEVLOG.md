@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-08 · Why start at login never worked, and what a hidden WebView2 costs
+
+The owner pointed out that start at login had never worked. The Run entry and its approval flag were correct and a manual `--hidden` start stayed up, so the difference was the moment of launch: setup treated `build_tray` failing as fatal, and a Run-key start can beat Explorer's taskbar, so the process panicked in a release build with no console and no trace. The tray is now retried for about two minutes, and `startup_log.rs` adds a panic hook and a small `startup.log` beside the data files so the next failure can be read instead of guessed. It has not yet been confirmed at a real sign-in.
+
+The same session measured what Opaline holds while hidden, which the work order had listed as unmeasured: host plus six WebView2 processes, about 200 MB private memory and about 430 MB working set against a 120 MB budget. WebView2's low memory target takes the working set to about 145 MB without changing private memory. Applied at every hide it made each open about 90 ms slower (about 140 ms against about 50 ms), so it was reworked to apply after 20 s hidden and to lift at the start of an open. The owner also asked for live wallpapers to be parked in favour of the productivity work, and noted that a video-only wallpaper would be far simpler than the HTML/JavaScript plan.
+
 ## 2026-11-05 · 0.3.0 "Crown" installed and released
 
 The owner asked for the build to be installed properly, to start at login, and for the work to be merged to `main` and released. The NSIS and MSI installers were built locally with `npm run tauri build -- --bundles nsis,msi` (1.77 and 2.54 MiB). The machine already had the 0.2.1 MSI in Program Files, a stale per-user 0.2.x copy installed by an earlier agent session inside the Codex app's package folder (with the Start Menu shortcut pointing at it), and a Run entry that still pointed at a debug build. The MSI upgrade needs elevation: running it from the user's AppData folder failed with 1619 because the elevated installer could not open the package there, so it was copied to a shared folder first and installed from there. The stale copy was removed with its own uninstaller, and the `Opaline` Run entry was pointed at the installed exe with `--hidden`, the same value the app's own Launch at login switch writes (the path is quoted here because it contains a space).
