@@ -86,6 +86,8 @@ await page.route("http://opaline.localhost/**", async (route) => {
     if (request.startsWith("icon:")) dataUrl = await page.evaluate((path) => window.__demoIcon(path), request.slice(5));
     else if (request.startsWith("thumb:")) { await wait(180); dataUrl = await page.evaluate(() => window.__demoThumbnail()); }
     if (!dataUrl) { await route.fulfill({ status: 404 }); return; }
+    // The demo manifest points real app icons at files the dev server hosts; everything else is a generated data URL.
+    if (!dataUrl.startsWith("data:")) { await route.fulfill({ response: await route.fetch({ url: new URL(dataUrl, page.url()).href }) }); return; }
     const separator = dataUrl.indexOf(",");
     const contentType = dataUrl.slice(5, dataUrl.indexOf(";"));
     await route.fulfill({ status: 200, contentType, body: Buffer.from(dataUrl.slice(separator + 1), "base64") });
@@ -172,6 +174,10 @@ const shot = async (name) => {
 try {
   await page.goto(verifyUrl);
   await page.waitForSelector("#grid .tile"); await wait(1000);
+  // Icons are images from the `opaline` protocol: every one must have loaded, none may have fallen back to a letter.
+  await page.waitForFunction(() => document.querySelectorAll("#grid .ico img").length > 0 && [...document.querySelectorAll("#grid .ico img")].every(image => image.complete));
+  assert.equal(await page.evaluate(() => [...document.querySelectorAll("#grid .ico img")].filter(image => image.naturalWidth === 0).length), 0, "an icon image failed to load");
+  assert.equal(await page.locator("#grid .ico .fallback").count(), 0, "demo icons must load, not fall back to letters");
   assert(await visible("#apps-surface"));
   assert.equal(await page.evaluate(() => document.activeElement?.id), "shell");
   await page.keyboard.press("s");
