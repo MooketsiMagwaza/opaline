@@ -4,6 +4,7 @@ mod desktop;
 mod icons;
 mod identity;
 mod idle;
+mod media;
 mod picker;
 mod start_menu;
 mod startup_log;
@@ -794,6 +795,11 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        // Icons and window previews are served as plain images instead of base64 text (see media.rs).
+        .register_asynchronous_uri_scheme_protocol(media::SCHEME, |_context, request, responder| {
+            let path = request.uri().path().to_string();
+            tauri::async_runtime::spawn_blocking(move || responder.respond(media::respond(&path)));
+        })
         // A second launch just opens the running instance's overlay.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             begin_show(app);

@@ -2473,6 +2473,7 @@ version = "0.3.0"
 dependencies = [
  "base64 0.23.1",
  "image",
+ "percent-encoding",
  "png",
  "serde",
  "serde_json",

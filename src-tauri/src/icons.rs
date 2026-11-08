@@ -29,6 +29,16 @@ fn bgra_to_rgba(pixels: &mut [u8]) {
     }
 }
 
+/// The item's icon as PNG bytes, for the `opaline` image protocol.
+pub fn icon_png(path: &str) -> Option<Vec<u8>> {
+    imp::icon_png(path, ICON_SIZE)
+}
+
+/// A window's own icon as PNG bytes.
+pub fn window_icon_png(hwnd: i64) -> Option<Vec<u8>> {
+    imp::window_icon_png(hwnd)
+}
+
 /// Returns the item's icon as a `data:image/png;base64,...` URL.
 pub fn icon_data_url(path: &str) -> Option<String> {
     let png = imp::icon_png(path, ICON_SIZE)?;
