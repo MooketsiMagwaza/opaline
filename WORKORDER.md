@@ -329,9 +329,9 @@ Rules live in `src/grid/organize-rules.ts` as plain data. Anything that matches 
 
 ## 8. Rust ↔ UI contract
 
-Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `get_window_icon` · `launch(path)` · `reveal(path)` · `rail_items` · `thumbnail(hwnd)` ·
+Commands: `ready` · `present` · `list_items` · `launch(path)` · `reveal(path)` · `rail_items` ·
 `focus_window(hwnd)` · `hide_launcher` · `quit` · `status` · `set_hotkey(combo)` · `set_behavior(closeOnBlur)` · `set_backdrop_capture(enabled)` · `load_store(name)` ·
-`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `pick_workspace_item` · `folder_preview` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `set_screen_saver` · `start_menu_status` · `set_start_menu(enabled)`. Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
+`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `pick_workspace_item` · `folder_preview` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `set_screen_saver` · `start_menu_status` · `set_start_menu(enabled)`. Icons, window icons and window previews are not commands: they are images from the `opaline` URI scheme (`icon:<path>`, `winicon:<hwnd>`, `thumb:<hwnd>:<n>`, see `src-tauri/src/media.rs`). Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
 
 ## 9. Acceptance checklist (run before every release)
 

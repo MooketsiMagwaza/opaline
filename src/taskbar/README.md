@@ -15,7 +15,7 @@ sequenceDiagram
   Rail->>API: rail()
   API-->>Rail: pinned/running items
   Rail->>UI: render only when signature changed
-  Rail->>API: thumbnail(hwnd) in background
+  Rail->>API: thumbnailUrl(hwnd), decoded in the background
   API-->>Cache: pixels + timestamp
   UI->>Rail: pointer enters app
   Rail->>Cache: cached thumbnail?
@@ -23,7 +23,7 @@ sequenceDiagram
   Rail->>API: refresh stale image asynchronously
 ```
 
-The thumbnail cache is bounded by live handles and a short TTL. Closing a window evicts its thumbnail and window-icon entries. Preview
+The thumbnail cache holds image URLs, bounded by live handles and a short TTL; each capture has its own URL (`opaline://thumb:<hwnd>:<n>`), decoded up front so a window that cannot be captured shows "Preview unavailable". Closing a window evicts its thumbnail entry. Preview
 geometry follows the taskbar's edge: the preview opens on the side of the icon that faces into the screen (above a bottom taskbar, below a top one, beside a side one)
 and is clamped on screen.
 
