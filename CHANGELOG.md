@@ -13,6 +13,7 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 - A startup log (`startup.log` in the app data folder) records each start, any tray retry and any panic, so a login start that fails leaves evidence. It stays on the machine and is cut back after 64 KiB.
 
 ### Changed
+- Icons and window previews are now served to the interface as plain images through an `opaline://` protocol instead of base64 text in command results. That drops about a third of their size on the wire, removes the 2 MB icon cache that was written to local storage and parsed at every start, and lets the browser decode and evict them. The browser UI suite has not yet been re-run against it and it needs a native check.
 - After 20 seconds hidden, Opaline asks WebView2 to keep its memory low, which takes the working set of its processes from about 430 MB to about 145 MB; the request is lifted when an open begins.
 
 ## [0.3.0] — 2026-11-05 "Crown"

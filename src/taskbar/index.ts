@@ -1,6 +1,6 @@
 import { api, type RailItem, type WindowInfo } from "../core/api";
 import { byId, clamp, el } from "../core/dom";
-import { iconElement, windowIconElement, forgetClosedWindowIcons } from "../core/icons";
+import { iconElement, windowIconElement } from "../core/icons";
 import { Closer, pointer, pointerIsMoving } from "../core/hover-intent";
 import { settings } from "../settings/store";
 import { toggleBar } from "../navigation/pages";
@@ -42,7 +42,6 @@ export async function refreshRail() {
   );
   items = next;
   const live = new Set(items.flatMap((item) => item.windows.map((window) => window.hwnd)));
-  forgetClosedWindowIcons(live);
   for (const hwnd of thumbnails.keys()) if (!live.has(hwnd)) thumbnails.delete(hwnd);
 
   // only touch the DOM when something changed, so a hover or preview isn't disturbed
@@ -124,15 +123,14 @@ async function thumbnail(hwnd: number): Promise<string | null> {
 
   const pending = pendingThumbnails.get(hwnd);
   if (pending) return pending;
-  const request = api.thumbnail(hwnd).then(async (url) => {
-    if (url) {
-      const image = new Image(); image.src = url;
-      await image.decode().catch(() => {});
-    }
+  // Decoding the image up front is the load: a 404 (a window that cannot be captured) rejects and becomes "no preview".
+  const capture = api.thumbnailUrl(hwnd);
+  const image = new Image(); image.src = capture;
+  const request = image.decode().then(() => capture, () => null).then((url) => {
     if (url || !cached) thumbnails.set(hwnd, { url, at: Date.now() });
     while (thumbnails.size > 32) thumbnails.delete(thumbnails.keys().next().value!);
     return url ?? cached?.url ?? null;
-  }).catch(() => cached?.url ?? null).finally(() => { pendingThumbnails.delete(hwnd); });
+  }).finally(() => { pendingThumbnails.delete(hwnd); });
   pendingThumbnails.set(hwnd, request);
   return request;
 }

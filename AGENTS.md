@@ -75,7 +75,7 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 ```
 src/            app/ (entry and shell styles) · core/ (shared helpers) · feature folders activity/ appearance/ focus/ grid/ navigation/ settings/ taskbar/,
                 each co-locating its logic, CSS and README (see src/README.md)
-src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs startup_log.rs
+src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs startup_log.rs media.rs
 tests/          Vitest unit tests for the frontend
 scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol) · verify-ui.mjs (browser UI suite on demo data)
                 · verify-native.mjs (checks against the running app) · measure-build.mjs (npm run size)

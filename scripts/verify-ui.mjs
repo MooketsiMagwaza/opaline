@@ -56,6 +56,8 @@ await page.addInitScript((manifest) => {
   for (const [key, value] of Object.entries(initial)) if (localStorage.getItem(`demo:${key}`) === null) localStorage.setItem(`demo:${key}`, JSON.stringify(value));
   window.__demoCalls = [];
   window.__demoFailSave = false;
+  window.__demoIcon = icon;
+  window.__demoThumbnail = () => data('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220"><rect width="360" height="220" fill="#202a3e"/><path d="M0 0h360v25H0z" fill="#3b4964"/><circle cx="13" cy="13" r="4" fill="#f59c9c"/><circle cx="27" cy="13" r="4" fill="#f1d08a"/><path d="M20 55h180M20 80h260M20 105h220M20 130h130" stroke="#98b9ed" stroke-width="8"/><path d="M20 160h290M20 185h250" stroke="#b4a1dd" stroke-width="8"/></svg>');
   window.__demoInvoke = async (command, args) => {
     window.__demoCalls.push(command);
     switch (command) {
@@ -64,12 +66,10 @@ await page.addInitScript((manifest) => {
       case "save_store": if (window.__demoFailSave) throw new Error("Demo disk full"); localStorage.setItem(`demo:${args.name}`, args.json); return;
       case "list_items": return items;
       case "list_apps": return items.filter(item=>!item.isFolder);
-      case "get_icon": return icon(args.path);
       case "workspace_item": return { name: "Example folder", path: args.path, isFolder: true };
       case "pick_workspace_item": return { name: args.kind === "folder" ? "Example folder" : "Example file", path: args.kind === "folder" ? "C:\\Example\\Project" : "C:\\Example\\Notes.txt", isFolder: args.kind === "folder" };
       case "folder_preview": return ["Overview.md", "Screenshots", "Notes", "Assets"].map((name, index) => ({ name, path: `preview:${index}`, isFolder: index > 0 }));
       case "rail_items": return [7, 0, 1, 5, 8].map((index, order) => ({ id: `app-${index}`, name: names[index], iconPath: items[index].path, launchPath: items[index].path, pinned: order < 4, windows: order < 3 ? [{ hwnd: order + 101, title: `${names[index]} — Example project`, minimized: false }] : [] }));
-      case "thumbnail": await new Promise((resolve) => setTimeout(resolve, 180)); return data('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220"><rect width="360" height="220" fill="#202a3e"/><path d="M0 0h360v25H0z" fill="#3b4964"/><circle cx="13" cy="13" r="4" fill="#f59c9c"/><circle cx="27" cy="13" r="4" fill="#f1d08a"/><path d="M20 55h180M20 80h260M20 105h220M20 130h130" stroke="#98b9ed" stroke-width="8"/><path d="M20 160h290M20 185h250" stroke="#b4a1dd" stroke-width="8"/></svg>');
       case "screen_time": return { enabled: true, supported: true, saveError: null, entries: [0, 7, 12, 1].map((index, order) => { const day = new Date(); const key = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,"0")}-${String(day.getDate()).padStart(2,"0")}`; return { id: `usage-${index}`, name: names[index], path: items[index].path, totalSeconds: [18900, 7800, 4200, 2700][order], todaySeconds: [6480, 3120, 1680, 540][order], dailySeconds: { [key]: [6480, 3120, 1680, 540][order] } }; }) };
       case "start_menu_status": return { enabled: false, available: true };
       case "plugin:autostart|is_enabled": return false;
@@ -78,9 +78,22 @@ await page.addInitScript((manifest) => {
     }
   };
 }, iconManifest);
+// Icons and window previews are images from the Rust `opaline` protocol; the suite serves the same routes from its demo fixtures.
+await page.route("http://opaline.localhost/**", async (route) => {
+  const request = decodeURIComponent(new URL(route.request().url()).pathname.slice(1));
+  try {
+    let dataUrl = null;
+    if (request.startsWith("icon:")) dataUrl = await page.evaluate((path) => window.__demoIcon(path), request.slice(5));
+    else if (request.startsWith("thumb:")) { await wait(180); dataUrl = await page.evaluate(() => window.__demoThumbnail()); }
+    if (!dataUrl) { await route.fulfill({ status: 404 }); return; }
+    const separator = dataUrl.indexOf(",");
+    const contentType = dataUrl.slice(5, dataUrl.indexOf(";"));
+    await route.fulfill({ status: 200, contentType, body: Buffer.from(dataUrl.slice(separator + 1), "base64") });
+  } catch { await route.abort().catch(() => {}); }
+});
 await page.route(/\/src\/app\/launcher\.ts(?:\?.*)?$/, async (route) => {
   const response = await route.fetch();
-  await route.fulfill({ response, body: `const { mockIPC } = await import('/node_modules/@tauri-apps/api/mocks.js'); mockIPC(window.__demoInvoke, { shouldMockEvents: true });\n${await response.text()}` });
+  await route.fulfill({ response, body: `const { mockIPC, mockConvertFileSrc } = await import('/node_modules/@tauri-apps/api/mocks.js'); mockConvertFileSrc('windows'); mockIPC(window.__demoInvoke, { shouldMockEvents: true });\n${await response.text()}` });
 });
 const wait = (milliseconds) => page.waitForTimeout(milliseconds);
 const visible = (selector) => page.locator(selector).isVisible();

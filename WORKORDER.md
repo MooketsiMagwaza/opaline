@@ -247,7 +247,7 @@ blur, tint and lensing.
 
 ### WP11 — Quality
 - [x] Frontend unit tests (64 Vitest tests on 5 November): organisation, groups, drag ordering, settings validation and drafts, workspace writes, focus deadline/phase transitions, chart axes, hover intent, refraction and user presets
-- [x] Rust unit tests (19 Rust tests on 8 November): display names, pixels, Taskband matching, app identity, usage/date/sleep attribution and the startup-log timestamps
+- [x] Rust unit tests (22 Rust tests on 8 November): display names, pixels, Taskband matching, app identity, usage/date/sleep attribution and the startup-log timestamps
 - [x] Browser UI suite (`scripts/verify-ui.mjs`, Playwright, demo fixtures, mocked IPC) covers navigation, Settings, the taskbar at every edge, gestures, fades and Home screens; `npm run size` enforces 220 KiB raw / 62 KiB gzip
 - [ ] Manual pass of §9 before each release
 - [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement

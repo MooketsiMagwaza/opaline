@@ -36,7 +36,6 @@ const DEFAULT_HOTKEY: &str = "ctrl+alt+space";
 const CODENAME: &str = "Crown";
 // Acrylic blur hides the extra detail; a smaller frame cuts GDI readback, JPEG work and IPC size.
 const SNAPSHOT_WIDTH: u32 = 960;
-const THUMBNAIL_WIDTH: u32 = 360;
 /// How long Rust waits for the UI to say the backdrop is ready before showing the window anyway.
 const PRESENT_TIMEOUT: Duration = Duration::from_millis(900);
 /// How long the overlay must stay hidden before WebView2 is asked to trim its memory. Short idle gaps keep the fast warm open.
@@ -604,22 +603,6 @@ async fn folder_preview(path: String) -> Result<Vec<desktop::Item>, String> {
 }
 
 #[tauri::command]
-async fn get_icon(path: String) -> Option<String> {
-    tauri::async_runtime::spawn_blocking(move || icons::icon_data_url(&path))
-        .await
-        .ok()
-        .flatten()
-}
-
-#[tauri::command]
-async fn get_window_icon(hwnd: i64) -> Option<String> {
-    tauri::async_runtime::spawn_blocking(move || icons::window_icon_data_url(hwnd))
-        .await
-        .ok()
-        .flatten()
-}
-
-#[tauri::command]
 fn launch(app: AppHandle, path: String) {
     hide(&app);
 
@@ -660,14 +643,6 @@ async fn rail_items() -> Vec<taskbar::RailItem> {
     tauri::async_runtime::spawn_blocking(taskbar::rail_items)
         .await
         .unwrap_or_default()
-}
-
-#[tauri::command]
-async fn thumbnail(hwnd: i64) -> Option<String> {
-    tauri::async_runtime::spawn_blocking(move || capture::window_thumbnail(hwnd, THUMBNAIL_WIDTH))
-        .await
-        .ok()
-        .flatten()
 }
 
 #[tauri::command]
@@ -843,12 +818,9 @@ pub fn run() {
             workspace_item,
             pick_workspace_item,
             folder_preview,
-            get_icon,
-            get_window_icon,
             launch,
             reveal,
             rail_items,
-            thumbnail,
             focus_window,
             hide_launcher,
             quit,

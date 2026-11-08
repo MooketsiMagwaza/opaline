@@ -19,7 +19,7 @@
 
 > **Latest release: [`v0.3.0` "Crown"](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0).** Windows 11 first; Linux is planned.
 >
-> The TypeScript build, 64 frontend tests, 19 Rust unit tests, the size budget and a browser UI suite on demo data are clean. Real Windows
+> The TypeScript build, 64 frontend tests, 22 Rust unit tests, the size budget and a browser UI suite on demo data are clean. Real Windows
 > interaction checks remain open for trackpad gestures, light bending on the target GPU, the taskbar at each edge, grid reordering and persistence,
 > tray/single-instance, installer and multi-monitor behaviour. The
 > [work order](WORKORDER.md#0-current-status) lists every requirement with its real status and only marks something done

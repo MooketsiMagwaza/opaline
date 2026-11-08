@@ -58,12 +58,7 @@ pub fn snapshot_rect(x: i32, y: i32, width: i32, height: i32, max_width: u32) ->
     snapshot
 }
 
-/// One window's contents, even when other windows cover it.
-pub fn window_thumbnail(hwnd: i64, max_width: u32) -> Option<String> {
-    to_jpeg_data_url(imp::window(hwnd, max_width)?, max_width)
-}
-
-/// The same capture as raw JPEG bytes, for the `opaline` image protocol.
+/// One window's contents as JPEG bytes, even when other windows cover it, for the `opaline` image protocol.
 pub fn window_thumbnail_jpeg(hwnd: i64, max_width: u32) -> Option<Vec<u8>> {
     to_jpeg_bytes(imp::window(hwnd, max_width)?, max_width)
 }
