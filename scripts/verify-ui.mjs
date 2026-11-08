@@ -61,7 +61,7 @@ await page.addInitScript((manifest) => {
   window.__demoInvoke = async (command, args) => {
     window.__demoCalls.push(command);
     switch (command) {
-      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.3.0", codename: "Crown", pinned: true };
+      case "status": return { hotkeyOk: true, hotkey: "Ctrl+Alt+Space", version: "0.3.1", codename: "Crown", pinned: true };
       case "load_store": return localStorage.getItem(`demo:${args.name}`);
       case "save_store": if (window.__demoFailSave) throw new Error("Demo disk full"); localStorage.setItem(`demo:${args.name}`, args.json); return;
       case "list_items": return items;

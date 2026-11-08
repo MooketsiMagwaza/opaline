@@ -1,6 +1,6 @@
 # Releasing Opaline
 
-The latest tagged release is [`v0.3.0`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0) "Crown", published on 5 November 2026 before the owner finished the native acceptance list in [§11 of the 0.3.0 work order](V0_3_WORKORDER.md#11-verification-matrix); its known trackpad gesture issue (W-51) is recorded in [WORKORDER §13](../WORKORDER.md#13-known-issues). The previous release was [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1).
+The latest tagged release is [`v0.3.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.1) "Crown", a patch for `v0.3.0`, which was published on 5 November 2026 before the owner finished the native acceptance list in [§11 of the 0.3.0 work order](V0_3_WORKORDER.md#11-verification-matrix); its known trackpad gesture issue (W-51) is recorded in [WORKORDER §13](../WORKORDER.md#13-known-issues). The previous release was [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1).
 
 Tagged releases are built on GitHub Actions and publish three Windows downloads: an NSIS installer, an MSI installer and a portable
 ZIP containing `opaline.exe`. A `SHA256SUMS.txt` file is published beside them.
