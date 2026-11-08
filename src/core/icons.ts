@@ -1,74 +1,40 @@
 import { api } from "./api";
 import { el } from "./dom";
 
-const STORAGE = "opaline.icons.v2";
-const cache = new Map<string, string | null>();
-const inflight = new Map<string, Promise<string | null>>();
-const queue: (() => Promise<void>)[] = [];
-let activeRequests = 0;
-let saveTimer: number | undefined;
-try {
-  const stored = JSON.parse(localStorage.getItem(STORAGE) || "{}");
-  if (Date.now() - stored.savedAt < 7 * 86400000 && Array.isArray(stored.icons)) {
-    for (const [path, url] of stored.icons.slice(-96)) if (typeof path === "string" && typeof url === "string" && url.startsWith("data:image/")) cache.set(path, url);
-  }
-} catch { /* A disposable icon cache can be rebuilt without changing user data. */ }
+// Icons are images served by the `opaline` protocol, so the browser decodes, caches and evicts them. Only a failure is remembered
+// (until the next open), so an app without an icon is not asked for again on every redraw.
+const failed = new Set<string>();
 
-function persistCache() {
-  window.clearTimeout(saveTimer);
-  saveTimer = window.setTimeout(() => {
-    const icons = [...cache].filter(([path, url]) => !path.startsWith("window:") && url?.startsWith("data:image/")).slice(-96);
-    while (icons.length && JSON.stringify(icons).length > 2_000_000) icons.shift();
-    try { localStorage.setItem(STORAGE, JSON.stringify({ savedAt: Date.now(), icons })); }
-    catch { /* Cache persistence is optional; the source icons remain available. */ }
-  }, 1000);
+// Earlier versions kept up to 2 MB of base64 icons here and parsed it at every start.
+try { localStorage.removeItem("opaline.icons.v2"); } catch { /* Storage can be unavailable; there is then nothing to clean up. */ }
+
+export function forgetFailedIcons() { failed.clear(); }
+
+const letter = (name: string) => el("span", "fallback", [name.trim().charAt(0).toUpperCase() || "?"]);
+
+function picture(url: string, onFailure: () => void): HTMLImageElement {
+  const image = new Image();
+  image.alt = ""; image.draggable = false; image.decoding = "async";
+  image.addEventListener("error", onFailure, { once: true });
+  image.src = url;
+  return image;
 }
 
-function pumpQueue() {
-  while (activeRequests < 2 && queue.length) {
-    activeRequests++;
-    void queue.shift()!().finally(() => { activeRequests--; pumpQueue(); });
-  }
+function showItemIcon(holder: HTMLElement, path: string, name: string) {
+  if (failed.has(path)) { holder.replaceChildren(letter(name)); return; }
+  holder.replaceChildren(picture(api.iconUrl(path), () => { failed.add(path); holder.replaceChildren(letter(name)); }));
 }
 
-function requestIcon(key: string, request: () => Promise<string | null>): Promise<string | null> {
-  if (cache.has(key)) return Promise.resolve(cache.get(key) ?? null);
-  const pending = inflight.get(key);
-  if (pending) return pending;
-  const result = new Promise<string | null>((resolve) => {
-    queue.push(async () => {
-      let url: string | null = null;
-      try { url = await request(); } catch { /* Missing/protected shell icons use the letter fallback. */ }
-      cache.set(key, url); inflight.delete(key); resolve(url);
-      if (url && !key.startsWith("window:")) persistCache();
-    });
-  });
-  inflight.set(key, result); pumpQueue(); return result;
-}
-
-export const loadIcon = (path: string): Promise<string | null> => requestIcon(path, () => api.icon(path));
-export function forgetFailedIcons() { for (const [path, url] of cache) if (url === null) cache.delete(path); }
-export function forgetClosedWindowIcons(handles: Set<number>) {
-  for (const key of cache.keys()) if (key.startsWith("window:") && !handles.has(Number(key.slice(7)))) cache.delete(key);
-}
-
-function fill(holder: HTMLElement, name: string, url: string | null | undefined) {
-  if (url) {
-    const image = new Image(); image.src = url; image.alt = ""; image.draggable = false;
-    image.decoding = "async";
-    holder.replaceChildren(image);
-  } else holder.replaceChildren(el("span", "fallback", [name.trim().charAt(0).toUpperCase() || "?"]));
-}
-
+/** An item's icon, or its first letter when Windows has none. */
 export function iconElement(path: string, name: string): HTMLElement {
-  const holder = el("span", "ico"); fill(holder, name, cache.get(path));
-  if (!cache.has(path)) void loadIcon(path).then((url) => fill(holder, name, url));
+  const holder = el("span", "ico");
+  showItemIcon(holder, path, name);
   return holder;
 }
 
+/** A window's own icon, falling back to the app's icon and then to a letter. */
 export function windowIconElement(hwnd: number, fallbackPath: string, name: string): HTMLElement {
-  const key = `window:${hwnd}`;
-  const holder = el("span", "ico"); fill(holder, name, cache.get(key) || cache.get(fallbackPath));
-  void requestIcon(key, () => api.windowIcon(hwnd)).then(async (url) => fill(holder, name, url || await loadIcon(fallbackPath)));
+  const holder = el("span", "ico");
+  holder.replaceChildren(picture(api.windowIconUrl(hwnd), () => showItemIcon(holder, fallbackPath, name)));
   return holder;
 }

@@ -4,11 +4,11 @@ The single source of truth for what Opaline must do, how it is built, what has a
 Everything in the original brief is traceable to a requirement ID (`R-xx`). Pull requests and commits should reference the IDs
 they touch.
 
-**Latest release:** [`v0.3.0`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0) · codename **Crown** (see [docs/NAMING.md](docs/NAMING.md)), published 5 November 2026 at the owner's instruction. It was released with the owner's native checks still open, above all the trackpad lag and missed swipes tracked as W-51; the previous release was [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) Borosilicate.
+**Latest release:** [`v0.3.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.1) · codename **Crown** (see [docs/NAMING.md](docs/NAMING.md)), a patch for [`v0.3.0`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.3.0) (5 November 2026): start at login that works, a trimmed idle memory footprint, icons and previews as plain images, and dependency audits in CI. `v0.3.0` was published at the owner's instruction. It was released with the owner's native checks still open, above all the trackpad lag and missed swipes tracked as W-51; the previous release was [`v0.2.1`](https://github.com/MooketsiMagwaza/opaline/releases/tag/v0.2.1) Borosilicate.
 **Current candidate:** none. `v0.3.0` shipped everything in `[0.3.0]` of the changelog. (`v0.2.2`, a candidate it superseded, was never published.)
 **Next development target:** `v0.4.0` — live wallpapers (GIF, video and sandboxed HTML/JavaScript backgrounds that read Lively packages), scoped in [V0_4_WORKORDER.md](docs/V0_4_WORKORDER.md). `v0.3.0`'s remaining acceptance steps are still the owner's native checks (trackpad, WebView2, the native checklist). The live layout customiser and restart caching follow in 0.5.0, the Activity Center in 0.6.0, completion feedback in 0.3.x; see §0 of [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
 **Platforms:** Windows 11 first. Linux is a planned port (R-17); platform-specific code stays behind `cfg(windows)`.
-**Last updated:** 2026-11-05 — v0.3.0 "Crown" released; its native acceptance checks remain open.
+**Last updated:** 2026-11-08 — v0.3.1 "Crown" prepared as a patch for 0.3.0; the native acceptance checks for 0.3.0 and the first real sign-in with the login-start fix remain open.
 
 **Current request intake:** [SESSION_WORKORDER.md](docs/SESSION_WORKORDER.md) lists every owner request from this chat, including named spaces, taskbar/icon parity, screen time and charts, Focus/Zen/saver, startup, screenshots, coding rules and remaining Windows acceptance checks.
 The superseding 0.3.0 experience scope and new requirements R-52–R-85 are tracked in [V0_3_WORKORDER.md](docs/V0_3_WORKORDER.md).
@@ -22,7 +22,7 @@ verified · `[ ]` not started. **Priority:** P0 targets the current preview · P
 
 ## 0. Current status
 
-**0.3.0 "Crown" (released 5 November):** the experience release; its installers were built and installed on the owner's machine. It adds light-bending glass and material presets (R-75), staged Settings as a panel with an expand button and six sections (R-84), taskbar placement on any edge (R-56), Taskbar ends and Sidebar arrangements (R-74), gesture motion and hover intent (R-68, R-69), real app names and icons (R-70), Android-style Home screens (R-71), a help page (R-72), chart axes (R-73) and page fades (R-85). It has been verified in headless Chrome against demo fixtures with mocked IPC: 64 unit tests, 18 Rust tests, the UI suite and the size budget (220 KiB raw / 62 KiB gzip) pass. It shipped before the owner's native pass, so the physical trackpad (W-51), WebView2 light bending on the target GPU, the taskbar at each edge and the native checklist are still the owner's to confirm. The two sections below record the 28 October candidate and the first real-app pass; they are kept as evidence, not as a description of 0.3.0.
+**0.3.0 "Crown" (released 5 November):** the experience release; its installers were built and installed on the owner's machine. It adds light-bending glass and material presets (R-75), staged Settings as a panel with an expand button and six sections (R-84), taskbar placement on any edge (R-56), Taskbar ends and Sidebar arrangements (R-74), gesture motion and hover intent (R-68, R-69), real app names and icons (R-70), Android-style Home screens (R-71), a help page (R-72), chart axes (R-73) and page fades (R-85). It has been verified in headless Chrome against demo fixtures with mocked IPC: 64 unit tests, the Rust tests (18 at the release), the UI suite and the size budget (220 KiB raw / 62 KiB gzip) pass. It shipped before the owner's native pass, so the physical trackpad (W-51), WebView2 light bending on the target GPU, the taskbar at each edge and the native checklist are still the owner's to confirm. The two sections below record the 28 October candidate and the first real-app pass; they are kept as evidence, not as a description of 0.3.0.
 
 **28 October candidate (historical):** named workspaces, local screen time with daily graphs, centered side-arrow navigation, compact mode, the reactivated taskbar mirror, cached previews, Windows-key opt-in, settings validation, group-origin popup motion, Focus timer, Zen and an opt-in screen saver are implemented. Browser checks cover keyboard/navigation/persistence/layout with demo fixtures. Native checks enumerated 197 apps, read eight rail entries, captured a preview, round-tripped workspace storage/pause state, and confirmed the Windows-key hook is available but off. Cached demo preview presentation measured 9–33 ms; native cold captures measured 66.5–131.6 ms. The current Windows login preference is off. Real key/chord, window-icon parity, login start, virtual-desktop/PowerToys, pointer, installer and CI acceptance remain open. The earlier observations below are historical evidence, not verification of every new path.
 
@@ -153,8 +153,8 @@ R-52 onward belong to the 0.3.0 and later plans: R-52–R-75 and R-84–R-85 are
 │               Start menu, file details)           │   │ appearance/ presets, backgrounds              │
 │ taskbar.rs    running windows + pinned items      │   │ activity/ focus/  screen time, charts, Focus  │
 │ apps.rs · usage.rs · idle.rs · workspace.rs ·     │   │ core/       api, dom, icons, menu, glass lens,│
-│ picker.rs · start_menu.rs   installed apps,       │   │             refraction, motion, hover intent  │
-│               screen time, idle, screens, pickers │   │ data/       shortcut and help data            │
+│ picker.rs · start_menu.rs · startup_log.rs        │   │             refraction, motion, hover intent  │
+│               apps, usage, idle, screens, login   │   │ data/       shortcut and help data            │
 │ store.rs      groups.json / config.json / …       │   └───────────────────────────────────────────────┘
 └───────────────────────────────────────────────────┘
 ```
@@ -247,7 +247,7 @@ blur, tint and lensing.
 
 ### WP11 — Quality
 - [x] Frontend unit tests (64 Vitest tests on 5 November): organisation, groups, drag ordering, settings validation and drafts, workspace writes, focus deadline/phase transitions, chart axes, hover intent, refraction and user presets
-- [x] Rust unit tests (18 on 4 November): display names, pixels, Taskband matching, app identity and usage/date/sleep attribution
+- [x] Rust unit tests (22 Rust tests on 8 November): display names, pixels, Taskband matching, app identity, usage/date/sleep attribution and the startup-log timestamps
 - [x] Browser UI suite (`scripts/verify-ui.mjs`, Playwright, demo fixtures, mocked IPC) covers navigation, Settings, the taskbar at every edge, gestures, fades and Home screens; `npm run size` enforces 220 KiB raw / 62 KiB gzip
 - [ ] Manual pass of §9 before each release
 - [~] Performance budget: transparent stable warm opens 9.2–49.2 ms on the target laptop, with one 57.1 ms open and 72–84 ms rebuild/jitter outliers; snapshot show ≤ 300 ms, idle ≤ 120 MB and scrolling still need measurement
@@ -329,9 +329,9 @@ Rules live in `src/grid/organize-rules.ts` as plain data. Anything that matches 
 
 ## 8. Rust ↔ UI contract
 
-Commands: `ready` · `present` · `list_items` · `get_icon(path)` · `get_window_icon` · `launch(path)` · `reveal(path)` · `rail_items` · `thumbnail(hwnd)` ·
+Commands: `ready` · `present` · `list_items` · `launch(path)` · `reveal(path)` · `rail_items` ·
 `focus_window(hwnd)` · `hide_launcher` · `quit` · `status` · `set_hotkey(combo)` · `set_behavior(closeOnBlur)` · `set_backdrop_capture(enabled)` · `load_store(name)` ·
-`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `pick_workspace_item` · `folder_preview` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `set_screen_saver` · `start_menu_status` · `set_start_menu(enabled)`. Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
+`save_store(name, json)` · `list_apps` · `workspace_item(path)` · `pick_workspace_item` · `folder_preview` · `screen_time` · `set_screen_time(enabled)` · `clear_screen_time` · `set_screen_saver` · `start_menu_status` · `set_start_menu(enabled)`. Icons, window icons and window previews are not commands: they are images from the `opaline` URI scheme (`icon:<path>`, `winicon:<hwnd>`, `thumb:<hwnd>:<n>`, see `src-tauri/src/media.rs`). Events: `launcher-prepare { snapshot, reuseSnapshot, page }`, `launcher-hidden`, `launcher-page`, `launcher-backdrop-cache`. Stores accept only `groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`.
 
 ## 9. Acceptance checklist (run before every release)
 
@@ -403,6 +403,8 @@ App Library, calendar, widgets and the reversible Start-style surface are specif
 
 ## 13. Known issues
 
+- **Start at login did not work (found 8 November, fix in the unreleased 0.3.1 work):** the entry was correct, but Opaline's setup treated a tray icon that could not be added as fatal, and a login start can run before Explorer's taskbar exists, so the app quit silently. The tray is now retried for about two minutes, and a startup log (`startup.log` in the app data folder, with a panic hook) records every start and failure. Not yet confirmed at a real sign-in.
+- **Idle memory is still above budget (measured 8 November):** hidden for 90 s, Opaline's host plus six WebView2 processes hold about 200 MB private memory against a 120 MB budget. In 0.3.0 their working set was about 452 MB. The 0.3.1 work asks WebView2 for a low memory target after 20 s hidden and lifts it when an open begins, which takes the working set to about 132–146 MB and private memory to about 196–200 MB (0.3.0: 208 MB). Trimming straight after every hide had made each open about 90 ms slower, which is why it waits. Measured back to back from the same kind of folder, opens were the same within noise: warm 18–30 ms against 18–20 ms, and the first open after idle 30–63 ms against 27–68 ms (second-launch method, remote debugging on; the absolute numbers vary by a few ms between runs). The private-memory budget is a Chromium floor that only a different UI engine would change.
 - **Open in 0.3.0 (W-51):** the owner saw consecutive horizontal swipes fail until a mouse move, and lag, while pinch works. 0.3.0 reworks gesture motion, rearms the swipe lock after 120 ms of silence and the browser suite swipes repeatedly without pointer movement, but headless Chrome is not a physical trackpad. It is not accepted until the owner retests on the device; use Tab/Home dots or Alt+1–5 meanwhile.
 - Real pointer grid reordering has not had its full real-app pass yet (the fabric opening was replaced by a short pop in 0.2.0).
 - Light bending (R-75) is an SVG displacement filter inside `backdrop-filter`: Chromium/WebView2 only, GPU-heavy and unmeasured on the target Intel GPU. It is off by default and falls back to plain frost where unsupported.

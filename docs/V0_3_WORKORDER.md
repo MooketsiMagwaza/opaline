@@ -63,9 +63,9 @@ continues to read Desktop files without moving them. Pane contents remain manual
   live Settings previews.
 - Layout settings expose app-area width, icon size, taskbar icon size, edge and alignment, but there is no visual customisation workspace, panel-height
   control or direct manipulation (0.5.0).
-- Warm opens reuse the live DOM and an in-memory backdrop. A small seven-day frontend icon cache stores at most 96 data URLs under a
+- Warm opens reuse the live DOM and an in-memory backdrop. (0.3.0 baseline) A small seven-day frontend icon cache stores at most 96 data URLs under a
   two-megabyte limit. That helps some restarts, but unchanged items still require individual IPC/cache lookups, cache misses return to
-  the serial Windows shell worker, and the Desktop/app manifests are rescanned.
+  the serial Windows shell worker, and the Desktop/app manifests are rescanned. (0.3.1 serves icons as images through the `opaline` protocol and removes that cache.)
 - Backdrops and live window thumbnails are memory-only. That privacy boundary remains unchanged.
 - Opaline currently has no inbox for reviewing its own alerts or Windows notifications after a toast disappears, and it has no agenda
   or calendar input path.

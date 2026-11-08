@@ -21,7 +21,7 @@ Knowing this helps you judge reports:
 - **Registers** one global hotkey, optionally a "launch at login" entry if the user turns it on, and, only if the user turns it on, a low-level keyboard hook that turns a lone Windows-key tap into Opaline's All apps (off by default; Windows chords and the native Start button are left alone).
 - **Makes no network requests** and contains no telemetry.
 
-The UI talks to Rust only through the commands listed in the [work order](WORKORDER.md#8-rust--ui-contract). `load_store`/`save_store` accept only the five file names above (`groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`) and cap each at 1 MiB.
+The UI talks to Rust only through the commands listed in the [work order](WORKORDER.md#8-rust--ui-contract), plus an `opaline` image scheme that returns the icon of a path, a window's icon or a window preview as raw image bytes (a 404 when none can be produced) and nothing else. `load_store`/`save_store` accept only the five file names above (`groups.json`, `config.json`, `workspaces.json`, `screen-time.json` and `shell.json`) and cap each at 1 MiB.
 
 ## Supported versions
 

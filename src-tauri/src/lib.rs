@@ -4,8 +4,10 @@ mod desktop;
 mod icons;
 mod identity;
 mod idle;
+mod media;
 mod picker;
 mod start_menu;
+mod startup_log;
 mod store;
 mod taskbar;
 mod usage;
@@ -14,7 +16,7 @@ mod workspace;
 use std::{
     sync::{
         Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     time::{Duration, Instant},
@@ -34,9 +36,10 @@ const DEFAULT_HOTKEY: &str = "ctrl+alt+space";
 const CODENAME: &str = "Crown";
 // Acrylic blur hides the extra detail; a smaller frame cuts GDI readback, JPEG work and IPC size.
 const SNAPSHOT_WIDTH: u32 = 960;
-const THUMBNAIL_WIDTH: u32 = 360;
 /// How long Rust waits for the UI to say the backdrop is ready before showing the window anyway.
 const PRESENT_TIMEOUT: Duration = Duration::from_millis(900);
+/// How long the overlay must stay hidden before WebView2 is asked to trim its memory. Short idle gaps keep the fast warm open.
+const MEMORY_TRIM_DELAY: Duration = Duration::from_secs(20);
 /// Focus changes this soon after showing are the window settling, not the user clicking away.
 const BLUR_GRACE: Duration = Duration::from_millis(500);
 
@@ -55,6 +58,10 @@ struct AppState {
     last_monitor: Mutex<Option<(i32, i32)>>,
     cached_snapshot: Mutex<Option<CachedSnapshot>>,
     snapshot_refreshing: AtomicBool,
+    /// Whether WebView2 is currently asked to keep its memory low (see `schedule_memory_trim`).
+    memory_trimmed: AtomicBool,
+    /// Bumped whenever the overlay is shown or hidden, so a trim scheduled for an earlier idle period does nothing.
+    memory_generation: AtomicU64,
 }
 
 #[derive(Clone)]
@@ -132,9 +139,74 @@ fn hide(app: &AppHandle) {
     if let Some(window) = main_window(app) {
         let _ = window.hide();
     }
+    schedule_memory_trim(app);
     let _ = app.emit("launcher-hidden", ());
     refresh_snapshot_while_hidden(app);
 }
+
+/// Once the overlay has stayed hidden for `MEMORY_TRIM_DELAY`, asks WebView2 to keep its memory low. Opaline sits resident
+/// all day and a hidden Chromium otherwise holds its full working set (about 430 MB across its processes, about 145 MB trimmed).
+/// Doing it straight after every hide made the next open about 90 ms slower, hence the delay and `restore_memory_target`.
+fn schedule_memory_trim(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let generation = state.memory_generation.fetch_add(1, Ordering::SeqCst) + 1;
+    let app = app.clone();
+    thread::spawn(move || {
+        thread::sleep(MEMORY_TRIM_DELAY);
+        let state = app.state::<AppState>();
+        let still_hidden =
+            main_window(&app).is_some_and(|window| !window.is_visible().unwrap_or(true));
+        if still_hidden && state.memory_generation.load(Ordering::SeqCst) == generation {
+            state.memory_trimmed.store(true, Ordering::SeqCst);
+            set_webview_memory_target(&app, true);
+        }
+    });
+}
+
+/// First thing a show does: cancels a pending trim and, if memory was trimmed, lifts it while the snapshot and the UI
+/// get ready, so the cost is hidden behind work that has to happen anyway.
+fn restore_memory_target(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    state.memory_generation.fetch_add(1, Ordering::SeqCst);
+    if state.memory_trimmed.swap(false, Ordering::SeqCst) {
+        set_webview_memory_target(app, false);
+    }
+}
+
+/// Asks WebView2 for a low or normal memory target. A runtime without the API (or a failed call) leaves memory as it was.
+#[cfg(windows)]
+fn set_webview_memory_target(app: &AppHandle, low: bool) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
+        ICoreWebView2_19,
+    };
+    use windows::core::Interface;
+
+    let Some(window) = main_window(app) else {
+        return;
+    };
+    let level = if low {
+        COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW
+    } else {
+        COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL
+    };
+    let _ = window.with_webview(move |webview| {
+        // SAFETY: the controller is alive for the duration of the closure, which runs on the UI thread.
+        let result = unsafe {
+            webview
+                .controller()
+                .CoreWebView2()
+                .and_then(|core| core.cast::<ICoreWebView2_19>())
+                .and_then(|core| core.SetMemoryUsageTargetLevel(level))
+        };
+        if let Err(error) = result {
+            eprintln!("opaline: WebView2 memory target not changed: {error}");
+        }
+    });
+}
+
+#[cfg(not(windows))]
+fn set_webview_memory_target(_app: &AppHandle, _low: bool) {}
 
 fn capture_current_monitor(app: &AppHandle) -> Option<CachedSnapshot> {
     let window = main_window(app)?;
@@ -259,6 +331,7 @@ fn open_app_list(app: &AppHandle) {
 }
 
 fn begin_show_page(app: &AppHandle, page: &'static str) {
+    restore_memory_target(app);
     let Some(window) = main_window(app) else {
         return;
     };
@@ -362,6 +435,34 @@ fn toggle(app: &AppHandle) {
     }
 }
 
+/// Keeps trying to create the tray icon for about two minutes, on the UI thread, then gives up and says so.
+fn retry_tray(app: AppHandle) {
+    thread::spawn(move || {
+        for attempt in 1..=60 {
+            thread::sleep(Duration::from_secs(2));
+            let (sender, receiver) = std::sync::mpsc::channel();
+            let handle = app.clone();
+            if app
+                .run_on_main_thread(move || {
+                    let _ = sender.send(build_tray(&handle));
+                })
+                .is_err()
+            {
+                return;
+            }
+            match receiver.recv_timeout(Duration::from_secs(5)) {
+                Ok(Ok(())) => {
+                    startup_log::write(&format!("tray ready after {attempt} retries"));
+                    return;
+                }
+                Ok(Err(error)) => startup_log::write(&format!("tray retry {attempt}: {error}")),
+                Err(_) => {}
+            }
+        }
+        startup_log::write("tray never became available; the hotkey still opens Opaline");
+    });
+}
+
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let show_item = MenuItem::with_id(app, "show", "Show Opaline", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -403,6 +504,9 @@ fn ready(app: AppHandle, state: State<AppState>) {
     idle::ready();
     if state.show_on_ready.swap(false, Ordering::SeqCst) {
         begin_show(&app);
+    } else {
+        // A login start never shows the overlay, so it would otherwise keep a full working set until the first hide.
+        schedule_memory_trim(&app);
     }
 }
 
@@ -499,22 +603,6 @@ async fn folder_preview(path: String) -> Result<Vec<desktop::Item>, String> {
 }
 
 #[tauri::command]
-async fn get_icon(path: String) -> Option<String> {
-    tauri::async_runtime::spawn_blocking(move || icons::icon_data_url(&path))
-        .await
-        .ok()
-        .flatten()
-}
-
-#[tauri::command]
-async fn get_window_icon(hwnd: i64) -> Option<String> {
-    tauri::async_runtime::spawn_blocking(move || icons::window_icon_data_url(hwnd))
-        .await
-        .ok()
-        .flatten()
-}
-
-#[tauri::command]
 fn launch(app: AppHandle, path: String) {
     hide(&app);
 
@@ -555,14 +643,6 @@ async fn rail_items() -> Vec<taskbar::RailItem> {
     tauri::async_runtime::spawn_blocking(taskbar::rail_items)
         .await
         .unwrap_or_default()
-}
-
-#[tauri::command]
-async fn thumbnail(hwnd: i64) -> Option<String> {
-    tauri::async_runtime::spawn_blocking(move || capture::window_thumbnail(hwnd, THUMBNAIL_WIDTH))
-        .await
-        .ok()
-        .flatten()
 }
 
 #[tauri::command]
@@ -677,7 +757,9 @@ fn save_store(app: AppHandle, name: String, json: String) -> Result<(), String> 
 }
 
 pub fn run() {
+    startup_log::install_panic_hook();
     let args: Vec<String> = std::env::args().collect();
+    startup_log::write(&format!("start v{} {args:?}", env!("CARGO_PKG_VERSION")));
     let start_hidden = args.iter().any(|arg| arg == "--hidden");
     let pinned = args.iter().any(|arg| arg == "--pin") || std::env::var_os("OPALINE_PIN").is_some();
     let mut context = tauri::generate_context!();
@@ -688,6 +770,11 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        // Icons and window previews are served as plain images instead of base64 text (see media.rs).
+        .register_asynchronous_uri_scheme_protocol(media::SCHEME, |_context, request, responder| {
+            let path = request.uri().path().to_string();
+            tauri::async_runtime::spawn_blocking(move || responder.respond(media::respond(&path)));
+        })
         // A second launch just opens the running instance's overlay.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             begin_show(app);
@@ -720,6 +807,8 @@ pub fn run() {
             last_monitor: Mutex::new(None),
             cached_snapshot: Mutex::new(None),
             snapshot_refreshing: AtomicBool::new(false),
+            memory_trimmed: AtomicBool::new(false),
+            memory_generation: AtomicU64::new(0),
         })
         .invoke_handler(tauri::generate_handler![
             ready,
@@ -729,12 +818,9 @@ pub fn run() {
             workspace_item,
             pick_workspace_item,
             folder_preview,
-            get_icon,
-            get_window_icon,
             launch,
             reveal,
             rail_items,
-            thumbnail,
             focus_window,
             hide_launcher,
             quit,
@@ -763,10 +849,18 @@ pub fn run() {
                 *current = combo;
             }
 
-            build_tray(handle)?;
+            // A login start can beat Explorer's taskbar, so a tray icon that cannot be added yet is retried instead of ending the app.
+            if let Err(error) = build_tray(handle) {
+                startup_log::write(&format!("tray not ready: {error}; retrying"));
+                retry_tray(handle.clone());
+            }
             usage::start(handle);
             start_menu::start(handle);
             idle::start(handle);
+            startup_log::write(&format!(
+                "ready, hotkey registered: {}",
+                state.hotkey_ok.load(Ordering::Relaxed)
+            ));
             Ok(())
         })
         .on_window_event(|window, event| match event {

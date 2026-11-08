@@ -19,6 +19,7 @@ npm run tauri dev          # app with hot-reloading UI; Rust changes rebuild aut
 npm run build              # tsc + vite production bundle (the type-check)
 npm run size               # production frontend + native artifact sizes; enforces frontend budgets
 npm run docs:check         # fails when a Markdown file disagrees with the code (links, paths, versions, test counts, budgets)
+npm audit                  # known vulnerabilities in JavaScript dependencies (CI fails on high); also cargo audit --file src-tauri/Cargo.lock
 npm run icons              # re-rasterise assets/logo.svg and regenerate src-tauri/icons
 cargo fmt   --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
@@ -74,7 +75,7 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 ```
 src/            app/ (entry and shell styles) · core/ (shared helpers) · feature folders activity/ appearance/ focus/ grid/ navigation/ settings/ taskbar/,
                 each co-locating its logic, CSS and README (see src/README.md)
-src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs
+src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs startup_log.rs media.rs
 tests/          Vitest unit tests for the frontend
 scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol) · verify-ui.mjs (browser UI suite on demo data)
                 · verify-native.mjs (checks against the running app) · measure-build.mjs (npm run size)

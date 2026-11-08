@@ -6,6 +6,19 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-11-08 "Crown"
+
+### Fixed
+- Start at login now works. Opaline's setup treated a tray icon that could not be added as fatal, and a login start can run before Explorer's taskbar exists, so the app quit silently every time. The tray is retried for about two minutes instead.
+
+### Added
+- A startup log (`startup.log` in the app data folder) records each start, any tray retry and any panic, so a login start that fails leaves evidence. It stays on the machine and is cut back after 64 KiB.
+
+### Changed
+- CI now fails on known vulnerabilities in JavaScript and Rust dependencies (`npm audit`, `cargo audit`), and a weekly workflow repeats both so a new advisory does not wait for the next push. `tauri-plugin-single-instance` moved to 2.5.5.
+- Icons and window previews are now served to the interface as plain images through an `opaline://` protocol instead of base64 text in command results. That drops about a third of their size on the wire, removes the 2 MB icon cache that was written to local storage and parsed at every start, and lets the browser decode and evict them. Checked in the real app: all 47 Desktop icons, a window icon and a window preview load, a missing icon fails cleanly to a letter, and the browser UI suite passes with a new check that demo icons load.
+- After 20 seconds hidden, Opaline asks WebView2 to keep its memory low, which takes the working set of its processes from about 452 MB to about 130–145 MB; the request is lifted when an open begins, and opens measured the same as before.
+
 ## [0.3.0] — 2026-11-05 "Crown"
 
 ### Added

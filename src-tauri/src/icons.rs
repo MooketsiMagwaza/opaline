@@ -2,8 +2,6 @@
 //! .lnk shortcuts to desktop and Store apps). Other platforms have no implementation yet, so the
 //! UI falls back to a letter tile there.
 
-use base64::{Engine, engine::general_purpose::STANDARD};
-
 const ICON_SIZE: u32 = 128;
 
 /// Converts shell premultiplied BGRA pixels to the straight RGBA layout PNG expects.
@@ -29,15 +27,14 @@ fn bgra_to_rgba(pixels: &mut [u8]) {
     }
 }
 
-/// Returns the item's icon as a `data:image/png;base64,...` URL.
-pub fn icon_data_url(path: &str) -> Option<String> {
-    let png = imp::icon_png(path, ICON_SIZE)?;
-    Some(format!("data:image/png;base64,{}", STANDARD.encode(png)))
+/// The item's icon as PNG bytes, for the `opaline` image protocol.
+pub fn icon_png(path: &str) -> Option<Vec<u8>> {
+    imp::icon_png(path, ICON_SIZE)
 }
 
-pub fn window_icon_data_url(hwnd: i64) -> Option<String> {
-    let png = imp::window_icon_png(hwnd)?;
-    Some(format!("data:image/png;base64,{}", STANDARD.encode(png)))
+/// A window's own icon as PNG bytes.
+pub fn window_icon_png(hwnd: i64) -> Option<Vec<u8>> {
+    imp::window_icon_png(hwnd)
 }
 
 #[cfg(windows)]

@@ -1,4 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+
+/** Icons and window previews are plain images served by the Rust `opaline` protocol (src-tauri/src/media.rs), not command results. */
+const image = (route: string) => convertFileSrc(route, "opaline");
+let thumbnailSequence = 0;
 
 export type Item = { name: string; path: string; isFolder: boolean };
 export type AppEntry = { name: string; path: string };
@@ -36,12 +40,13 @@ export const api = {
   startMenuStatus: () => invoke<{ enabled: boolean; available: boolean }>("start_menu_status"),
   setStartMenu: (enabled: boolean) => invoke<void>("set_start_menu", { enabled }),
   setScreenSaver: (enabled: boolean, idleMinutes: number) => invoke<void>("set_screen_saver", { enabled, idleMinutes }),
-  icon: (path: string) => invoke<string | null>("get_icon", { path }),
-  windowIcon: (hwnd: number) => invoke<string | null>("get_window_icon", { hwnd }),
+  iconUrl: (path: string) => image(`icon:${path}`),
+  windowIconUrl: (hwnd: number) => image(`winicon:${hwnd}`),
   launch: (path: string) => invoke<void>("launch", { path }),
   reveal: (path: string) => invoke<void>("reveal", { path }),
   rail: () => invoke<RailItem[]>("rail_items"),
-  thumbnail: (hwnd: number) => invoke<string | null>("thumbnail", { hwnd }),
+  /** Every capture gets its own URL, so a refreshed preview is never served from an older response. */
+  thumbnailUrl: (hwnd: number) => image(`thumb:${hwnd}:${++thumbnailSequence}`),
   focusWindow: (hwnd: number) => invoke<void>("focus_window", { hwnd }),
   hide: () => invoke<void>("hide_launcher"),
   quit: () => invoke<void>("quit"),

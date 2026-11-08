@@ -37,6 +37,7 @@ Useful while developing:
 | Icons (one STA worker) | `src-tauri/src/icons.rs` |
 | App names and icons as Windows shows them (package family, Start menu, file details) | `src-tauri/src/identity.rs` |
 | Installed apps, screen time, idle, workspaces, pickers, Windows key | `src-tauri/src/apps.rs`, `usage.rs`, `idle.rs`, `workspace.rs`, `picker.rs`, `start_menu.rs` |
+| Startup log and panic hook (what a login start leaves behind) | `src-tauri/src/startup_log.rs` |
 | Taskbar mirror (native side) | `src-tauri/src/taskbar.rs` |
 | Persistent files | `src-tauri/src/store.rs` |
 | UI entry, open/close lifecycle, keyboard | `src/app/launcher.ts` |

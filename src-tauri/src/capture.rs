@@ -13,8 +13,8 @@ struct Frame {
     height: u32,
 }
 
-/// Downscales to at most `max_width` and encodes as a `data:image/jpeg` URL.
-fn to_jpeg_data_url(frame: Frame, max_width: u32) -> Option<String> {
+/// Downscales to at most `max_width` and encodes as JPEG bytes.
+fn to_jpeg_bytes(frame: Frame, max_width: u32) -> Option<Vec<u8>> {
     let rgb: Vec<u8> = frame
         .pixels
         .as_chunks::<4>()
@@ -34,6 +34,12 @@ fn to_jpeg_data_url(frame: Frame, max_width: u32) -> Option<String> {
     JpegEncoder::new_with_quality(&mut Cursor::new(&mut bytes), 58)
         .encode_image(&DynamicImage::ImageRgb8(image))
         .ok()?;
+    Some(bytes)
+}
+
+/// The backdrop still travels to the UI as a data URL: it is one payload per open and several views share it.
+fn to_jpeg_data_url(frame: Frame, max_width: u32) -> Option<String> {
+    let bytes = to_jpeg_bytes(frame, max_width)?;
     Some(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
 }
 
@@ -52,9 +58,9 @@ pub fn snapshot_rect(x: i32, y: i32, width: i32, height: i32, max_width: u32) ->
     snapshot
 }
 
-/// One window's contents, even when other windows cover it.
-pub fn window_thumbnail(hwnd: i64, max_width: u32) -> Option<String> {
-    to_jpeg_data_url(imp::window(hwnd, max_width)?, max_width)
+/// One window's contents as JPEG bytes, even when other windows cover it, for the `opaline` image protocol.
+pub fn window_thumbnail_jpeg(hwnd: i64, max_width: u32) -> Option<Vec<u8>> {
+    to_jpeg_bytes(imp::window(hwnd, max_width)?, max_width)
 }
 
 #[cfg(windows)]

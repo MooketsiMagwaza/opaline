@@ -73,8 +73,11 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 
 ## Performance rules
 
+- A login start can run before Explorer's taskbar exists, so the tray icon is retried instead of being fatal, and `startup_log.rs` records every start, tray retry and panic in `startup.log` beside the data files.
+- After the overlay has stayed hidden for 20 seconds, WebView2 is asked for a low memory target (about 430 MB to about 145 MB of working set across Opaline's processes); the request is lifted at the start of the next open so it never sits on the visible-frame path. Trimming immediately after every hide cost about 90 ms per open and was dropped.
 - Nothing except fit/capture/present belongs on the visible-frame path.
 - Shell icon extraction remains serialized on one STA worker.
+- Icons and window previews reach the UI as image responses from the `opaline` URI scheme (`media.rs`), not as base64 text in command results, so nothing icon-sized is parsed, held as a string or written to local storage.
 - Glass is applied to large floating surfaces, never as one backdrop filter per tile.
 - Desktop and AppsFolder refreshes happen after presentation. Taskbar enumeration and bounded thumbnail warming run after presentation and stop when hidden.
 - The UI keeps up to 32 decoded thumbnails in memory, shares concurrent requests per window and shows stale pixels while refreshing. A cached hover avoids capture entirely; cold PrintWindow can take longer than 50 ms.
@@ -84,7 +87,7 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 ## Frontend module boundaries
 
 - `src/app/`: the shell (`launcher.ts`: open/close lifecycle, keyboard wiring) and the shared surfaces and tokens in `launcher.css`.
-- `src/core/`: Rust command wrappers, DOM helpers, the icon cache, the context menu, hover intent, motion, and the refraction and glass lens.
+- `src/core/`: Rust command wrappers and image URLs, DOM helpers, icons, the context menu, hover intent, motion, and the refraction and glass lens.
 - `src/focus/`: timer state transitions, ambient presentation and the Focus page controller.
 - `src/grid/`: Home rendering, pane/group state, workspaces, drag/drop ordering and delayed folder/pane peeks; `index.ts` is the feature coordinator.
 - `src/navigation/`: pages and the pager, navigation arrangements, the tray, and swipe and pinch gestures with their motion.

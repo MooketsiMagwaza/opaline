@@ -4,7 +4,7 @@ Core contains the smallest reusable layer beneath features.
 
 - `api.ts` is the typed frontend facade over Tauri commands. Features never call `invoke` directly.
 - `dom.ts` contains framework-free element, lookup, timing and numeric helpers.
-- `icons.ts` deduplicates concurrent icon requests and caches decoded data URLs, with explicit failed/closed-entry eviction.
+- `icons.ts` builds icon elements from `opaline://` image URLs (see below). The browser decodes, caches and evicts the images; only a failed icon is remembered, until the next open, so an app without an icon is not asked for again on every redraw.
 - `menu.ts` owns the shared contextual menu and nested menu interaction.
 - `hover-intent.ts` holds the shared hover rules: `PathGuard` (point-in-triangle corridor plus a distance turn-back test), `Closer` (a grace
   timer re-evaluated on every pointer move) and `HoverGroup` (a cold delay for the first popup, none once one is open or just closed).
@@ -23,24 +23,32 @@ classDiagram
     +status()
     +desktopItems()
     +installedApps()
-    +icon(path)
+    +iconUrl(path)
+    +windowIconUrl(hwnd)
     +rail()
-    +thumbnail(hwnd)
+    +thumbnailUrl(hwnd)
     +loadStore(key)
     +saveStore(key,value)
   }
-  class IconCache {
-    +loadIcon(path)
+  class Icons {
     +iconElement(path,name)
     +windowIconElement(hwnd,path,name)
-    +forgetClosedWindowIcons(handles)
+    +forgetFailedIcons()
   }
   class Features
   Features --> ApiFacade
-  Features --> IconCache
-  IconCache --> ApiFacade
+  Features --> Icons
+  Icons --> ApiFacade
   ApiFacade --> TauriCommands
 ```
+
+## Images
+
+Icons and window previews are not command results. Rust serves them as plain image bytes through the `opaline` URI scheme (`http://opaline.localhost/…` on
+Windows; `src-tauri/src/media.rs`), and `api.iconUrl`, `api.windowIconUrl` and `api.thumbnailUrl` build the URLs with `convertFileSrc`. They used to be base64 `data:` URLs
+inside JSON: a third larger, encoded and decoded at both ends, held in the page as strings, and for icons stored in local storage (up to 2 MB, parsed at every start).
+An image that cannot be produced is a 404, which becomes a letter tile or "Preview unavailable". The screen snapshot behind the overlay is still a data URL: it is one
+payload per open and several views share it.
 
 ## Hover intent
 
