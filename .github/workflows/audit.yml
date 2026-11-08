@@ -1,0 +1,31 @@
+name: Dependency audit
+
+# New advisories appear without any change here, so the same two audits also run every week.
+permissions:
+  contents: read
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: npm audit
+        run: npm audit --package-lock-only --audit-level=high
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: cargo audit
+        run: cargo audit --file src-tauri/Cargo.lock

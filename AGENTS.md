@@ -19,6 +19,7 @@ npm run tauri dev          # app with hot-reloading UI; Rust changes rebuild aut
 npm run build              # tsc + vite production bundle (the type-check)
 npm run size               # production frontend + native artifact sizes; enforces frontend budgets
 npm run docs:check         # fails when a Markdown file disagrees with the code (links, paths, versions, test counts, budgets)
+npm audit                  # known vulnerabilities in JavaScript dependencies (CI fails on high); also cargo audit --file src-tauri/Cargo.lock
 npm run icons              # re-rasterise assets/logo.svg and regenerate src-tauri/icons
 cargo fmt   --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets

@@ -9,7 +9,7 @@ ZIP containing `opaline.exe`. A `SHA256SUMS.txt` file is published beside them.
 
 1. Complete the manual acceptance checklist in [WORKORDER.md](../WORKORDER.md#9-acceptance-checklist-run-before-every-release).
 2. Run `npm ci`, `npm test`, `npm run build`, `npm run size`, `npm run docs:check`, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`,
-   `cargo test --locked` and `cargo check --locked`, then the browser UI suite ([TESTING.md](TESTING.md) §5) and check that `git status` shows only demo-data changes in `docs/images/`.
+   `cargo test --locked` and `cargo check --locked`, then `npm audit` and `cargo audit --file src-tauri/Cargo.lock` (CI and a weekly workflow run both), then the browser UI suite ([TESTING.md](TESTING.md) §5) and check that `git status` shows only demo-data changes in `docs/images/`.
 3. Update `CHANGELOG.md` (move `[Unreleased]` under the new version and remove any "Planning" notes for work that did not ship), then set
    the same version in `package.json`, `package-lock.json` (root `version` and `packages[""].version`), `src-tauri/Cargo.toml`,
    `src-tauri/Cargo.lock` (the `opaline` package; CI uses `--locked`, so a stale lock fails the build) and `src-tauri/tauri.conf.json`.

@@ -41,6 +41,9 @@ jobs:
       - name: Frontend unit tests
         run: npm test
 
+      - name: Known vulnerabilities in JavaScript dependencies
+        run: npm audit --audit-level=high
+
       - name: Documentation matches the code
         run: npm run docs:check
 
@@ -55,6 +58,15 @@ jobs:
 
       - name: Rust unit tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      # Fails on a known vulnerability. Warnings about unmaintained crates are reported but do not fail the build:
+      # the ones in the lockfile today belong to Tauri's Linux stack and are not compiled for Windows.
+      - name: Known vulnerabilities in Rust dependencies
+        run: cargo audit --file src-tauri/Cargo.lock
 
   # Linux is a planned port (WORKORDER WP10). Enable this job once the non-Windows paths exist.
   # linux:
