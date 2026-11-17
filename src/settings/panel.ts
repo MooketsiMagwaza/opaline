@@ -1,4 +1,3 @@
-import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { api, type Status } from "../core/api";
 import { exportUserPresets, importUserPresets, loadUserPresets, matchesUserPreset, removeUserPreset, saveUserPreset } from "../appearance/user-presets";
 import { APPEARANCE_PRESETS, appearanceValues, matchesAppearance, type AppearanceValues } from "../appearance/presets";
@@ -666,8 +665,7 @@ function autostartRow(): HTMLElement {
     async (value) => {
       (node as HTMLButtonElement).disabled = true;
       try {
-        if (value) await enable();
-        else await disable();
+        await api.setLoginStart(value);
         enabled = value;
         note.textContent = value ? "Opaline will start hidden at your next Windows sign-in." : "Off — Opaline will not start after sign-in.";
       } catch (error) {
@@ -679,7 +677,7 @@ function autostartRow(): HTMLElement {
   );
 
   (node as HTMLButtonElement).disabled = true;
-  void isEnabled()
+  void api.loginStartStatus()
     .then((value) => {
       enabled = value;
       note.textContent = value ? "On — Opaline starts hidden after Windows sign-in." : "Off — turn this on to start after Windows sign-in.";
