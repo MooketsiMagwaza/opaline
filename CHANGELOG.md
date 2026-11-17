@@ -6,6 +6,14 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+### Fixed
+- Start at login now works from a per-user Scheduled Task instead of the Run-key entry. Windows' own log (Shell-Core event 9707) showed Explorer starting seven other Run entries at every sign-in and never Opaline's, although the value and its approval flag were correct, so 0.3.1's tray retry never got to run. The task starts Opaline hidden ten seconds after sign-in, needs no elevation and leaves a history in Task Scheduler. An install that had the Run entry is moved over on its next start, and the old entry is removed.
+- A second `--hidden` launch no longer opens the overlay of the instance that is already running.
+
+### Changed
+- The CI and weekly `npm audit` now cover the JavaScript that ships (`--omit=dev`). A picomatch advisory with no patched version (GHSA-fc5q-39xc-vjpf, a ReDoS in glob matching) reaches only the build tools Vite and Vitest pull in, and would otherwise have failed every build; `cargo audit` is unchanged. The build-tool finding is still visible in a plain `npm audit` and is to be cleared when picomatch publishes a fix.
+- `tauri-plugin-autostart`, its npm package and its permissions are gone; `login.rs` owns start at login through the `login_start_status` and `set_login_start` commands.
+
 ## [0.3.1] — 2026-11-08 "Crown"
 
 ### Fixed
