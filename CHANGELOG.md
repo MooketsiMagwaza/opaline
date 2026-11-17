@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org). Each minor relea
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-11-17 "Crown"
+
 ### Fixed
 - Start at login now works from a per-user Scheduled Task instead of the Run-key entry. Windows' own log (Shell-Core event 9707) showed Explorer starting seven other Run entries at every sign-in and never Opaline's, although the value and its approval flag were correct, so 0.3.1's tray retry never got to run. The task starts Opaline hidden ten seconds after sign-in, needs no elevation and leaves a history in Task Scheduler. An install that had the Run entry is moved over on its next start, and the old entry is removed.
 - A second `--hidden` launch no longer opens the overlay of the instance that is already running.
