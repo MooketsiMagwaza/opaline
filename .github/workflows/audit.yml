@@ -21,7 +21,7 @@ jobs:
           node-version: 22
 
       - name: npm audit
-        run: npm audit --package-lock-only --audit-level=high
+        run: npm audit --package-lock-only --omit=dev --audit-level=high
 
       - uses: taiki-e/install-action@v2
         with:

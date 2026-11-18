@@ -4,6 +4,7 @@ mod desktop;
 mod icons;
 mod identity;
 mod idle;
+mod login;
 mod media;
 mod picker;
 mod start_menu;
@@ -28,7 +29,6 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
-use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use tauri_plugin_opener::OpenerExt;
 
@@ -746,6 +746,21 @@ fn set_screen_saver(enabled: bool, idle_minutes: u64) -> Result<(), String> {
     idle::configure(enabled, idle_minutes)
 }
 
+/// Runs a Windows tool and waits for it, so it stays off the UI thread.
+#[tauri::command]
+async fn login_start_status() -> bool {
+    tauri::async_runtime::spawn_blocking(login::is_enabled)
+        .await
+        .unwrap_or(false)
+}
+
+#[tauri::command]
+async fn set_login_start(enabled: bool) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || login::set_enabled(enabled))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
 #[tauri::command]
 fn load_store(app: AppHandle, name: String) -> Option<String> {
     store::load(&app, &name)
@@ -775,15 +790,14 @@ pub fn run() {
             let path = request.uri().path().to_string();
             tauri::async_runtime::spawn_blocking(move || responder.respond(media::respond(&path)));
         })
-        // A second launch just opens the running instance's overlay.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            begin_show(app);
+        // A second launch just opens the running instance's overlay, unless it is a start-at-login launch (`--hidden`),
+        // which must stay silent when Opaline is already running.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if !args.iter().any(|arg| arg == "--hidden") {
+                begin_show(app);
+            }
         }))
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::init(
-            MacosLauncher::LaunchAgent,
-            Some(vec!["--hidden"]),
-        ))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
@@ -834,6 +848,8 @@ pub fn run() {
             start_menu_status,
             set_start_menu,
             set_screen_saver,
+            login_start_status,
+            set_login_start,
             load_store,
             save_store,
         ])
@@ -857,6 +873,8 @@ pub fn run() {
             usage::start(handle);
             start_menu::start(handle);
             idle::start(handle);
+            // Off the main thread: it spawns Windows tools, and the first window should not wait for them.
+            std::thread::spawn(login::migrate_legacy_entry);
             startup_log::write(&format!(
                 "ready, hotkey registered: {}",
                 state.hotkey_ok.load(Ordering::Relaxed)

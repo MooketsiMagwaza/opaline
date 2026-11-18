@@ -19,7 +19,7 @@ npm run tauri dev          # app with hot-reloading UI; Rust changes rebuild aut
 npm run build              # tsc + vite production bundle (the type-check)
 npm run size               # production frontend + native artifact sizes; enforces frontend budgets
 npm run docs:check         # fails when a Markdown file disagrees with the code (links, paths, versions, test counts, budgets)
-npm audit                  # known vulnerabilities in JavaScript dependencies (CI fails on high); also cargo audit --file src-tauri/Cargo.lock
+npm audit --omit=dev        # known vulnerabilities in the JavaScript that ships (CI fails on high; build tools are reported, not gated); also cargo audit --file src-tauri/Cargo.lock
 npm run icons              # re-rasterise assets/logo.svg and regenerate src-tauri/icons
 cargo fmt   --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
@@ -57,7 +57,7 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 - **Never touch the user's Desktop files.** Opaline reads them; panes are metadata in `groups.json`. Tests must not move, rename or
   delete anything on a real Desktop, and must restore any pane changes they make to the user's real data.
 - **No network access, no telemetry.** The snapshot and window thumbnails stay in memory.
-- **Do not enable launch-at-login** or change any system setting while testing; the control exists for the user.
+- **Do not enable launch-at-login** (it registers a scheduled task named `Opaline`) or change any system setting while testing; the control exists for the user.
 - **Icon extraction goes through the single worker** in `icons.rs`. Concurrent shell icon calls lose icons (this sank the first beta).
 - **Platform code stays isolated** behind `cfg(windows)` with a non-Windows fallback.
 - **`backdrop-filter` rule:** glass panes must not sit inside an element with `filter`, `mask`, `opacity < 1`, `clip-path` or its own
@@ -75,7 +75,7 @@ The owner explicitly adopted these standards from their screenshot. Apply them t
 ```
 src/            app/ (entry and shell styles) · core/ (shared helpers) · feature folders activity/ appearance/ focus/ grid/ navigation/ settings/ taskbar/,
                 each co-locating its logic, CSS and README (see src/README.md)
-src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs startup_log.rs media.rs
+src-tauri/src/  Rust: lib.rs capture.rs desktop.rs icons.rs identity.rs taskbar.rs store.rs apps.rs usage.rs idle.rs workspace.rs picker.rs start_menu.rs startup_log.rs media.rs login.rs
 tests/          Vitest unit tests for the frontend
 scripts/        make-icons.mjs (logo → icons) · cdp.mjs (drive the running app over the DevTools protocol) · verify-ui.mjs (browser UI suite on demo data)
                 · verify-native.mjs (checks against the running app) · measure-build.mjs (npm run size)

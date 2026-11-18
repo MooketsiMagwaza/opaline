@@ -73,6 +73,7 @@ reads legacy `dev.opaline.launcher` JSON once and copies valid data into `io.git
 
 ## Performance rules
 
+- Start at login is a per-user Scheduled Task with a logon trigger (`login.rs`), not a Run-key entry: Explorer was found to skip Opaline's Run entry at every sign-in. The task runs the installed exe with `--hidden` after ten seconds, an old Run entry is moved over on the next start, and a second `--hidden` launch does nothing.
 - A login start can run before Explorer's taskbar exists, so the tray icon is retried instead of being fatal, and `startup_log.rs` records every start, tray retry and panic in `startup.log` beside the data files.
 - After the overlay has stayed hidden for 20 seconds, WebView2 is asked for a low memory target (about 430 MB to about 145 MB of working set across Opaline's processes); the request is lifted at the start of the next open so it never sits on the visible-frame path. Trimming immediately after every hide cost about 90 ms per open and was dropped.
 - Nothing except fit/capture/present belongs on the visible-frame path.
